@@ -29,6 +29,12 @@ const nextConfig: NextConfig = {
         port: "",
         pathname: "/**",
       },
+      {
+        protocol: "https",
+        hostname: "cdn.angelsinmykitchen.in",
+        port: "",
+        pathname: "/**",
+      },
     ],
     dangerouslyAllowLocalIP: true,
   },
