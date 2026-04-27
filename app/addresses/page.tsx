@@ -10,6 +10,7 @@ import {
   useSetDefaultAddressMutation,
   useUpdateAddressMutation,
 } from "@/features/address/addressApiService";
+import { useToast } from "@/hooks/useToast";
 import { Address, AddressType, CreateAddressPayload } from "@/interfaces/address.interface";
 import { useAppSelector } from "@/lib/store";
 import AddIcon from "@mui/icons-material/Add";
@@ -128,11 +129,10 @@ function AddressCard({
         sx={{
           p: 2.5,
           borderRadius: 3,
-          border: `1.5px solid ${
-            address.isDefault
+          border: `1.5px solid ${address.isDefault
               ? theme.palette.primary.main
               : theme.palette.divider
-          }`,
+            }`,
           position: "relative",
           transition: "all 0.2s ease",
           background: address.isDefault
@@ -365,7 +365,7 @@ function MapPicker({
         setMapCenter({ lat, lng });
         reverseGeocode(lat, lng);
       },
-      () => {}
+      () => { }
     );
   }, [reverseGeocode]);
 
@@ -440,9 +440,21 @@ function AddressFormDialog({
   const [form, setForm] = useState<CreateAddressPayload>(emptyForm());
   const [mapCoords, setMapCoords] = useState<{ lat: number; lng: number } | null>(null);
 
-  const [createAddress, { isLoading: isCreating }] = useCreateAddressMutation();
-  const [updateAddress, { isLoading: isUpdating }] = useUpdateAddressMutation();
+  const { showToast } = useToast();
+
+  const [createAddress, { isLoading: isCreating, isError: isCreatingAddressError, error: creatingAddressError }] = useCreateAddressMutation();
+  const [updateAddress, { isLoading: isUpdating, isError: isUpdatingAddressError, error: updatingAddressError }] = useUpdateAddressMutation();
   const isLoading = isCreating || isUpdating;
+
+  useEffect(() => {
+    if (isCreatingAddressError) {
+      showToast((creatingAddressError as any)?.data?.message, "error");
+    }
+
+    if (isUpdatingAddressError) {
+      showToast((updatingAddressError as any)?.data?.message, "error");
+    }
+  }, [isCreatingAddressError, isUpdatingAddressError]);
 
   // Pre-fill form when editing
   useEffect(() => {
@@ -654,9 +666,8 @@ function AddressFormDialog({
                 gap: 1.5,
                 p: 1.5,
                 borderRadius: 2,
-                border: `1.5px solid ${
-                  form.isDefault ? theme.palette.primary.main : theme.palette.divider
-                }`,
+                border: `1.5px solid ${form.isDefault ? theme.palette.primary.main : theme.palette.divider
+                  }`,
                 cursor: "pointer",
                 background: form.isDefault
                   ? alpha(theme.palette.primary.main, 0.04)
