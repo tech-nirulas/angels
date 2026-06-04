@@ -4,4 +4,4 @@ export NEXT_PUBLIC_MEDIA_BASE_URL=http://localhost:8333/aimk/
 export NEXT_PUBLIC_RAZORPAY_KEY=rzp_test_Sg27oZveHv5lDu
 export NEXT_PUBLIC_RAZORPAY_SECRET=U1i2xXf1ql3M5338xPxKQ2BJ
 export NEXT_PUBLIC_GOOGLE_MAPS_KEY=AIzaSyB9-UVtUqzCN6hWuKSVn2jXCloEl34ZfLk
-npm run dev
+npm run dev -- -p 8080
