@@ -10,6 +10,7 @@ export const orderEndpoints = (builder: EndpointDefinitions) => ({
       orderType: string;
       deliveryAddressId: string;
       promoCode?: string;
+      paymentMethod?: string;
     }
   >({
     query: (body) => ({

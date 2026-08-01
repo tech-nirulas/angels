@@ -22,6 +22,9 @@ Please read and adhere strictly to the rules and references below before perform
    - Run the development server with `./local.sh` (or `npm run dev -- -p 8080`).
    - The backend API URL is configured via `NEXT_PUBLIC_BASE_URL` (usually `http://localhost:9090`).
    - Local storage/cookie security: Twilio test OTPs and Razorpay credentials are bound for local test checkouts.
+5. **Incremental Step-by-Step Execution**: Do NOT do everything all at once. Even within a milestone, proceed strictly 1 or 2 small steps at a time. After completing 1 or 2 steps, stop and inform the user what to check, how to test/verify it, and wait for feedback if needed.
+6. **Activity Log (`LOG.md`)**: Maintain a `LOG.md` file in the root of the project (`LOG.md`) as a detailed history log of all changes made and their rationale for traceability.
+
 
 ---
 

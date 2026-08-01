@@ -45,11 +45,13 @@ function StatusChip({ status }: { status: string }) {
   );
 }
 
-function OrderCard({ order }: { order: any }) {
+import { Order, OrderItem } from "@/interfaces/order.interface";
+
+function OrderCard({ order }: { order: Order }) {
   const theme = useTheme();
   const router = useRouter();
   const firstItem = order.items?.[0];
-  const totalItems = order.items?.reduce((s: number, i: any) => s + i.quantity, 0) ?? 0;
+  const totalItems = order.items?.reduce((s: number, i: OrderItem) => s + i.quantity, 0) ?? 0;
 
   return (
     <motion.div
@@ -94,7 +96,7 @@ function OrderCard({ order }: { order: any }) {
         <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
           {/* Stacked thumbnails */}
           <Box sx={{ display: "flex", position: "relative", width: 80 }}>
-            {order.items?.slice(0, 3).map((item: any, idx: number) => (
+            {order.items?.slice(0, 3).map((item: OrderItem, idx: number) => (
               <Box
                 key={item.id}
                 sx={{
@@ -224,7 +226,7 @@ export default function OrdersPage() {
             </Box>
           ) : (
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              {orders.map((order: any) => (
+              {orders.map((order: Order) => (
                 <OrderCard key={order.id} order={order} />
               ))}
             </Box>

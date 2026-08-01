@@ -1,5 +1,3 @@
-// features/auth/authApiService.ts (add signup mutation)
-import getDecryptedToken from "@/helpers/decryptToken.helper";
 import {
   LoginRequest,
   LoginResponse,
@@ -7,27 +5,12 @@ import {
   SignupResponse,
 } from "@/interfaces/auth.interface";
 import { Root } from "@/interfaces/root.interface";
-import { API_BASE_URL } from "@/utils/constants";
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-
-const baseQuery = fetchBaseQuery({
-  baseUrl: API_BASE_URL,
-  prepareHeaders: async (headers) => {
-    headers.set("Content-Type", "application/json");
-
-    // Get token from encrypted storage for authenticated requests
-    const token = await getDecryptedToken();
-    if (token) {
-      headers.set("Authorization", `Bearer ${token}`);
-    }
-
-    return headers;
-  },
-});
+import { createApi } from "@reduxjs/toolkit/query/react";
+import { baseQueryWithReauth } from "@/features/api/baseQuery";
 
 export const authApiService = createApi({
   reducerPath: "authApi",
-  baseQuery,
+  baseQuery: baseQueryWithReauth,
   endpoints: (builder) => ({
     login: builder.mutation<Root<LoginResponse>, LoginRequest>({
       query: (credentials) => ({
@@ -58,24 +41,61 @@ export const authApiService = createApi({
       }),
     }),
     requestOtp: builder.mutation({
-      query: (email) => ({
+      query: (emailOrPhone) => ({
         url: "auth/request-otp",
         method: "POST",
-        body: { email },
+        body: { emailOrPhone },
       }),
     }),
     resendOtp: builder.mutation({
-      query: (email) => ({
+      query: (emailOrPhone) => ({
         url: "auth/resend-otp",
         method: "POST",
-        body: { email },
+        body: { emailOrPhone },
       }),
     }),
     verifyOtp: builder.mutation({
-      query: ({ email, otp, guestCart }) => ({
+      query: ({ emailOrPhone, otp, guestCart }) => ({
         url: "auth/verify-otp",
         method: "POST",
-        body: { email, otp, guestCart },
+        body: { emailOrPhone, otp, guestCart },
+      }),
+    }),
+    verifyEmailOtp: builder.mutation({
+      query: ({ email, otp }) => ({
+        url: "auth/verify-email-otp",
+        method: "POST",
+        body: { email, otp },
+      }),
+    }),
+    loginPasswordless: builder.mutation({
+      query: ({ primaryToken, provider, guestCart }) => ({
+        url: "auth/login-passwordless",
+        method: "POST",
+        body: { primaryToken, provider, guestCart },
+      }),
+    }),
+    registerPasswordless: builder.mutation({
+      query: ({
+        primaryToken,
+        primaryProvider,
+        secondaryToken,
+        secondaryProvider,
+        firstName,
+        lastName,
+        guestCart,
+      }) => ({
+        url: "auth/register-passwordless",
+        method: "POST",
+        body: {
+          primaryToken,
+          primaryProvider,
+          secondaryToken,
+          secondaryProvider,
+          firstName,
+          lastName,
+          guestCart,
+        },
       }),
     }),
   }),
@@ -90,4 +110,7 @@ export const {
   useRequestOtpMutation,
   useVerifyOtpMutation,
   useResendOtpMutation,
+  useVerifyEmailOtpMutation,
+  useLoginPasswordlessMutation,
+  useRegisterPasswordlessMutation,
 } = authApiService;

@@ -23,6 +23,7 @@ export async function encryptToken(key: CryptoKey, token?: string) {
 
 // Save encrypted token to storage
 export async function saveEncryptedToken(token?: string) {
+  if (!token) return;
   const key = await generateKey();
   const { iv, encryptedToken } = await encryptToken(key, token);
 
@@ -32,4 +33,20 @@ export async function saveEncryptedToken(token?: string) {
   localStorage.setItem('encryptionKey', JSON.stringify(await crypto.subtle.exportKey('jwk', key)));
   localStorage.setItem('iv', ivBase64);
   localStorage.setItem('encryptedToken', encryptedTokenBase64);
+}
+
+export function saveRefreshToken(token: string) {
+  localStorage.setItem('refreshToken', token);
+}
+
+export function getRefreshToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem('refreshToken');
+}
+
+export function clearTokens() {
+  localStorage.removeItem('encryptionKey');
+  localStorage.removeItem('iv');
+  localStorage.removeItem('encryptedToken');
+  localStorage.removeItem('refreshToken');
 }

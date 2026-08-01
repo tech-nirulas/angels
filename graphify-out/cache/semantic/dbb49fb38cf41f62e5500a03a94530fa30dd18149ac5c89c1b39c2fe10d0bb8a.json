@@ -1,0 +1,1 @@
+{"nodes": [{"id": "doc:AGENTS.md", "label": "Consumer App Rules (AGENTS.md)", "type": "DOCUMENT", "source_file": ".agents/AGENTS.md", "summary": "Rules and guidelines for angels consumer web app development, Next.js 16 / React 19 rules, Three.js 3D scenes, port 8080, and documentation maintenance.", "confidence": "EXTRACTED"}], "edges": [], "hyperedges": []}

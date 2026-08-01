@@ -11,6 +11,7 @@ import {
 } from "@/features/order/orderApiService";
 import { useAppSelector } from "@/lib/store";
 import { MEDIA_BASE_URL } from "@/utils/constants";
+import getDecryptedToken from "@/helpers/decryptToken.helper";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
 import CheckCircleOutlinedIcon from "@mui/icons-material/CheckCircleOutlined";
@@ -112,17 +113,45 @@ function ReviewDialog({
   onSuccess: () => void;
 }) {
   const theme = useTheme();
-  const [rating, setRating] = useState(0);
+  const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
-  // const [createReview, { isLoading }] = useCreateReviewMutation();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
   const handleSubmit = async () => {
     if (!rating) return;
+    setIsSubmitting(true);
+    setErrorMsg("");
+
     try {
-      await createReview({ orderId, productId: item.productId, rating, comment }).unwrap();
+      const token = await getDecryptedToken();
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:9090";
+
+      const res = await fetch(`${baseUrl}/review`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          productId: item.productId,
+          rating,
+          comment,
+        }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.message || "Failed to submit review.");
+      }
+
       onSuccess();
       onClose();
-    } catch { }
+    } catch (err: any) {
+      setErrorMsg(err.message || "Error submitting review.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -131,6 +160,12 @@ function ReviewDialog({
         Review Product
       </DialogTitle>
       <DialogContent sx={{ pt: 3 }}>
+        {errorMsg && (
+          <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
+            {errorMsg}
+          </Alert>
+        )}
+
         <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}>
           <Box sx={{ width: 56, height: 56, borderRadius: 2, overflow: "hidden", bgcolor: alpha(theme.palette.primary.main, 0.08), flexShrink: 0 }}>
             <Image
@@ -161,10 +196,10 @@ function ReviewDialog({
         <Button
           onClick={handleSubmit}
           variant="contained"
-          // disabled={!rating || isLoading}
+          disabled={!rating || isSubmitting}
           sx={{ borderRadius: 2, textTransform: "none", minWidth: 120 }}
         >
-          {/* {isLoading ? <CircularProgress size={18} sx={{ color: "white" }} /> : "Submit Review"} */}
+          {isSubmitting ? <CircularProgress size={18} sx={{ color: "white" }} /> : "Submit Review"}
         </Button>
       </DialogActions>
     </Dialog>
@@ -486,7 +521,7 @@ export default function OrderDetailPage() {
         <Container maxWidth="lg" sx={{ py: { xs: 3, md: 5 } }}>
           <Grid container spacing={3}>
             {/* ── Left column ── */}
-            <Grid item xs={12} md={8}>
+            <Grid size={{ xs: 12, md: 8 }}>
               {/* Order progress */}
               {!["cancelled", "payment_failed", "refunded"].includes(order.status) && (
                 <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
@@ -626,7 +661,7 @@ export default function OrderDetailPage() {
             </Grid>
 
             {/* ── Right column — financials + payment ── */}
-            <Grid item xs={12} md={4}>
+            <Grid size={{ xs: 12, md: 4 }}>
               {/* Order summary */}
               <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
                 <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: `1.5px solid ${theme.palette.divider}`, mb: 3, position: { md: "sticky" }, top: { md: 100 } }}>

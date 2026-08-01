@@ -99,7 +99,7 @@ export default function VerifyOtpPage() {
     }
 
     try {
-      const result = await verifyOtp({ email, otp: code }).unwrap();
+      const result = await verifyOtp({ emailOrPhone: email, otp: code }).unwrap();
 
       dispatch(
         setCredentials({
@@ -136,7 +136,7 @@ export default function VerifyOtpPage() {
 
   const handleResend = async () => {
     try {
-      await resendOtp({ email }).unwrap();
+      await resendOtp(email).unwrap();
       setCooldown(RESEND_COOLDOWN);
       toast.showToast("A new code has been sent to your email.", "success");
     } catch (err: any) {

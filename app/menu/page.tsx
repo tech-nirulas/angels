@@ -343,7 +343,7 @@ export default function MenuPage() {
             </Grid>
 
             {/* ── Main content ── */}
-            <Grid item xs={12} md={9}>
+            <Grid size={{ xs: 12, md: 9 }}>
               {/* Search + Sort */}
               <Box
                 sx={{
@@ -436,7 +436,7 @@ export default function MenuPage() {
               <Grid container spacing={3}>
                 {isLoading
                   ? Array.from({ length: 8 }).map((_, idx) => (
-                    <Grid item xs={12} sm={6} lg={4} key={idx}>
+                    <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={idx}>
                       <Skeleton
                         variant="rectangular"
                         height={300}
@@ -447,7 +447,7 @@ export default function MenuPage() {
                     </Grid>
                   ))
                   : sortedProducts.map((product, idx) => (
-                    <Grid item xs={12} sm={6} lg={4} key={product.id}>
+                    <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={product.id}>
                       <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}

@@ -215,7 +215,7 @@ export default function MenuSection() {
           <AnimatePresence mode="wait">
             {isLoading
               ? Array.from({ length: PREVIEW_LIMIT }).map((_, idx) => (
-                  <Grid item xs={12} sm={6} md={4} lg={3} key={`skel-${idx}`}>
+                  <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={`skel-${idx}`}>
                     <Skeleton
                       variant="rectangular"
                       height={280}
@@ -230,7 +230,7 @@ export default function MenuSection() {
                   const imageUrl = getImageUrl(product);
 
                   return (
-                    <Grid item xs={12} sm={6} md={4} lg={3} key={product.id}>
+                    <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={product.id}>
                       <motion.div
                         layout
                         initial={{ opacity: 0, y: 20 }}

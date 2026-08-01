@@ -6,6 +6,8 @@ import { productApiService } from "@/features/products/productApiService";
 import { userApiService } from "@/features/user/userApiService";
 import { addressApiService } from "@/features/address/addressApiService";
 import { orderApiService } from "@/features/order/orderApiService";
+import { cakeApiService } from "@/features/cake-customization/cakeApiService";
+import { offerApiService } from "@/features/offer/offerApiService";
 
 export const api = {
   categoryApiService,
@@ -15,4 +17,6 @@ export const api = {
   userApiService,
   addressApiService,
   orderApiService,
+  cakeApiService,
+  offerApiService,
 };

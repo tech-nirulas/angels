@@ -1,28 +1,10 @@
-// features/address/addressApiService.ts
-import getDecryptedToken from "@/helpers/decryptToken.helper";
-import { API_BASE_URL } from "@/utils/constants";
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { createApi } from "@reduxjs/toolkit/query/react";
 import { addressEndpoints } from "./addressEndpoints";
-
-// const baseQuery = createBaseQuery();
-const baseQuery = fetchBaseQuery({
-  baseUrl: API_BASE_URL,
-  prepareHeaders: async (headers) => {
-    headers.set("Content-Type", "application/json");
-
-    // Get token from encrypted storage for authenticated requests
-    const token = await getDecryptedToken();
-    if (token) {
-      headers.set("Authorization", `Bearer ${token}`);
-    }
-
-    return headers;
-  },
-});
+import { baseQueryWithReauth } from "@/features/api/baseQuery";
 
 export const addressApiService = createApi({
   reducerPath: "addressApiService",
-  baseQuery,
+  baseQuery: baseQueryWithReauth,
   tagTypes: ["Address"],
   endpoints: addressEndpoints,
 });

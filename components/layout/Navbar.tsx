@@ -29,7 +29,7 @@ import CartBadge from "../ui/CartBadge";
 const NAV_LINKS = [
   { label: "Home", href: "#home" },
   { label: "Menu", href: "#menu" },
-  { label: "Custom Cakes", href: "#custom-cakes" },
+  { label: "Custom Cakes", href: "/customize" },
 ];
 
 export default function Navbar() {
@@ -60,6 +60,12 @@ export default function Navbar() {
   }, []);
 
   const handleNavigation = (href: string) => {
+    if (href.startsWith("/")) {
+      router.push(href);
+      if (drawerOpen) setDrawerOpen(false);
+      return;
+    }
+
     const isHomePage = pathname === "/";
 
     if (isHomePage) {

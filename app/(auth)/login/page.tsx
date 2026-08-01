@@ -1,110 +1,347 @@
-// Updated Login component with Material UI
 // app/login/page.tsx
 "use client";
 
-import { MaterialPasswordField, MaterialTextField } from '@/components/common/CustomFields';
-import { useLazyFetchUserQuery, useLoginMutation } from '@/features/auth/authApiService';
-import { setCredentials } from '@/features/auth/authSlice';
-import { saveEncryptedToken } from '@/helpers/encryptToken.helper';
-import { useToast } from '@/hooks/useToast';
-import { ErrorResponse } from '@/interfaces/root.interface';
-import { useAppDispatch } from '@/lib/store';
-import AuthValidator from '@/utils/validators/auth.validator';
-import { Email, Lock, Visibility, VisibilityOff } from '@mui/icons-material';
 import {
+  useRequestOtpMutation,
+  useVerifyEmailOtpMutation,
+  useLoginPasswordlessMutation,
+  useRegisterPasswordlessMutation,
+} from '@/features/auth/authApiService';
+import { setCredentials } from '@/features/auth/authSlice';
+import { saveEncryptedToken, saveRefreshToken } from '@/helpers/encryptToken.helper';
+import { useAppDispatch, useAppSelector } from '@/lib/store';
+import {
+  Alert,
   Box,
   Button,
   CircularProgress,
   Container,
-  Divider,
-  IconButton,
-  InputAdornment,
   Paper,
+  TextField,
   Typography,
-  useMediaQuery,
-  useTheme
+  Divider,
 } from '@mui/material';
-import { Form, Formik, FormikHelpers } from 'formik';
 import { motion } from "framer-motion";
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-interface LoginValues {
-  email: string;
-  password: string;
-}
+type AuthStep =
+  | 'select'
+  | 'email'
+  | 'email-otp'
+  | 'phone'
+  | 'phone-otp'
+  | 'complete-profile';
 
-function Login() {
+export default function LoginPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('lg'));
+  const guestCart = useAppSelector((state) => state.cart.items);
 
-  const [showPassword, setShowPassword] = useState<boolean>(false);
-  const [login, { isLoading, isError: isLoginError, error: loginError, data: loginData, isSuccess: isLoginSuccess, reset: resetLogin }] = useLoginMutation();
-  const [fetchUser, { isLoading: isUserLoading, isSuccess: userSuccess, isError: isFetchingUserError, error: fetchingUserError, data: userData, reset: resetFetchingUser }] = useLazyFetchUserQuery();
+  const [step, setStep] = useState<AuthStep>('select');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [otp, setOtp] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const { showToast } = useToast();
+  // Passwordless authentication states
+  const [primaryToken, setPrimaryToken] = useState('');
+  const [primaryProvider, setPrimaryProvider] = useState<'email' | 'phone' | 'google' | null>(null);
+  const [secondaryToken, setSecondaryToken] = useState('');
+  const [secondaryProvider, setSecondaryProvider] = useState<'email' | 'phone' | null>(null);
 
-  // UseEffect for handling login api error
-  useEffect(() => {
-    if (isLoginError) {
-      showToast((loginError as ErrorResponse)?.data?.message ?? 'Error Logging In.', 'error');
-      resetLogin();
-    }
-  }, [isLoginError, loginError, showToast, resetLogin]);
+  // Mutations
+  const [requestOtp] = useRequestOtpMutation();
+  const [verifyEmailOtp] = useVerifyEmailOtpMutation();
+  const [loginPasswordless] = useLoginPasswordlessMutation();
+  const [registerPasswordless] = useRegisterPasswordlessMutation();
 
-  // UseEffect for handling user api error
-  useEffect(() => {
-    if (isFetchingUserError) {
-      showToast((fetchingUserError as ErrorResponse)?.data?.message ?? 'Error Logging In', 'error');
-    }
-    resetFetchingUser();
-  }, [isFetchingUserError, fetchingUserError, showToast, resetFetchingUser]);
-
-  const initialValues = {
-    email: '',
-    password: '',
+  // Login success helper
+  const handleLoginSuccess = (accessToken: string, refreshToken: string, user: any) => {
+    dispatch(setCredentials({ token: accessToken, user }));
+    saveEncryptedToken(accessToken);
+    saveRefreshToken(refreshToken);
+    router.push('/');
   };
 
-  const handleLogin = async (values: LoginValues, { setSubmitting }: FormikHelpers<LoginValues>) => {
+  // Google OAuth Success Callback
+  const handleGoogleCallback = async (response: any) => {
+    setLoading(true);
+    setError('');
     try {
-      await login({ email: values.email, password: values.password }).unwrap();
-    } catch (err: any) {
-      const message = err?.data?.message ?? '';
+      const result = await loginPasswordless({
+        primaryToken: response.credential,
+        provider: 'google',
+        guestCart,
+      }).unwrap();
 
-      // Try to parse structured error from backend
-      try {
-        const parsed = JSON.parse(message);
-        if (parsed.code === 'EMAIL_NOT_VERIFIED') {
-          showToast('Please verify your email. A new code has been sent.', 'warning');
-          router.push(`/verify-otp?email=${encodeURIComponent(parsed.email)}`);
-          return;
-        }
-      } catch {
-        // Not a JSON error, fall through to generic handler
+      const data = result.data; // ResponseInterceptor unwrapping
+
+      if (data.status === 'EXISTING_USER') {
+        handleLoginSuccess(data.accessToken, data.refreshToken, data.user);
+      } else if (data.status === 'NEW_USER') {
+        setPrimaryToken(response.credential);
+        setPrimaryProvider('google');
+        setSecondaryProvider('phone');
+        setFirstName(data.firstName || '');
+        setLastName(data.lastName || '');
+        // Go to secondary phone verification
+        setStep('phone');
       }
+    } catch (err: any) {
+      setError(err?.data?.message || err.message || 'Google authentication failed');
     } finally {
-      setSubmitting(false);
+      setLoading(false);
     }
   };
 
-  useEffect(() => {
-    if (isLoginSuccess && loginData) {
-      console.log("🚀 ~ Login ~ loginData:", loginData)
-      fetchUser(loginData?.data?.accessToken);
-    }
-  }, [isLoginSuccess, loginData, fetchUser]);
+  // MSG91 Callback handler (hooked to script load)
+  const handleMsg91Success = async (token: string) => {
+    setLoading(true);
+    setError('');
+    try {
+      if (!primaryProvider) {
+        // Phone is primary verification
+        const result = await loginPasswordless({
+          primaryToken: token,
+          provider: 'phone',
+          guestCart,
+        }).unwrap();
 
-  useEffect(() => {
-    if (userSuccess && userData && loginData) {
-      dispatch(setCredentials({ user: userData, token: loginData?.data?.accessToken }));
-      saveEncryptedToken(loginData?.data?.accessToken);
-      showToast('Login Successful', 'success');
-      router.push('/');
+        const data = result.data; // ResponseInterceptor unwrapping
+
+        if (data.status === 'EXISTING_USER') {
+          handleLoginSuccess(data.accessToken, data.refreshToken, data.user);
+        } else if (data.status === 'NEW_USER') {
+          setPrimaryToken(token);
+          setPrimaryProvider('phone');
+          // Skip secondary email, go directly to name entry
+          setStep('complete-profile');
+        }
+      } else {
+        // Phone is secondary verification
+        setSecondaryToken(token);
+        if (primaryProvider === 'google') {
+          const result = await registerPasswordless({
+            primaryToken,
+            primaryProvider,
+            secondaryToken: token,
+            secondaryProvider: 'phone',
+            firstName,
+            lastName,
+            guestCart,
+          }).unwrap();
+          const data = result.data; // ResponseInterceptor unwrapping
+          handleLoginSuccess(data.accessToken, data.refreshToken, data.user);
+        } else {
+          setStep('complete-profile');
+        }
+      }
+    } catch (err: any) {
+      setError(err?.data?.message || err.message || 'Phone verification failed');
+    } finally {
+      setLoading(false);
     }
-  }, [userSuccess, userData, loginData, dispatch, showToast, router]);
+  };
+
+  // Script loaders for MSG91 and Google Client GSI SDK
+  useEffect(() => {
+    // Load MSG91 script
+    const loadMsg91Script = () => {
+      if ((window as any).initSendOTP) {
+        initOtpWidget();
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = 'https://verify.msg91.com/otp-provider.js';
+      script.async = true;
+      script.onload = () => {
+        initOtpWidget();
+      };
+      document.head.appendChild(script);
+    };
+
+    const initOtpWidget = () => {
+      const configuration = {
+        widgetId: process.env.NEXT_PUBLIC_MSG91_WIDGET_ID || '366644664c4a323237353039',
+        tokenAuth: process.env.NEXT_PUBLIC_MSG91_TOKEN_AUTH || '512331Tv4ORqfJ6a436578P1',
+        exposeMethods: true,
+        success: (data: any) => {
+          if (data && data['access-token']) {
+            handleMsg91Success(data['access-token']);
+          }
+        },
+        failure: (err: any) => {
+          setError(typeof err === 'string' ? err : err.message || 'OTP verification failed');
+        },
+      };
+      if (typeof (window as any).initSendOTP === 'function') {
+        (window as any).initSendOTP(configuration);
+      }
+    };
+
+    loadMsg91Script();
+
+    // Load Google GSI SDK
+    const loadGoogleScript = () => {
+      if ((window as any).google) {
+        initGoogleSignIn();
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = 'https://accounts.google.com/gsi/client';
+      script.async = true;
+      script.onload = () => {
+        initGoogleSignIn();
+      };
+      document.head.appendChild(script);
+    };
+
+    const initGoogleSignIn = () => {
+      const google = (window as any).google;
+      if (google && google.accounts && google.accounts.id) {
+        google.accounts.id.initialize({
+          client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '785311894982-f3f6oou8pq73e72fl2bfe1bcr01t7mep.apps.googleusercontent.com',
+          callback: handleGoogleCallback,
+        });
+        google.accounts.id.renderButton(
+          document.getElementById('google-signin-btn-page'),
+          { theme: 'outline', size: 'large', width: '100%' }
+        );
+      }
+    };
+
+    loadGoogleScript();
+  }, []);
+
+  // Handle Request Email OTP
+  const handleRequestEmailOtp = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      await requestOtp(email).unwrap();
+      setStep('email-otp');
+    } catch (err: any) {
+      setError(err?.data?.message || err.message || 'Failed to send verification email');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle Verify Email OTP
+  const handleVerifyEmailOtp = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const result = await verifyEmailOtp({ email, otp }).unwrap();
+      const token = result.data.emailVerificationToken; // ResponseInterceptor unwrapping
+
+      if (!primaryProvider) {
+        // Email is primary verification
+        const loginRes = await loginPasswordless({
+          primaryToken: token,
+          provider: 'email',
+          guestCart,
+        }).unwrap();
+
+        const data = loginRes.data; // ResponseInterceptor unwrapping
+
+        if (data.status === 'EXISTING_USER') {
+          handleLoginSuccess(data.accessToken, data.refreshToken, data.user);
+        } else if (data.status === 'NEW_USER') {
+          setPrimaryToken(token);
+          setPrimaryProvider('email');
+          // Go directly to Complete Profile
+          setStep('complete-profile');
+        }
+      } else {
+        // Email is secondary verification
+        setSecondaryToken(token);
+        setStep('complete-profile');
+      }
+    } catch (err: any) {
+      setError(err?.data?.message || err.message || 'OTP verification failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle Request Phone OTP
+  const handleRequestPhoneOtp = () => {
+    setError('');
+    const win = window as any;
+    if (win.sendOtp) {
+      setLoading(true);
+      let cleanedPhone = phone.replace(/\D/g, '');
+      if (!cleanedPhone.startsWith('91')) {
+        cleanedPhone = '91' + cleanedPhone;
+      }
+      win.sendOtp(
+        cleanedPhone,
+        () => {
+          setLoading(false);
+          setStep('phone-otp');
+        },
+        (err: any) => {
+          setLoading(false);
+          setError(typeof err === 'string' ? err : err.message || 'Failed to send SMS OTP');
+        }
+      );
+    } else {
+      setError('MSG91 Widget is not initialized yet. Please try again.');
+    }
+  };
+
+  // Handle Verify Phone OTP
+  const handleVerifyPhoneOtp = () => {
+    setError('');
+    const win = window as any;
+    if (win.verifyOtp) {
+      setLoading(true);
+      win.verifyOtp(
+        otp,
+        () => {
+          setLoading(false);
+        },
+        (err: any) => {
+          setLoading(false);
+          setError(typeof err === 'string' ? err : err.message || 'OTP verification failed');
+        }
+      );
+    } else {
+      setError('MSG91 Widget error: verify method not found');
+    }
+  };
+
+  // Handle Register Complete Profile
+  const handleRegister = async () => {
+    if (!firstName || !lastName) {
+      setError('Both first name and last name are required');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    try {
+      const result = await registerPasswordless({
+        primaryToken,
+        primaryProvider,
+        secondaryToken,
+        secondaryProvider,
+        firstName,
+        lastName,
+        guestCart,
+      }).unwrap();
+      const data = result.data; // ResponseInterceptor unwrapping
+      handleLoginSuccess(data.accessToken, data.refreshToken, data.user);
+    } catch (err: any) {
+      setError(err?.data?.message || err.message || 'Failed to register account');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <Box
@@ -115,9 +352,9 @@ function Login() {
         background: "linear-gradient(135deg, #FFF8F7 0%, #FFECEF 100%)",
       }}
     >
-      <Container maxWidth="sm">
+      <Container maxWidth="xs">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
@@ -128,107 +365,203 @@ function Login() {
               borderRadius: 4,
               background: "white",
               boxShadow: "var(--shadow-soft)",
+              textAlign: "center",
             }}
           >
-            <Box textAlign="center" mb={4}>
-              <Typography
-                variant="h4"
-                sx={{
-                  fontFamily: "var(--font-display)",
-                  fontWeight: 700,
-                  color: "var(--color-primary)",
-                  mb: 1,
-                }}
-              >
-                Login to Your Account
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Welcome back! Please enter your details to continue.
-              </Typography>
-            </Box>
+            <Typography variant="h5" sx={{ fontFamily: "var(--font-display)", fontWeight: 700, mb: 3 }}>
+              {step === 'select' && 'Welcome to Angels'}
+              {step === 'email' && 'Email Verification'}
+              {step === 'email-otp' && 'Verify Email OTP'}
+              {step === 'phone' && 'Phone Verification'}
+              {step === 'phone-otp' && 'Verify Phone OTP'}
+              {step === 'complete-profile' && 'Complete Profile'}
+            </Typography>
 
-            <Formik
-              initialValues={initialValues}
-              validationSchema={AuthValidator.loginSchema}
-              onSubmit={handleLogin}
-            >
-              {({ isSubmitting }) => (
-                <Form>
-                  <MaterialTextField
-                    label="Email Address"
-                    name="email"
-                    type="email"
-                    sx={{ mb: 2 }}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <Email color="primary" />
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-                  <MaterialPasswordField
-                    label="Password"
-                    name="password"
-                    sx={{ mb: 2 }}
-                    type={showPassword ? "text" : "password"}
-                    startAdornment={(
-                      <InputAdornment position="start">
-                        <Lock color="primary" />
-                      </InputAdornment>
-                    )}
-                    endAdornment={(
-                      <InputAdornment position="end">
-                        <IconButton
-                          onClick={() => setShowPassword(!showPassword)}
-                          edge="end"
-                        >
-                          {showPassword ? <VisibilityOff /> : <Visibility />}
-                        </IconButton>
-                      </InputAdornment>
-                    )}
-                  />
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {step === 'select' && (
+                <>
+                  {/* Google Button */}
+                  <Box id="google-signin-btn-page" sx={{ minHeight: 40, width: '100%' }} />
 
+                  <Divider sx={{ my: 1 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      OR
+                    </Typography>
+                  </Divider>
+
+                  {/* Continue with Email */}
                   <Button
+                    variant="outlined"
                     fullWidth
-                    type="submit"
-                    variant="contained"
                     size="large"
-                    disabled={isLoading}
-                    sx={{
-                      py: 1.5,
-                      borderRadius: 2,
-                      fontSize: "1rem",
-                      fontWeight: 600,
-                      textTransform: "none",
-                    }}
+                    onClick={() => setStep('email')}
+                    sx={{ py: 1.2, textTransform: 'none' }}
                   >
-                    {isLoading || isSubmitting ? <CircularProgress size={24} /> : "Sign In"}
+                    Continue with Email
                   </Button>
-                </Form>
+
+                  {/* Continue with Phone */}
+                  <Button
+                    variant="outlined"
+                    fullWidth
+                    size="large"
+                    onClick={() => setStep('phone')}
+                    sx={{ py: 1.2, textTransform: 'none' }}
+                  >
+                    Continue with Mobile Number
+                  </Button>
+                </>
               )}
-            </Formik>
 
-            <Divider sx={{ my: 3 }}>
-              <Typography variant="caption" color="text.secondary">
-                OR
-              </Typography>
-            </Divider>
+              {step === 'email' && (
+                <>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                    {primaryProvider
+                      ? 'Please verify your Email address as your secondary contact method.'
+                      : 'Enter your Email address to login or register.'}
+                  </Typography>
+                  <TextField
+                    label="Email Address"
+                    type="email"
+                    fullWidth
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    disabled={loading}
+                  />
+                  {error && <Alert severity="error">{error}</Alert>}
+                  <Button
+                    variant="contained"
+                    onClick={handleRequestEmailOtp}
+                    disabled={!email || loading}
+                    fullWidth
+                    size="large"
+                  >
+                    {loading ? <CircularProgress size={24} color="inherit" /> : 'Send OTP'}
+                  </Button>
+                  <Button variant="text" onClick={() => setStep('select')} disabled={loading}>
+                    Back
+                  </Button>
+                </>
+              )}
 
-            <Box textAlign="center">
-              <Typography variant="body2" color="text.secondary">
-                Don&apos;t have an account?{" "}
-                <Link
-                  href="/register"
-                  style={{
-                    color: "var(--color-primary)",
-                    textDecoration: "none",
-                    fontWeight: 600,
-                  }}
-                >
-                  Sign Up
-                </Link>
-              </Typography>
+              {step === 'email-otp' && (
+                <>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                    Please enter the 6-digit OTP sent to <strong>{email}</strong>
+                  </Typography>
+                  <TextField
+                    label="Email OTP Code"
+                    fullWidth
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value.slice(0, 6))}
+                    disabled={loading}
+                  />
+                  {error && <Alert severity="error">{error}</Alert>}
+                  <Button
+                    variant="contained"
+                    onClick={handleVerifyEmailOtp}
+                    disabled={otp.length !== 6 || loading}
+                    fullWidth
+                    size="large"
+                  >
+                    {loading ? <CircularProgress size={24} color="inherit" /> : 'Verify & Continue'}
+                  </Button>
+                  <Button variant="text" onClick={() => setStep('email')} disabled={loading}>
+                    Back
+                  </Button>
+                </>
+              )}
+
+              {step === 'phone' && (
+                <>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                    {primaryProvider
+                      ? 'Please verify your Mobile number as your secondary contact method.'
+                      : 'Enter your Mobile number to login or register.'}
+                  </Typography>
+                  <TextField
+                    label="Mobile Number"
+                    fullWidth
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    disabled={loading}
+                    placeholder="e.g. 9876543210"
+                  />
+                  {error && <Alert severity="error">{error}</Alert>}
+                  <Button
+                    variant="contained"
+                    onClick={handleRequestPhoneOtp}
+                    disabled={!phone || loading}
+                    fullWidth
+                    size="large"
+                  >
+                    {loading ? <CircularProgress size={24} color="inherit" /> : 'Send Mobile OTP'}
+                  </Button>
+                  <Button variant="text" onClick={() => setStep('select')} disabled={loading}>
+                    Back
+                  </Button>
+                </>
+              )}
+
+              {step === 'phone-otp' && (
+                <>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                    Please enter the OTP sent to <strong>{phone}</strong>
+                  </Typography>
+                  <TextField
+                    label="Mobile OTP Code"
+                    fullWidth
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value)}
+                    disabled={loading}
+                  />
+                  {error && <Alert severity="error">{error}</Alert>}
+                  <Button
+                    variant="contained"
+                    onClick={handleVerifyPhoneOtp}
+                    disabled={!otp || loading}
+                    fullWidth
+                    size="large"
+                  >
+                    {loading ? <CircularProgress size={24} color="inherit" /> : 'Verify & Continue'}
+                  </Button>
+                  <Button variant="text" onClick={() => setStep('phone')} disabled={loading}>
+                    Back
+                  </Button>
+                </>
+              )}
+
+              {step === 'complete-profile' && (
+                <>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                    We verified your details successfully! Please tell us your name to complete registration.
+                  </Typography>
+                  <TextField
+                    label="First Name"
+                    fullWidth
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    disabled={loading}
+                  />
+                  <TextField
+                    label="Last Name"
+                    fullWidth
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    disabled={loading}
+                  />
+                  {error && <Alert severity="error">{error}</Alert>}
+                  <Button
+                    variant="contained"
+                    onClick={handleRegister}
+                    disabled={!firstName || !lastName || loading}
+                    fullWidth
+                    size="large"
+                  >
+                    {loading ? <CircularProgress size={24} color="inherit" /> : 'Create Account'}
+                  </Button>
+                </>
+              )}
             </Box>
           </Paper>
         </motion.div>
@@ -236,5 +569,3 @@ function Login() {
     </Box>
   );
 }
-
-export default Login;

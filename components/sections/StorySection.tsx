@@ -68,7 +68,7 @@ export default function StorySection() {
       <Container maxWidth="lg" sx={{ position: "relative" }}>
         <Grid container spacing={{ xs: 6, md: 10 }} alignItems="center">
           {/* Story text */}
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <SectionLabel
               label="Est. 1987"
               title="A Family Tradition Thirty-Five Years in the Making"
@@ -116,7 +116,7 @@ export default function StorySection() {
           </Grid>
 
           {/* Timeline & values */}
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             {/* Timeline */}
             <Box sx={{ mb: 6 }}>
               {MILESTONES.map((m, i) => (
@@ -184,7 +184,7 @@ export default function StorySection() {
                 { icon: "🤲", label: "Hand Crafted", desc: "No machines touch our dough lamination" },
                 { icon: "♻️", label: "Zero Waste", desc: "Day-old bread donated to local shelters" },
               ].map((v) => (
-                <Grid item xs={12} sm={4} key={v.label}>
+                <Grid size={{ xs: 12, sm: 4 }} key={v.label}>
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}

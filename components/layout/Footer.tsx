@@ -74,7 +74,7 @@ export default function Footer() {
       <Container maxWidth="lg" sx={{ position: "relative" }}>
         <Grid container spacing={{ xs: 5, md: 8 }}>
           {/* Brand column */}
-          <Grid item xs={12} md={4}>
+          <Grid size={{ xs: 12, md: 4 }}>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -125,7 +125,7 @@ export default function Footer() {
 
           {/* Link columns */}
           {Object.entries(FOOTER_LINKS).map(([heading, links], colIdx) => (
-            <Grid item xs={6} md={2} key={heading}>
+            <Grid size={{ xs: 6, md: 2 }} key={heading}>
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -161,7 +161,7 @@ export default function Footer() {
           ))}
 
           {/* Newsletter */}
-          <Grid item xs={12} md={4}>
+          <Grid size={{ xs: 12, md: 4 }}>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}

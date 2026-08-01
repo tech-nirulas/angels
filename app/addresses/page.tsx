@@ -16,7 +16,7 @@ import { useAppSelector } from "@/lib/store";
 import AddIcon from "@mui/icons-material/Add";
 import BusinessOutlinedIcon from "@mui/icons-material/BusinessOutlined";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
 import LocationOnOutlinedIcon from "@mui/icons-material/LocationOnOutlined";
@@ -130,8 +130,8 @@ function AddressCard({
           p: 2.5,
           borderRadius: 3,
           border: `1.5px solid ${address.isDefault
-              ? theme.palette.primary.main
-              : theme.palette.divider
+            ? theme.palette.primary.main
+            : theme.palette.divider
             }`,
           position: "relative",
           transition: "all 0.2s ease",
@@ -560,7 +560,7 @@ function AddressFormDialog({
       <DialogContent sx={{ pt: 3 }}>
         <Grid container spacing={2.5}>
           {/* ── Map ── */}
-          <Grid item xs={12}>
+          <Grid size={{ xs: 12 }}>
             <Typography
               variant="body2"
               sx={{ fontWeight: 600, mb: 1, color: theme.palette.text.primary }}
@@ -571,7 +571,7 @@ function AddressFormDialog({
           </Grid>
 
           {/* ── Address type + label ── */}
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
               select
               label="Address Type"
@@ -593,34 +593,34 @@ function AddressFormDialog({
               ))}
             </TextField>
           </Grid>
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             {field("Label (e.g. Home, Office, Mom's place)", "label")}
           </Grid>
 
           {/* ── Recipient ── */}
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             {field("Recipient Name", "recipientName")}
           </Grid>
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             {field("Phone", "phone", { type: "tel" })}
           </Grid>
 
           {/* ── Address lines ── */}
-          <Grid item xs={12}>
+          <Grid size={{ xs: 12 }}>
             {field("Address Line 1", "line1")}
           </Grid>
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             {field("Address Line 2 (optional)", "line2")}
           </Grid>
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             {field("Landmark (optional)", "landmark")}
           </Grid>
 
           {/* ── City / State / Postcode ── */}
-          <Grid item xs={12} sm={4}>
+          <Grid size={{ xs: 12, sm: 4 }}>
             {field("City", "city")}
           </Grid>
-          <Grid item xs={12} sm={4}>
+          <Grid size={{ xs: 12, sm: 4 }}>
             <TextField
               select
               label="State"
@@ -637,12 +637,12 @@ function AddressFormDialog({
               ))}
             </TextField>
           </Grid>
-          <Grid item xs={12} sm={4}>
+          <Grid size={{ xs: 12, sm: 4 }}>
             {field("Postcode", "postcode")}
           </Grid>
 
           {/* ── Delivery instructions ── */}
-          <Grid item xs={12}>
+          <Grid size={{ xs: 12 }}>
             <TextField
               label="Delivery Instructions (optional)"
               value={form.deliveryInstructions ?? ""}
@@ -657,7 +657,7 @@ function AddressFormDialog({
           </Grid>
 
           {/* ── Set as default ── */}
-          <Grid item xs={12}>
+          <Grid size={{ xs: 12 }}>
             <Box
               onClick={() => setForm((f) => ({ ...f, isDefault: !f.isDefault }))}
               sx={{
@@ -899,7 +899,7 @@ export default function AddressesPage() {
           {isLoading ? (
             <Grid container spacing={3}>
               {Array.from({ length: 3 }).map((_, i) => (
-                <Grid item xs={12} sm={6} md={4} key={i}>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }} key={i}>
                   <Skeleton variant="rectangular" height={220} sx={{ borderRadius: 3 }} />
                 </Grid>
               ))}
@@ -952,7 +952,7 @@ export default function AddressesPage() {
             <Grid container spacing={3}>
               <AnimatePresence mode="popLayout">
                 {addresses.map((address) => (
-                  <Grid item xs={12} sm={6} md={4} key={address.id}>
+                  <Grid size={{xs: 12, sm:6, md:4}} key={address.id}>
                     <AddressCard
                       address={address}
                       onEdit={() => handleEdit(address)}
@@ -966,7 +966,7 @@ export default function AddressesPage() {
               </AnimatePresence>
 
               {/* Add more card */}
-              <Grid item xs={12} sm={6} md={4}>
+              <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                 <motion.div
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}

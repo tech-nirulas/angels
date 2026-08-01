@@ -26,7 +26,7 @@ import { MEDIA_BASE_URL } from "@/utils/constants";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import BusinessOutlinedIcon from "@mui/icons-material/BusinessOutlined";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
 import LocalShippingOutlinedIcon from "@mui/icons-material/LocalShippingOutlined";
@@ -210,6 +210,8 @@ function DeliveryConfirmModal({
   addresses,
   selectedAddressId,
   onSelectAddress,
+  paymentMethod,
+  onSelectPaymentMethod,
   orderTotal,
   isPlacingOrder,
 }: {
@@ -219,6 +221,8 @@ function DeliveryConfirmModal({
   addresses: Address[];
   selectedAddressId: string | null;
   onSelectAddress: (id: string) => void;
+  paymentMethod: "RAZORPAY" | "COD";
+  onSelectPaymentMethod: (method: "RAZORPAY" | "COD") => void;
   orderTotal: number;
   isPlacingOrder: boolean;
 }) {
@@ -241,7 +245,7 @@ function DeliveryConfirmModal({
           borderBottom: `1px solid ${theme.palette.divider}`,
         }}
       >
-        Confirm Delivery Address
+        Confirm Order & Payment Method
       </DialogTitle>
 
       <DialogContent sx={{ pt: 2.5 }}>
@@ -293,6 +297,55 @@ function DeliveryConfirmModal({
 
             <Divider sx={{ my: 2 }} />
 
+            {/* Payment Method Selection */}
+            <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 1, fontWeight: 700 }}>
+              Select Payment Method:
+            </Typography>
+            <Grid container spacing={1.5} sx={{ mb: 2.5 }}>
+              <Grid size={{ xs: 6 }}>
+                <Paper
+                  onClick={() => onSelectPaymentMethod("RAZORPAY")}
+                  sx={{
+                    p: 1.5,
+                    borderRadius: 2,
+                    border: `2px solid ${paymentMethod === "RAZORPAY" ? theme.palette.primary.main : theme.palette.divider}`,
+                    cursor: "pointer",
+                    bgcolor: paymentMethod === "RAZORPAY" ? alpha(theme.palette.primary.main, 0.04) : "#FFF",
+                    textAlign: "center",
+                    transition: "all 0.2s ease",
+                  }}
+                >
+                  <Typography variant="body2" sx={{ fontWeight: 800, color: paymentMethod === "RAZORPAY" ? theme.palette.primary.main : "#334155" }}>
+                    💳 Online Payment
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: theme.palette.text.secondary, display: "block" }}>
+                    UPI, Cards, Netbanking
+                  </Typography>
+                </Paper>
+              </Grid>
+              <Grid size={{ xs: 6 }}>
+                <Paper
+                  onClick={() => onSelectPaymentMethod("COD")}
+                  sx={{
+                    p: 1.5,
+                    borderRadius: 2,
+                    border: `2px solid ${paymentMethod === "COD" ? theme.palette.primary.main : theme.palette.divider}`,
+                    cursor: "pointer",
+                    bgcolor: paymentMethod === "COD" ? alpha(theme.palette.primary.main, 0.04) : "#FFF",
+                    textAlign: "center",
+                    transition: "all 0.2s ease",
+                  }}
+                >
+                  <Typography variant="body2" sx={{ fontWeight: 800, color: paymentMethod === "COD" ? theme.palette.primary.main : "#334155" }}>
+                    💵 Cash on Delivery
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: theme.palette.text.secondary, display: "block" }}>
+                    Pay cash upon delivery
+                  </Typography>
+                </Paper>
+              </Grid>
+            </Grid>
+
             {/* Order total summary */}
             <Box
               sx={{
@@ -321,7 +374,7 @@ function DeliveryConfirmModal({
                 variant="caption"
                 sx={{ color: theme.palette.text.disabled, display: "block", mt: 0.5 }}
               >
-                You will be redirected to Razorpay to complete payment
+                {paymentMethod === "COD" ? "Pay ₹" + orderTotal.toFixed(2) + " in cash upon delivery" : "You will be redirected to Razorpay to complete payment"}
               </Typography>
             </Box>
           </>
@@ -445,7 +498,9 @@ export default function CartPage() {
     }
   };
 
-  // ── Razorpay payment flow ────────────────────────────────────────────────
+  const [paymentMethod, setPaymentMethod] = useState<"RAZORPAY" | "COD">("RAZORPAY");
+
+  // ── Razorpay / COD payment flow ──────────────────────────────────────────
   const handleConfirmAndPay = async () => {
     if (!selectedAddressId) return;
     setIsPlacingOrder(true);
@@ -456,9 +511,22 @@ export default function CartPage() {
         orderType: "delivery",
         deliveryAddressId: selectedAddressId,
         promoCode: promoApplied ? VALID_PROMO : undefined,
+        paymentMethod,
       }).unwrap();
 
-      const { razorpayOrderId, amount, currency, keyId, order } = res.data;
+      const resultData = res.data || res;
+
+      // Handle Cash on Delivery
+      if (paymentMethod === "COD" || resultData.isCod) {
+        setDeliveryModalOpen(false);
+        showSnack("Order placed successfully with Cash on Delivery! Redirecting...", "success");
+        const orderId = resultData.order?.id || resultData.id;
+        setTimeout(() => router.push(`/orders/${orderId}`), 1500);
+        return;
+      }
+
+      // 2. Open Razorpay checkout for online payment
+      const { razorpayOrderId, amount, currency, keyId, order } = resultData;
 
       // 2. Open Razorpay checkout
       const selectedAddress = addresses.find((a) => a.id === selectedAddressId);
@@ -623,7 +691,7 @@ export default function CartPage() {
           ) : (
             <Grid container spacing={{ xs: 3, md: 5 }}>
               {/* ── Cart items ── */}
-              <Grid item xs={12} md={7}>
+              <Grid size={{ xs: 12, md: 7 }}>
                 {/* Shipping progress */}
                 <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
                   <Box sx={{ mb: 3, p: 2.5, borderRadius: 3, border: `1.5px solid ${alpha(theme.palette.primary.main, 0.15)}`, background: alpha(theme.palette.primary.main, 0.03) }}>
@@ -770,7 +838,7 @@ export default function CartPage() {
               </Grid>
 
               {/* ── Order summary ── */}
-              <Grid item xs={12} md={5}>
+              <Grid size={{ xs: 12, md: 5 }}>
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.15 }}>
                   <Box sx={{ borderRadius: 4, border: `1.5px solid ${theme.palette.divider}`, background: theme.palette.background.paper, p: 3, position: { md: "sticky" }, top: { md: 100 } }}>
                     <Typography variant="h5" sx={{ fontFamily: "var(--font-display)", fontWeight: 700, mb: 3, fontSize: "1.3rem" }}>
@@ -877,6 +945,8 @@ export default function CartPage() {
         addresses={addresses}
         selectedAddressId={selectedAddressId}
         onSelectAddress={setSelectedAddressId}
+        paymentMethod={paymentMethod}
+        onSelectPaymentMethod={setPaymentMethod}
         orderTotal={orderTotal}
         isPlacingOrder={isPlacingOrder}
       />

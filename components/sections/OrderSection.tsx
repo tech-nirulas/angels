@@ -60,7 +60,7 @@ export default function OrderSection() {
       <Container maxWidth="lg">
         <Grid container spacing={{ xs: 6, md: 10 }} alignItems="flex-start">
           {/* Left: Info */}
-          <Grid item xs={12} md={5}>
+          <Grid size={{ xs: 12, md: 5 }}>
             <SectionLabel
               label="Place Your Order"
               title="Let's Create Something Unforgettable"
@@ -129,7 +129,7 @@ export default function OrderSection() {
           </Grid>
 
           {/* Right: Form */}
-          <Grid item xs={12} md={7}>
+          <Grid size={{ xs: 12, md: 7 }}>
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -179,7 +179,7 @@ export default function OrderSection() {
                       { label: "Email Address", name: "email", xs: 12, type: "email" },
                       { label: "Phone", name: "phone", xs: 12, type: "tel" },
                     ].map((f) => (
-                      <Grid item xs={f.xs} key={f.name}>
+                      <Grid size={{ xs: f.xs }} key={f.name}>
                         <TextField
                           label={f.label}
                           name={f.name}
@@ -192,7 +192,7 @@ export default function OrderSection() {
                       </Grid>
                     ))}
 
-                    <Grid item xs={12} sm={6}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
                       <TextField
                         select
                         label="Occasion"
@@ -210,7 +210,7 @@ export default function OrderSection() {
                       </TextField>
                     </Grid>
 
-                    <Grid item xs={12} sm={6}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
                       <TextField
                         label="Date of Event"
                         type="date"
@@ -222,7 +222,7 @@ export default function OrderSection() {
                       />
                     </Grid>
 
-                    <Grid item xs={12}>
+                    <Grid size={{ xs: 12 }}>
                       <TextField
                         label="Tell us about your vision"
                         multiline
@@ -233,7 +233,7 @@ export default function OrderSection() {
                       />
                     </Grid>
 
-                    <Grid item xs={12}>
+                    <Grid size={{ xs: 12 }}>
                       <Button
                         type="submit"
                         variant="contained"

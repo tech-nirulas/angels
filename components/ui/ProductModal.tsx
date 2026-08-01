@@ -181,12 +181,13 @@ const ProductModal = memo(({ product, onAddToCart, onClose }: ProductModalProps)
 
         <Divider sx={{ my: 2 }} />
 
-        {/* ── Tabs: Details / Nutrition / Storage ── */}
+        {/* ── Tabs: Details / Nutrition / Storage / Reviews ── */}
         <Tabs value={activeTab} onChange={(_, v) => setActiveTab(v)} sx={{ mb: 2, minHeight: 36 }}
           TabIndicatorProps={{ style: { height: 2 } }}>
           <Tab label="Details" sx={{ fontSize: "0.75rem", minHeight: 36, py: 0 }} />
           <Tab label="Nutrition" sx={{ fontSize: "0.75rem", minHeight: 36, py: 0 }} disabled={!nutritional} />
           <Tab label="Storage" sx={{ fontSize: "0.75rem", minHeight: 36, py: 0 }} disabled={!product.storageInstructions} />
+          <Tab label="Reviews" sx={{ fontSize: "0.75rem", minHeight: 36, py: 0 }} />
         </Tabs>
 
         {/* Tab: Details */}
@@ -253,6 +254,11 @@ const ProductModal = memo(({ product, onAddToCart, onClose }: ProductModalProps)
           </Typography>
         )}
 
+        {/* Tab: Reviews */}
+        {activeTab === 3 && (
+          <ProductReviewsTab productId={product.id} />
+        )}
+
         <Divider sx={{ my: 2.5 }} />
 
         {/* Add to cart */}
@@ -291,6 +297,101 @@ function FactItem({ label, value }: { label: string; value: string }) {
       <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.25 }}>
         {value}
       </Typography>
+    </Box>
+  );
+}
+
+// ── ProductReviewsTab helper ───────────────────────────────────────────────
+import Skeleton from "@mui/material/Skeleton";
+import Avatar from "@mui/material/Avatar";
+import { useEffect } from "react";
+
+function ProductReviewsTab({ productId }: { productId: string }) {
+  const theme = useTheme();
+  const [loading, setLoading] = useState(true);
+  const [reviewsData, setReviewsData] = useState<any>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchReviews = async () => {
+      try {
+        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:9090";
+        const res = await fetch(`${baseUrl}/review/product/${productId}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (isMounted) setReviewsData(data);
+        }
+      } catch (err) {
+        console.error("Error fetching reviews:", err);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+    fetchReviews();
+    return () => { isMounted = false; };
+  }, [productId]);
+
+  if (loading) {
+    return (
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+        <Skeleton width="60%" height={24} />
+        <Skeleton height={60} sx={{ borderRadius: 2 }} />
+        <Skeleton height={60} sx={{ borderRadius: 2 }} />
+      </Box>
+    );
+  }
+
+  const reviews = reviewsData?.data || [];
+  const meta = reviewsData?.meta;
+  const avgRating = meta?.averageRating || 0;
+
+  return (
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 2, maxHeight: 220, overflowY: "auto", pr: 0.5 }}>
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, pb: 1, borderBottom: `1px solid ${theme.palette.divider}` }}>
+        <Typography variant="h5" sx={{ fontWeight: 800, color: theme.palette.primary.main }}>
+          {avgRating > 0 ? avgRating.toFixed(1) : "N/A"}
+        </Typography>
+        <Box>
+          <Rating value={avgRating} readOnly precision={0.5} size="small" />
+          <Typography variant="caption" sx={{ color: theme.palette.text.secondary, display: "block" }}>
+            {meta?.totalItems || 0} customer {meta?.totalItems === 1 ? "review" : "reviews"}
+          </Typography>
+        </Box>
+      </Box>
+
+      {reviews.length === 0 ? (
+        <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontStyle: "italic", py: 2, textAlign: "center" }}>
+          No customer reviews yet for this product.
+        </Typography>
+      ) : (
+        reviews.map((rev: any) => {
+          const user = rev.customer?.user;
+          const name = user ? `${user.firstName} ${user.lastName}`.trim() : "Anonymous Customer";
+          return (
+            <Box key={rev.id} sx={{ p: 1.5, borderRadius: 2, bgcolor: theme.palette.background.accent }}>
+              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 0.5 }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <Avatar sx={{ width: 24, height: 24, fontSize: "0.75rem", bgcolor: theme.palette.primary.main }}>
+                    {name.charAt(0)}
+                  </Avatar>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: "0.8rem" }}>
+                    {name}
+                  </Typography>
+                  {rev.isVerified && (
+                    <Chip label="✓ Verified" size="small" sx={{ height: 16, fontSize: "0.55rem", bgcolor: "#DCFCE7", color: "#15803D", fontWeight: 700 }} />
+                  )}
+                </Box>
+                <Rating value={rev.rating} readOnly size="small" sx={{ fontSize: "0.85rem" }} />
+              </Box>
+              {rev.comment && (
+                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontSize: "0.8rem", mt: 0.5 }}>
+                  {rev.comment}
+                </Typography>
+              )}
+            </Box>
+          );
+        })
+      )}
     </Box>
   );
 }

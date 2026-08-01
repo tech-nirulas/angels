@@ -44,6 +44,14 @@ export const userEndpoints = (builder: EndpointDefinitions) => ({
     providesTags: ["User"],
   }),
 
+  getMyLoyaltyProfile: builder.query<any, void>({
+    query: () => ({
+      url: `user/loyalty`,
+      method: "GET",
+    }),
+    providesTags: ["User"],
+  }),
+
   updateProfile: builder.mutation<GetUserResponse, UpdateProfileDto>({
     query: (body) => ({
       url: `user/profile`,

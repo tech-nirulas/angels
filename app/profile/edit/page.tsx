@@ -180,9 +180,8 @@ export default function ProfileEditPage() {
         {/* ── Header ── */}
         <Box
           sx={{
-            background: `linear-gradient(135deg, ${theme.palette.primary.main}12, ${
-              theme.palette.background.accent ?? "#FFF8F7"
-            })`,
+            background: `linear-gradient(135deg, ${theme.palette.primary.main}12, ${theme.palette.background.accent ?? "#FFF8F7"
+              })`,
             borderBottom: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
             py: { xs: 4, md: 6 },
           }}
@@ -222,9 +221,8 @@ export default function ProfileEditPage() {
                       fontSize: "1.4rem",
                       fontWeight: 700,
                       fontFamily: "var(--font-display)",
-                      background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${
-                        theme.palette.primary.dark ?? theme.palette.primary.main
-                      })`,
+                      background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark ?? theme.palette.primary.main
+                        })`,
                     }}
                   >
                     {initials}
@@ -291,7 +289,7 @@ export default function ProfileEditPage() {
                 {isLoading ? (
                   <Grid container spacing={2.5}>
                     {Array.from({ length: 4 }).map((_, i) => (
-                      <Grid item xs={12} sm={6} key={i}>
+                      <Grid size={{ xs: 12, sm: 6 }} key={i}>
                         <Skeleton height={56} sx={{ borderRadius: 1.5 }} />
                       </Grid>
                     ))}
@@ -310,7 +308,7 @@ export default function ProfileEditPage() {
                     {({ isSubmitting, dirty }) => (
                       <Form>
                         <Grid container spacing={2.5}>
-                          <Grid item xs={12} sm={6}>
+                          <Grid size={{ xs: 12, sm: 6 }}>
                             <MaterialTextField
                               label="First Name"
                               name="firstName"
@@ -326,13 +324,13 @@ export default function ProfileEditPage() {
                               }}
                             />
                           </Grid>
-                          <Grid item xs={12} sm={6}>
+                          <Grid size={{ xs: 12, sm: 6 }}>
                             <MaterialTextField
                               label="Last Name"
                               name="lastName"
                             />
                           </Grid>
-                          <Grid item xs={12}>
+                          <Grid size={{ xs: 12 }}>
                             <MaterialTextField
                               label="Phone Number (Optional)"
                               name="phone"
@@ -350,7 +348,7 @@ export default function ProfileEditPage() {
                           </Grid>
 
                           {/* Email — read-only */}
-                          <Grid item xs={12}>
+                          <Grid size={{ xs: 12 }}>
                             <Box
                               sx={{
                                 px: 2,

@@ -247,7 +247,7 @@ const FeaturedProductCard = ({
 const LoadingSkeleton = () => (
   <Grid container spacing={3}>
     {Array.from({ length: 4 }).map((_, idx) => (
-      <Grid item xs={12} sm={6} md={3} key={`featured-skel-${idx}`}>
+      <Grid size={{ xs: 12, sm: 6, md: 3 }} key={`featured-skel-${idx}`}>
         <Skeleton
           variant="rectangular"
           height={280}

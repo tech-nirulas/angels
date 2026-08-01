@@ -3,7 +3,7 @@
 
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
-import { useGetProfileQuery } from "@/features/user/userApiService";
+import { useGetProfileQuery, useGetMyLoyaltyProfileQuery } from "@/features/user/userApiService";
 import { logout } from "@/features/auth/authSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/store";
 import {
@@ -115,6 +115,9 @@ export default function ProfilePage() {
   const isAuthenticated = useAppSelector((s) => s.auth.isAuthenticated);
 
   const { data, isLoading } = useGetProfileQuery(undefined, {
+    skip: !isAuthenticated,
+  });
+  const { data: loyaltyData } = useGetMyLoyaltyProfileQuery(undefined, {
     skip: !isAuthenticated,
   });
   const profile = data?.data;
@@ -244,12 +247,42 @@ export default function ProfilePage() {
         <Container maxWidth="lg" sx={{ py: { xs: 4, md: 6 } }}>
           <Grid container spacing={4}>
             {/* ── Personal info card ── */}
-            <Grid item xs={12} md={5}>
+            <Grid size={{ xs: 12, md: 5 }}>
               <motion.div
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.5, delay: 0.1 }}
               >
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 3,
+                    mb: 3,
+                    borderRadius: 3,
+                    background: "linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%)",
+                    border: "1.5px solid #FCD34D",
+                  }}
+                >
+                  <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <Box>
+                      <Typography variant="caption" sx={{ fontWeight: 800, color: "#92400E", letterSpacing: 1, textTransform: "uppercase" }}>
+                        Loyalty Rewards Tier
+                      </Typography>
+                      <Typography variant="h4" sx={{ fontWeight: 900, color: "#78350F", mt: 0.5 }}>
+                        {loyaltyData?.tier || "Bronze"} Tier 🏆
+                      </Typography>
+                    </Box>
+                    <Box sx={{ textAlign: "right" }}>
+                      <Typography variant="h4" sx={{ fontWeight: 900, color: "#D97706" }}>
+                        {loyaltyData?.loyaltyPoints || 0}
+                      </Typography>
+                      <Typography variant="caption" sx={{ fontWeight: 700, color: "#92400E" }}>
+                        Available Points
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Paper>
+
                 <Paper
                   elevation={0}
                   sx={{
@@ -314,10 +347,10 @@ export default function ProfilePage() {
             </Grid>
 
             {/* ── Stats + orders ── */}
-            <Grid item xs={12} md={7}>
+            <Grid size={{ xs: 12, md: 7 }}>
               {/* Stats row */}
               <Grid container spacing={2} sx={{ mb: 3 }}>
-                <Grid item xs={6} sm={4}>
+                <Grid size={{ xs: 6, sm: 4 }}>
                   <StatCard
                     icon={<ShoppingBagOutlined />}
                     label="Total Orders"
@@ -325,7 +358,7 @@ export default function ProfilePage() {
                     delay={0.15}
                   />
                 </Grid>
-                <Grid item xs={6} sm={4}>
+                <Grid size={{ xs: 6, sm: 4 }}>
                   <StatCard
                     icon={<LocalShippingOutlined />}
                     label="Delivered"
@@ -333,7 +366,7 @@ export default function ProfilePage() {
                     delay={0.2}
                   />
                 </Grid>
-                <Grid item xs={12} sm={4}>
+                <Grid size={{ xs: 12, sm: 4 }}>
                   <StatCard
                     icon={<span style={{ fontSize: "1.25rem" }}>₹</span>}
                     label="Total Spent"

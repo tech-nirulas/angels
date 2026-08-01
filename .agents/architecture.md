@@ -80,3 +80,20 @@ sequenceDiagram
 - **Razorpay Payments**:
   - The Checkout interface interacts with Razorpay SDK (`window.Razorpay` script loaded dynamically).
   - Razorpay order ID is fetched from `/order/create` (backend), payment overlay displays, and callback calls `/payment/verify` to confirm.
+
+---
+
+## 4. Authentication & Security Flow (Passwordless & RTR)
+
+### Unified Passwordless Experience
+- Customers authenticate completely passwordlessly on both the `LoginModal` and the `/login` page using:
+  - **Email OTP**: Requests verification OTP via `/auth/request-otp`, verifies OTP via `/auth/verify-email-otp` to get an `emailVerificationToken`, and completes login/registration via passwordless endpoints.
+  - **Phone OTP**: Handled via the MSG91 OTP widget, verifying the number on the client and resolving with an access token verified by the backend.
+  - **Google OAuth**: Verifies the Google ID Token. If the account doesn't have a verified phone, the app prompts for phone verification.
+- User profile completion (First & Last name entry) is requested only on registration (`NEW_USER`).
+
+### Session Lifespans & Automatic Refresh
+- **Access Token**: Valid for `15m`, saved securely in LocalStorage using AES-GCM encryption (`helpers/encryptToken.helper.ts`).
+- **Refresh Token**: Stored as a high-entropy string in LocalStorage.
+- **Automatic RTR**: All RTK Query API slices (`authApiService`, `userApiService`, etc.) use a unified `baseQueryWithReauth` wrapper. When a query fails with `401 Unauthorized` (indicating access token expiry), it automatically fires a POST request to `/auth/refresh` using the `refreshToken`, rotates both tokens in storage, updates the Redux store, and transparently retries the failed request.
+
