@@ -1,7 +1,9 @@
 import {
   GetAllCategoriesPaginatedResponse,
   GetAllCategoriesResponse,
+  GetCategoryBySlugResponse,
   GetCategoryResponse,
+  GetCategoryTreeResponse,
 } from "@/interfaces/category.interface";
 import { Parameters } from "@/interfaces/parameters.interface";
 import { EndpointBuilder } from "@reduxjs/toolkit/query";
@@ -12,6 +14,18 @@ export const categoryEndpoints = (builder: EndpointDefinitions) => ({
   getAllCategories: builder.query<GetAllCategoriesResponse, null>({
     query: () => ({
       url: `category`,
+      method: "GET",
+    }),
+  }),
+  getCategoryTree: builder.query<GetCategoryTreeResponse, null>({
+    query: () => ({
+      url: `category/tree`,
+      method: "GET",
+    }),
+  }),
+  getCategoryBySlug: builder.query<GetCategoryBySlugResponse, { slug: string }>({
+    query: ({ slug }) => ({
+      url: `category/slug/${slug}`,
       method: "GET",
     }),
   }),
@@ -34,8 +48,9 @@ export const categoryEndpoints = (builder: EndpointDefinitions) => ({
   }),
   getCategory: builder.query<GetCategoryResponse, { id: string }>({
     query: (body) => ({
-      url: `categories/${body.id}`,
+      url: `category/${body.id}`,
       method: "GET",
     }),
   }),
 });
+

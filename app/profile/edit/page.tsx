@@ -1,8 +1,6 @@
 // app/profile/edit/page.tsx
 "use client";
 
-import Footer from "@/components/layout/Footer";
-import Navbar from "@/components/layout/Navbar";
 import { MaterialPasswordField, MaterialTextField } from "@/components/common/CustomFields";
 import {
   useChangePasswordMutation,
@@ -174,9 +172,7 @@ export default function ProfileEditPage() {
     : "?";
 
   return (
-    <>
-      <Navbar />
-      <main>
+    <main>
         {/* ── Header ── */}
         <Box
           sx={{
@@ -582,7 +578,5 @@ export default function ProfileEditPage() {
           </Paper>
         </Container>
       </main>
-      <Footer />
-    </>
   );
 }

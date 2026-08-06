@@ -61,6 +61,23 @@ export const productsEndpoints = (builder: EndpointDefinitions) => ({
       },
     }),
   }),
+  getProductsByCategorySlugPaginated: builder.query<
+    PaginatedProductsResponse,
+    { slug: string; filterDto: Parameters }
+  >({
+    query: ({ slug, filterDto }) => ({
+      url: `product/category/slug/${slug}/paginated`,
+      method: "GET",
+      params: {
+        page: filterDto.page,
+        limit: filterDto.limit,
+        ...(filterDto.search && { search: filterDto.search }),
+        ...(filterDto.isActive !== undefined && { isActive: filterDto.isActive }),
+        ...(filterDto.sortBy && { sortBy: filterDto.sortBy }),
+        ...(filterDto.sortOrder && { sortOrder: filterDto.sortOrder }),
+      },
+    }),
+  }),
   getFeaturedProducts: builder.query<GetProductsResponse, null>({
     query: () => ({
       url: `product/featured`,

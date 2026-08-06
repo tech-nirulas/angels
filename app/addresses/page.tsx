@@ -1,8 +1,6 @@
 // app/addresses/page.tsx
 "use client";
 
-import Footer from "@/components/layout/Footer";
-import Navbar from "@/components/layout/Navbar";
 import {
   useCreateAddressMutation,
   useDeleteAddressMutation,
@@ -827,19 +825,14 @@ export default function AddressesPage() {
 
   if (!isLoaded) {
     return (
-      <>
-        <Navbar />
-        <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "60vh" }}>
-          <CircularProgress />
-        </Box>
-        <Footer />
-      </>
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "60vh" }}>
+        <CircularProgress />
+      </Box>
     );
   }
 
   return (
     <>
-      <Navbar />
       <main>
         {/* ── Hero ── */}
         <Box
@@ -1020,8 +1013,6 @@ export default function AddressesPage() {
           )}
         </Container>
       </main>
-
-      <Footer />
 
       {/* ── Form dialog ── */}
       <AddressFormDialog

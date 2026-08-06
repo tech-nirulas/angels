@@ -1,8 +1,6 @@
 // app/profile/page.tsx
 "use client";
 
-import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
 import { useGetProfileQuery, useGetMyLoyaltyProfileQuery } from "@/features/user/userApiService";
 import { logout } from "@/features/auth/authSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/store";
@@ -141,9 +139,7 @@ export default function ProfilePage() {
   };
 
   return (
-    <>
-      <Navbar />
-      <main>
+    <main>
         {/* ── Hero ── */}
         <Box
           sx={{
@@ -448,7 +444,5 @@ export default function ProfilePage() {
           </Grid>
         </Container>
       </main>
-      <Footer />
-    </>
   );
 }

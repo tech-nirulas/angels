@@ -1,6 +1,7 @@
 // components/sections/FeaturedSection.tsx
 "use client";
 
+import ProductCard from "@/components/ui/ProductCard";
 import SectionLabel from '@/components/ui/SectionLabel';
 import { addToGuestCart, openCart } from '@/features/cart/cartSlice';
 import { addToServerCart } from '@/features/cart/cartThunk';
@@ -390,11 +391,9 @@ export default function FeaturedSection() {
               lg={3}  // 4 items per row on large screens
               key={product.id}
             >
-              <FeaturedProductCard
+              <ProductCard
                 product={product}
-                index={idx}
-                onAddToCart={handleAddToCart}
-                onProductClick={handleProductClick}
+                onClick={() => handleProductClick(product)}
               />
             </Grid>
           ))}

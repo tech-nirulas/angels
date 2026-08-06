@@ -12,6 +12,10 @@ export interface Product {
   code: string;
   baseUnit: string;
   basePrice: string;
+  discountedPrice?: number;
+  discountPct?: number | null;
+  discountFlat?: number | null;
+  discountName?: string | null;
   availableUnits: object;
   hsnCode: string;
   gstRate: string;

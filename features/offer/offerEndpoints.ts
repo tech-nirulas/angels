@@ -10,4 +10,18 @@ export const offerEndpoints = (builder: EndpointDefinitions) => ({
     }),
     providesTags: ["Offer"],
   }),
+  getAvailableOffers: builder.query<any, void>({
+    query: () => ({
+      url: "offer/available",
+      method: "GET",
+    }),
+    providesTags: ["Offer"],
+  }),
+  validateOfferCode: builder.mutation<any, { code: string; cartItems?: any[] }>({
+    query: (body) => ({
+      url: "offer/validate-code",
+      method: "POST",
+      body,
+    }),
+  }),
 });

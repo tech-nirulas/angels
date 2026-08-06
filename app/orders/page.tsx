@@ -1,8 +1,6 @@
 // app/orders/page.tsx
 "use client";
 
-import Footer from "@/components/layout/Footer";
-import Navbar from "@/components/layout/Navbar";
 import { useGetOrdersPaginatedQuery } from "@/features/order/orderApiService";
 import { useAppSelector } from "@/lib/store";
 import { MEDIA_BASE_URL } from "@/utils/constants";
@@ -172,9 +170,7 @@ export default function OrdersPage() {
   const orders = data?.data ?? data ?? [];
 
   return (
-    <>
-      <Navbar />
-      <main>
+    <main>
         {/* Hero */}
         <Box
           sx={{
@@ -249,7 +245,5 @@ export default function OrdersPage() {
         </Container>
 
       </main>
-      <Footer />
-    </>
   );
 }

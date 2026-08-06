@@ -1,8 +1,6 @@
 // app/orders/[id]/page.tsx
 "use client";
 
-import Footer from "@/components/layout/Footer";
-import Navbar from "@/components/layout/Navbar";
 import {
   // useCancelOrderMutation,
   // useCreateComplaintMutation,
@@ -445,26 +443,18 @@ export default function OrderDetailPage() {
 
   if (isLoading) {
     return (
-      <>
-        <Navbar />
-        <Container maxWidth="lg" sx={{ py: 6 }}>
-          <Skeleton variant="rectangular" height={400} sx={{ borderRadius: 3 }} />
-        </Container>
-        <Footer />
-      </>
+      <Container maxWidth="lg" sx={{ py: 6 }}>
+        <Skeleton variant="rectangular" height={400} sx={{ borderRadius: 3 }} />
+      </Container>
     );
   }
 
   if (!order) {
     return (
-      <>
-        <Navbar />
-        <Container maxWidth="lg" sx={{ py: 8, textAlign: "center" }}>
-          <Typography variant="h5">Order not found</Typography>
-          <Button onClick={() => router.push("/orders")} sx={{ mt: 2 }}>Back to orders</Button>
-        </Container>
-        <Footer />
-      </>
+      <Container maxWidth="lg" sx={{ py: 8, textAlign: "center" }}>
+        <Typography variant="h5">Order not found</Typography>
+        <Button onClick={() => router.push("/orders")} sx={{ mt: 2 }}>Back to orders</Button>
+      </Container>
     );
   }
 
@@ -472,7 +462,6 @@ export default function OrderDetailPage() {
 
   return (
     <>
-      <Navbar />
       <main>
         {/* Hero */}
         <Box sx={{ background: `linear-gradient(135deg, ${theme.palette.primary.main}12, ${theme.palette.background.accent})`, borderBottom: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`, py: { xs: 3, md: 5 } }}>
@@ -810,8 +799,6 @@ export default function OrderDetailPage() {
           </Grid>
         </Container>
       </main>
-
-      <Footer />
 
       {/* ── Dialogs ── */}
       {reviewItem && (

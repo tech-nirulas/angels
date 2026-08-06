@@ -9,4 +9,8 @@ export const offerApiService = createApi({
   endpoints: offerEndpoints,
 });
 
-export const { useGetActiveOffersQuery } = offerApiService;
+export const {
+  useGetActiveOffersQuery,
+  useGetAvailableOffersQuery,
+  useValidateOfferCodeMutation,
+} = offerApiService;

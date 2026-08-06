@@ -27,9 +27,9 @@ import { useDispatch, useSelector } from "react-redux";
 import CartBadge from "../ui/CartBadge";
 
 const NAV_LINKS = [
-  { label: "Home", href: "#home" },
-  { label: "Menu", href: "#menu" },
-  { label: "Custom Cakes", href: "/customize" },
+  { label: "Home", href: "/" },
+  { label: "Menu", href: "/menu" },
+  { label: "Customize", href: "/customize" },
 ];
 
 export default function Navbar() {

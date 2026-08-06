@@ -1,7 +1,6 @@
 "use client";
 
-import Footer from "@/components/layout/Footer";
-import Navbar from "@/components/layout/Navbar";
+import { useGetCustomizationFormQuery } from "@/features/cake-customization/cakeCustomizationApiService";
 import { useCreateCakeRequestMutation } from "@/features/cake-customization/cakeApiService";
 import { MEDIA_BASE_URL } from "@/utils/constants";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
@@ -192,10 +191,7 @@ export default function CustomizeCakePage() {
   };
 
   return (
-    <>
-      <Navbar />
-
-      <main style={{ backgroundColor: "#FAF7F5", minHeight: "100vh", paddingBottom: "80px" }}>
+    <main style={{ backgroundColor: "#FAF7F5", minHeight: "100vh", paddingBottom: "80px" }}>
         {/* Header Hero Banner */}
         <Box
           sx={{
@@ -595,8 +591,5 @@ export default function CustomizeCakePage() {
           )}
         </Container>
       </main>
-
-      <Footer />
-    </>
   );
 }

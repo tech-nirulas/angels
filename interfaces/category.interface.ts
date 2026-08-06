@@ -27,6 +27,13 @@ export interface Category {
   _count?: object | undefined;
 }
 
+export interface CategoryWithChildren extends Category {
+  children?: CategoryWithChildren[];
+}
+
 export type GetCategoryResponse = Root<Category>;
+export type GetCategoryBySlugResponse = Root<CategoryWithChildren>;
 export type GetAllCategoriesResponse = Root<Category[]>;
+export type GetCategoryTreeResponse = Root<CategoryWithChildren[]>;
 export type GetAllCategoriesPaginatedResponse = RootPaginate<Category[]>;
+

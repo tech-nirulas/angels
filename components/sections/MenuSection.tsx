@@ -1,6 +1,7 @@
 // components/sections/MenuSection.tsx
 "use client";
 
+import ProductCard from "@/components/ui/ProductCard";
 import SectionLabel from "@/components/ui/SectionLabel";
 import { useAddToCartMutation } from "@/features/cart/cartApiService";
 import { addToGuestCart, openCart } from "@/features/cart/cartSlice";
@@ -225,172 +226,22 @@ export default function MenuSection() {
                     <Skeleton width="50%" />
                   </Grid>
                 ))
-              : displayProducts.map((product, idx) => {
-                  const price = Number(product.basePrice);
-                  const imageUrl = getImageUrl(product);
-
-                  return (
-                    <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={product.id}>
-                      <motion.div
-                        layout
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        transition={{ delay: idx * 0.04, duration: 0.35 }}
-                      >
-                        <Card
-                          sx={{
-                            height: "100%",
-                            display: "flex",
-                            flexDirection: "column",
-                            borderRadius: 2.5,
-                            overflow: "hidden",
-                            cursor: "pointer",
-                            transition: "all 0.3s ease",
-                            "&:hover": {
-                              transform: "translateY(-4px)",
-                              boxShadow: "var(--shadow-medium)",
-                            },
-                          }}
-                          onClick={() => handleProductClick(product)}
-                        >
-                          {/* Image */}
-                          <Box
-                            sx={{
-                              position: "relative",
-                              height: 180,
-                              overflow: "hidden",
-                              bgcolor: theme.palette.background.accent,
-                              flexShrink: 0,
-                            }}
-                          >
-                            <CardMedia
-                              component="img"
-                              image={imageUrl}
-                              alt={product.name}
-                              sx={{
-                                width: "100%",
-                                height: "100%",
-                                objectFit: "cover",
-                                transition: "transform 0.5s ease",
-                                "&:hover": { transform: "scale(1.05)" },
-                              }}
-                            />
-
-                            {product.inStock === false && (
-                              <Box
-                                sx={{
-                                  position: "absolute",
-                                  inset: 0,
-                                  background: "rgba(0,0,0,0.55)",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                }}
-                              >
-                                <Chip
-                                  label="Out of Stock"
-                                  size="small"
-                                  sx={{ background: "white", height: 24 }}
-                                />
-                              </Box>
-                            )}
-                          </Box>
-
-                          {/* Content */}
-                          <CardContent
-                            sx={{ p: 1.5, pb: 1, flexGrow: 1 }}
-                          >
-                            <Typography
-                              variant="h6"
-                              sx={{
-                                fontFamily: "var(--font-display)",
-                                fontWeight: 600,
-                                mb: 0.5,
-                                fontSize: "0.95rem",
-                                lineHeight: 1.3,
-                                display: "-webkit-box",
-                                WebkitLineClamp: 1,
-                                WebkitBoxOrient: "vertical",
-                                overflow: "hidden",
-                              }}
-                            >
-                              {product.name}
-                            </Typography>
-
-                            <Typography
-                              variant="body2"
-                              sx={{
-                                color: theme.palette.text.secondary,
-                                mb: 1,
-                                fontSize: "0.7rem",
-                                lineHeight: 1.4,
-                                minHeight: "2.5rem",
-                                display: "-webkit-box",
-                                WebkitLineClamp: 2,
-                                WebkitBoxOrient: "vertical",
-                                overflow: "hidden",
-                              }}
-                            >
-                              {product.shortDescription || product.description}
-                            </Typography>
-
-                            {Number(product.rating) > 0 && (
-                              <Box
-                                sx={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: 0.5,
-                                  mb: 1,
-                                }}
-                              >
-                                <Rating
-                                  value={Number(product.rating)}
-                                  precision={0.1}
-                                  size="small"
-                                  readOnly
-                                  sx={{ fontSize: "0.8rem" }}
-                                />
-                                <Typography
-                                  variant="caption"
-                                  sx={{
-                                    color: theme.palette.text.secondary,
-                                    fontSize: "0.65rem",
-                                  }}
-                                >
-                                  ({product.totalReviews})
-                                </Typography>
-                              </Box>
-                            )}
-
-                            <Box
-                              sx={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 0.75,
-                              }}
-                            >
-                              <Typography
-                                sx={{
-                                  fontFamily: "var(--font-display)",
-                                  fontSize: "1rem",
-                                  fontWeight: 700,
-                                  color: theme.palette.primary.main,
-                                }}
-                              >
-                                ₹{price.toFixed(2)}
-                              </Typography>
-                            </Box>
-                          </CardContent>
-
-                          <CardActions sx={{ p: 1.5, pt: 0 }}>
-                            <AddToCartButton item={product} />
-                          </CardActions>
-                        </Card>
-                      </motion.div>
-                    </Grid>
-                  );
-                })}
+              : displayProducts.map((product, idx) => (
+                  <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={product.id}>
+                    <motion.div
+                      layout
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ delay: idx * 0.04, duration: 0.35 }}
+                    >
+                      <ProductCard
+                        product={product}
+                        onClick={() => handleProductClick(product)}
+                      />
+                    </motion.div>
+                  </Grid>
+                ))}
           </AnimatePresence>
         </Grid>
 

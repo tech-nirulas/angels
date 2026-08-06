@@ -14,8 +14,13 @@ export const categoryApiService = createApi({
 export const {
   useGetAllCategoriesQuery,
   useLazyGetAllCategoriesQuery,
+  useGetCategoryTreeQuery,
+  useLazyGetCategoryTreeQuery,
+  useGetCategoryBySlugQuery,
+  useLazyGetCategoryBySlugQuery,
   useGetCategoryQuery,
   useLazyGetCategoryQuery,
   useGetAllCategoriesPaginatedQuery,
   useLazyGetAllCategoriesPaginatedQuery,
 } = categoryApiService;
+

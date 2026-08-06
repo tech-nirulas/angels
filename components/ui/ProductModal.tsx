@@ -35,7 +35,17 @@ const ProductModal = memo(({ product, onAddToCart, onClose }: ProductModalProps)
 
   if (!product) return null;
 
-  const price = Number(product.basePrice);
+  const basePrice = Number(product.basePrice);
+  const discountedPrice = (product as any).discountedPrice
+    ? Number((product as any).discountedPrice)
+    : basePrice;
+  const hasDiscount = discountedPrice < basePrice;
+  const discountPct =
+    (product as any).discountPct ||
+    (hasDiscount
+      ? Math.round(((basePrice - discountedPrice) / basePrice) * 100)
+      : null);
+
   const isOutOfStock = !product.inStock;
 
   // Build gallery: mainImage first, then gallery items
@@ -75,6 +85,18 @@ const ProductModal = memo(({ product, onAddToCart, onClose }: ProductModalProps)
 
           {/* Top-left badge cluster */}
           <Box sx={{ position: "absolute", top: 12, left: 12, display: "flex", flexDirection: "column", gap: 0.5 }}>
+            {hasDiscount && (
+              <Chip
+                label={
+                  discountPct
+                    ? `${discountPct}% OFF`
+                    : `SAVE ₹${(basePrice - discountedPrice).toFixed(0)}`
+                }
+                size="small"
+                color="error"
+                sx={{ color: "white", fontWeight: 800, fontSize: "0.65rem" }}
+              />
+            )}
             {product.bestSeller && <Chip label="Best Seller" size="small" sx={{ bgcolor: theme.palette.warning.main, color: "white", fontWeight: 700, fontSize: "0.65rem" }} />}
             {product.newArrival && <Chip label="New Arrival" size="small" sx={{ bgcolor: theme.palette.info.main, color: "white", fontWeight: 700, fontSize: "0.65rem" }} />}
             {product.featured && <Chip label="Featured" size="small" sx={{ bgcolor: theme.palette.primary.main, color: "white", fontWeight: 700, fontSize: "0.65rem" }} />}
@@ -140,8 +162,13 @@ const ProductModal = memo(({ product, onAddToCart, onClose }: ProductModalProps)
         {/* Price row */}
         <Box sx={{ display: "flex", alignItems: "baseline", gap: 1.5, mb: 2 }}>
           <Typography sx={{ fontFamily: "var(--font-display)", fontSize: "2rem", fontWeight: 800, color: theme.palette.primary.main }}>
-            ₹{price.toFixed(2)}
+            ₹{discountedPrice.toFixed(2)}
           </Typography>
+          {hasDiscount && (
+            <Typography sx={{ fontSize: "1.2rem", color: theme.palette.text.disabled, textDecoration: "line-through", fontWeight: 600 }}>
+              ₹{basePrice.toFixed(2)}
+            </Typography>
+          )}
           <Typography variant="body2" sx={{ color: theme.palette.text.disabled }}>
             / {product.baseUnit?.toLowerCase()}
           </Typography>

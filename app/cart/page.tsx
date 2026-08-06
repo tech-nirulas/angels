@@ -1,8 +1,7 @@
 // app/cart/page.tsx
 "use client";
 
-import Footer from "@/components/layout/Footer";
-import Navbar from "@/components/layout/Navbar";
+import AvailableCouponsDrawer from "@/components/ui/AvailableCouponsDrawer";
 import LoginModal from "@/components/ui/LoginModal";
 import { useGetAddressesQuery } from "@/features/address/addressApiService";
 import {
@@ -13,18 +12,23 @@ import {
   useUpdateCartQuantityMutation,
 } from "@/features/cart/cartApiService";
 import {
+  applyPromo,
   clearGuestCart,
   removeFromGuestCart,
+  removePromo,
+  selectAppliedPromo,
   selectGuestCartItems,
   selectGuestCartTotal,
   updateGuestQuantity,
 } from "@/features/cart/cartSlice";
+import { useValidateOfferCodeMutation } from "@/features/offer/offerApiService";
 import { useCreateOrderMutation, useVerifyPaymentMutation } from "@/features/order/orderApiService";
 import { Address } from "@/interfaces/address.interface";
 import { useAppDispatch, useAppSelector } from "@/lib/store";
 import { MEDIA_BASE_URL } from "@/utils/constants";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import BusinessOutlinedIcon from "@mui/icons-material/BusinessOutlined";
+import LocalOfferIcon from "@mui/icons-material/LocalOffer";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
@@ -59,7 +63,8 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-function effectivePrice(price: number, discount?: number | null) {
+function effectivePrice(price: number, discount?: number | null, discountedPrice?: number) {
+  if (discountedPrice !== undefined && discountedPrice < price) return discountedPrice;
   if (discount && discount > 0) return price * (1 - discount / 100);
   return price;
 }
@@ -444,8 +449,8 @@ export default function CartPage() {
 
   const [mounted, setMounted] = useState(false);
   const [promoCode, setPromoCode] = useState("");
-  const [promoApplied, setPromoApplied] = useState(false);
   const [promoError, setPromoError] = useState(false);
+  const [couponsDrawerOpen, setCouponsDrawerOpen] = useState(false);
   const [snackOpen, setSnackOpen] = useState(false);
   const [snackMsg, setSnackMsg] = useState("");
   const [snackSeverity, setSnackSeverity] = useState<"info" | "success" | "error">("info");
@@ -456,13 +461,14 @@ export default function CartPage() {
   const [updatingProductId, setUpdatingProductId] = useState<string | null>(null);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
 
+  const appliedPromo = useAppSelector(selectAppliedPromo);
+
   const [createOrder] = useCreateOrderMutation();
   const [verifyPayment] = useVerifyPaymentMutation();
+  const [validateOfferCode, { isLoading: isValidatingPromo }] = useValidateOfferCodeMutation();
 
   const SHIPPING_THRESHOLD = 500;
   const SHIPPING_COST = 49;
-  const PROMO_DISCOUNT = 0.1;
-  const VALID_PROMO = "BAKERY10";
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -479,8 +485,8 @@ export default function CartPage() {
   }, [isAuthenticated]);
 
   const shipping = cartTotal >= SHIPPING_THRESHOLD ? 0 : SHIPPING_COST;
-  const promoSaving = promoApplied ? cartTotal * PROMO_DISCOUNT : 0;
-  const orderTotal = cartTotal - promoSaving + shipping;
+  const promoSaving = appliedPromo ? appliedPromo.discountAmount : 0;
+  const orderTotal = Math.max(0, cartTotal - promoSaving + shipping);
   const shippingProgress = Math.min((cartTotal / SHIPPING_THRESHOLD) * 100, 100);
   const remaining = Math.max(SHIPPING_THRESHOLD - cartTotal, 0);
 
@@ -510,7 +516,7 @@ export default function CartPage() {
       const res = await createOrder({
         orderType: "delivery",
         deliveryAddressId: selectedAddressId,
-        promoCode: promoApplied ? VALID_PROMO : undefined,
+        promoCode: appliedPromo ? appliedPromo.code : undefined,
         paymentMethod,
       }).unwrap();
 
@@ -610,13 +616,36 @@ export default function CartPage() {
     else dispatch(clearGuestCart());
   }, [dispatch, isAuthenticated, clearCartMutation]);
 
-  const handleApplyPromo = () => {
-    if (promoCode.trim().toUpperCase() === VALID_PROMO) {
-      setPromoApplied(true);
-      setPromoError(false);
-    } else {
+  const handleApplyPromo = async () => {
+    if (!promoCode.trim()) return;
+    setPromoError(false);
+    try {
+      const res = await validateOfferCode({
+        code: promoCode,
+        cartItems: normalizedItems.map((item) => ({
+          productId: item.productId,
+          categoryId: item.product?.category?.id,
+          quantity: item.quantity,
+          unitPrice: item.currentPrice,
+        })),
+      }).unwrap();
+
+      if (res?.data) {
+        dispatch(
+          applyPromo({
+            code: res.data.code,
+            discountAmount: res.data.discountAmount,
+            offerId: res.data.offerId,
+            title: res.data.title,
+          })
+        );
+        showSnack(`Coupon '${res.data.code}' applied! Saved ₹${res.data.discountAmount}`, "success");
+        setPromoCode("");
+      }
+    } catch (err: any) {
       setPromoError(true);
-      setPromoApplied(false);
+      const msg = err?.data?.message ?? "Invalid or ineligible promo code";
+      showSnack(msg, "error");
     }
   };
 
@@ -624,19 +653,14 @@ export default function CartPage() {
 
   if (isPageLoading) {
     return (
-      <>
-        <Navbar />
-        <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "60vh" }}>
-          <CircularProgress />
-        </Box>
-        <Footer />
-      </>
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "60vh" }}>
+        <CircularProgress />
+      </Box>
     );
   }
 
   return (
     <>
-      <Navbar />
       <main>
         {/* ── Hero strip ── */}
         <Box
@@ -716,9 +740,15 @@ export default function CartPage() {
                 <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                   <AnimatePresence mode="popLayout">
                     {normalizedItems.map((item, idx) => {
-                      const unitPrice = effectivePrice(Number(item.currentPrice), item.currentDiscount ? Number(item.currentDiscount) : null);
+                      const unitPrice = effectivePrice(
+                        Number(item.currentPrice),
+                        item.currentDiscount ? Number(item.currentDiscount) : null,
+                        item.product?.discountedPrice
+                      );
                       const lineTotal = unitPrice * item.quantity;
                       const isItemUpdating = updatingProductId === item.productId;
+                      const discountPct = item.currentDiscount ?? (item.product?.discountedPrice ? Math.round(((Number(item.currentPrice) - item.product.discountedPrice) / Number(item.currentPrice)) * 100) : null);
+                      const hasDiscount = discountPct !== null && discountPct > 0;
 
                       return (
                         <motion.div
@@ -759,12 +789,12 @@ export default function CartPage() {
                                     <Typography sx={{ fontWeight: 700, color: theme.palette.primary.main, fontSize: "0.95rem", fontFamily: "var(--font-display)" }}>
                                       ₹{unitPrice.toFixed(2)}
                                     </Typography>
-                                    {item.currentDiscount && item.currentDiscount > 0 && (
+                                    {hasDiscount && (
                                       <>
                                         <Typography variant="caption" sx={{ textDecoration: "line-through", color: theme.palette.text.disabled }}>
                                           ₹{Number(item.currentPrice).toFixed(2)}
                                         </Typography>
-                                        <Chip label={`-${item.currentDiscount}%`} size="small" sx={{ height: 18, fontSize: "0.6rem", fontWeight: 700, background: alpha(theme.palette.error.main, 0.1), color: theme.palette.error.main }} />
+                                        <Chip label={`-${discountPct}%`} size="small" sx={{ height: 18, fontSize: "0.6rem", fontWeight: 700, background: alpha(theme.palette.error.main, 0.1), color: theme.palette.error.main }} />
                                       </>
                                     )}
                                   </Box>
@@ -853,10 +883,14 @@ export default function CartPage() {
                         <Typography variant="body2" sx={{ fontWeight: 600 }}>₹{cartTotal.toFixed(2)}</Typography>
                       </Box>
 
-                      {promoApplied && (
+                      {appliedPromo && (
                         <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-                          <Typography variant="body2" sx={{ color: theme.palette.success.main, fontWeight: 500 }}>Promo (BAKERY10)</Typography>
-                          <Typography variant="body2" sx={{ fontWeight: 600, color: theme.palette.success.main }}>−₹{promoSaving.toFixed(2)}</Typography>
+                          <Typography variant="body2" sx={{ color: theme.palette.success.main, fontWeight: 500 }}>
+                            Coupon ({appliedPromo.code})
+                          </Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 600, color: theme.palette.success.main }}>
+                            −₹{appliedPromo.discountAmount.toFixed(2)}
+                          </Typography>
                         </Box>
                       )}
 
@@ -877,24 +911,88 @@ export default function CartPage() {
                       </Typography>
                     </Box>
 
-                    {/* Promo code */}
-                    <Box sx={{ display: "flex", gap: 1, mb: 3 }}>
-                      <TextField
-                        size="small"
-                        fullWidth
-                        placeholder="Promo code"
-                        value={promoCode}
-                        onChange={(e) => { setPromoCode(e.target.value); setPromoError(false); }}
-                        error={promoError}
-                        helperText={promoError ? "Invalid promo code" : promoApplied ? "✓ Discount applied" : ""}
-                        FormHelperTextProps={{ sx: { color: promoApplied ? theme.palette.success.main : theme.palette.error.main, mt: 0.5 } }}
-                        sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2, fontSize: "0.85rem" } }}
-                        disabled={promoApplied}
-                        onKeyDown={(e) => e.key === "Enter" && handleApplyPromo()}
-                      />
-                      <Button variant="outlined" onClick={handleApplyPromo} disabled={promoApplied || !promoCode.trim()} sx={{ borderRadius: 2, flexShrink: 0, fontSize: "0.8rem", fontWeight: 600, whiteSpace: "nowrap" }}>
-                        {promoApplied ? "Applied" : "Apply"}
-                      </Button>
+                    {/* Promo Code & Available Coupons */}
+                    <Box sx={{ mb: 3 }}>
+                      {appliedPromo ? (
+                        <Paper
+                          elevation={0}
+                          sx={{
+                            p: 1.5,
+                            borderRadius: 2.5,
+                            backgroundColor: `${theme.palette.success.main}12`,
+                            border: `1px solid ${theme.palette.success.main}40`,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                          }}
+                        >
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                            <CheckCircleIcon sx={{ color: theme.palette.success.main, fontSize: 20 }} />
+                            <Box>
+                              <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "text.primary", lineHeight: 1.2 }}>
+                                {appliedPromo.code}
+                              </Typography>
+                              <Typography variant="caption" sx={{ color: "text.secondary", fontSize: "0.72rem" }}>
+                                Saved ₹{appliedPromo.discountAmount.toFixed(2)} on this order
+                              </Typography>
+                            </Box>
+                          </Box>
+                          <Button
+                            size="small"
+                            color="error"
+                            onClick={() => {
+                              dispatch(removePromo());
+                              showSnack("Coupon removed", "info");
+                            }}
+                            sx={{ fontWeight: 600, fontSize: "0.75rem", textTransform: "none" }}
+                          >
+                            Remove
+                          </Button>
+                        </Paper>
+                      ) : (
+                        <>
+                          <Box sx={{ display: "flex", gap: 1, mb: 1 }}>
+                            <TextField
+                              size="small"
+                              fullWidth
+                              placeholder="Enter promo code"
+                              value={promoCode}
+                              onChange={(e) => { setPromoCode(e.target.value); setPromoError(false); }}
+                              error={promoError}
+                              helperText={promoError ? "Invalid or ineligible promo code" : ""}
+                              slotProps={{ helperText: { sx: { color: theme.palette.error.main, mt: 0.5 } } }}
+                              sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2, fontSize: "0.85rem" } }}
+                              onKeyDown={(e) => e.key === "Enter" && handleApplyPromo()}
+                            />
+                            <Button
+                              variant="outlined"
+                              onClick={handleApplyPromo}
+                              disabled={isValidatingPromo || !promoCode.trim()}
+                              sx={{ borderRadius: 2, flexShrink: 0, fontSize: "0.8rem", fontWeight: 600, whiteSpace: "nowrap" }}
+                            >
+                              {isValidatingPromo ? <CircularProgress size={16} /> : "Apply"}
+                            </Button>
+                          </Box>
+
+                          <Button
+                            fullWidth
+                            size="small"
+                            startIcon={<LocalOfferIcon sx={{ color: "#FFD700" }} />}
+                            onClick={() => setCouponsDrawerOpen(true)}
+                            sx={{
+                              justifyContent: "flex-start",
+                              textTransform: "none",
+                              fontSize: "0.8rem",
+                              fontWeight: 600,
+                              color: theme.palette.primary.main,
+                              p: 0.5,
+                              "&:hover": { backgroundColor: `${theme.palette.primary.main}08` },
+                            }}
+                          >
+                            View Available Coupons & Offers ✨
+                          </Button>
+                        </>
+                      )}
                     </Box>
 
                     <Button
@@ -935,7 +1033,19 @@ export default function CartPage() {
         </Container>
       </main>
 
-      <Footer />
+      {/* ── Available Coupons Drawer ── */}
+      <AvailableCouponsDrawer
+        open={couponsDrawerOpen}
+        onClose={() => setCouponsDrawerOpen(false)}
+        cartItems={normalizedItems.map((item) => ({
+          productId: item.productId,
+          categoryId: item.product?.category?.id,
+          quantity: item.quantity,
+          unitPrice: item.currentPrice,
+        }))}
+        onSuccess={(msg) => showSnack(msg, "success")}
+        onError={(msg) => showSnack(msg, "error")}
+      />
 
       {/* ── Delivery confirmation modal ── */}
       <DeliveryConfirmModal

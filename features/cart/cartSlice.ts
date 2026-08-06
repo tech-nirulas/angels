@@ -15,6 +15,8 @@ export interface CartItem {
     slug: string;
     description: string;
     basePrice: number;
+    discountedPrice?: number;
+    discountPct?: number | null;
     inStock: boolean;
     mainImage?: { url?: string; key?: string } | null;
   };
@@ -31,23 +33,32 @@ function loadGuestCart(): CartItem[] {
     if (!stored) return [];
     const raw: any[] = JSON.parse(stored);
     if (!Array.isArray(raw)) return [];
-    return raw.map((item) => ({
-      id: `temp-${item.productId}-${Math.random()}`,
-      productId: item.productId,
-      quantity: item.quantity ?? 1,
-      product: {
-        id: item.productId,
-        name: item.name ?? "",
-        slug: item.slug ?? "",
-        description: item.description ?? "",
-        basePrice: item.price ?? 0,
-        inStock: true,
-        mainImage: item.image ?? null,
-      },
-      currentPrice: item.price ?? 0,
-      currentDiscount: item.discount ?? null,
-      lineTotal: (item.price ?? 0) * (item.quantity ?? 1),
-    }));
+    return raw.map((item) => {
+      const basePrice = Number(item.price ?? 0);
+      const discountedPrice = item.discountedPrice !== undefined ? Number(item.discountedPrice) : basePrice;
+      const discountPct = item.discount ?? null;
+      const effectivePrice = discountedPrice < basePrice ? discountedPrice : (discountPct && discountPct > 0 ? basePrice * (1 - discountPct / 100) : basePrice);
+
+      return {
+        id: `temp-${item.productId}-${Math.random()}`,
+        productId: item.productId,
+        quantity: item.quantity ?? 1,
+        product: {
+          id: item.productId,
+          name: item.name ?? "",
+          slug: item.slug ?? "",
+          description: item.description ?? "",
+          basePrice,
+          discountedPrice,
+          discountPct,
+          inStock: true,
+          mainImage: item.image ?? null,
+        },
+        currentPrice: basePrice,
+        currentDiscount: discountPct,
+        lineTotal: effectivePrice * (item.quantity ?? 1),
+      };
+    });
   } catch {
     return [];
   }
@@ -61,7 +72,8 @@ function saveGuestCart(items: CartItem[]) {
       quantity: item.quantity,
       name: item.product.name,
       slug: item.product.slug,
-      price: item.currentPrice,
+      price: item.product.basePrice,
+      discountedPrice: item.product.discountedPrice,
       discount: item.currentDiscount,
       image: item.product.mainImage,
     }));
@@ -71,42 +83,71 @@ function saveGuestCart(items: CartItem[]) {
   }
 }
 
+export interface AppliedPromoInfo {
+  code: string;
+  discountAmount: number;
+  offerId?: string;
+  title?: string;
+}
+
 // ── Slice state ───────────────────────────────────────────────────────────────
 interface CartState {
   /** Items used ONLY for unauthenticated (guest) sessions. */
   guestItems: CartItem[];
   /** Drawer / sidebar open state. */
   isOpen: boolean;
+  /** Currently applied promo code coupon info. */
+  appliedPromo: AppliedPromoInfo | null;
 }
 
 const initialState: CartState = {
   guestItems: loadGuestCart(),
   isOpen: false,
+  appliedPromo: null,
 };
 
 const cartSlice = createSlice({
   name: "cart",
   initialState,
   reducers: {
+    // ── Promo Code actions ─────────────────────────────────────────────────
+    applyPromo(state, action: PayloadAction<AppliedPromoInfo>) {
+      state.appliedPromo = action.payload;
+    },
+    removePromo(state) {
+      state.appliedPromo = null;
+    },
     // ── Guest cart actions ─────────────────────────────────────────────────
     addToGuestCart(
       state,
       action: PayloadAction<{ productId: string; quantity?: number; product: CartItem["product"] }>
     ) {
       const { productId, quantity = 1, product } = action.payload;
+      const basePrice = Number(product.basePrice);
+      const discountedPrice = product.discountedPrice !== undefined ? Number(product.discountedPrice) : basePrice;
+      const discountPct = product.discountPct !== undefined ? product.discountPct : (discountedPrice < basePrice ? Math.round(((basePrice - discountedPrice) / basePrice) * 100) : null);
+      const unitEffectivePrice = discountedPrice < basePrice ? discountedPrice : (discountPct && discountPct > 0 ? basePrice * (1 - discountPct / 100) : basePrice);
+
       const existing = state.guestItems.find((i) => i.productId === productId);
       if (existing) {
         existing.quantity += quantity;
-        existing.lineTotal = existing.currentPrice * existing.quantity;
+        const existingEffective = existing.product.discountedPrice !== undefined && existing.product.discountedPrice < existing.product.basePrice
+          ? existing.product.discountedPrice
+          : (existing.currentDiscount && existing.currentDiscount > 0 ? existing.currentPrice * (1 - existing.currentDiscount / 100) : existing.currentPrice);
+        existing.lineTotal = existingEffective * existing.quantity;
       } else {
         state.guestItems.push({
           id: `temp-${productId}-${Date.now()}`,
           productId,
           quantity,
-          product,
-          currentPrice: product.basePrice,
-          currentDiscount: null,
-          lineTotal: product.basePrice * quantity,
+          product: {
+            ...product,
+            discountedPrice,
+            discountPct,
+          },
+          currentPrice: basePrice,
+          currentDiscount: discountPct,
+          lineTotal: unitEffectivePrice * quantity,
         });
       }
       saveGuestCart(state.guestItems);
@@ -123,7 +164,10 @@ const cartSlice = createSlice({
         const item = state.guestItems.find((i) => i.productId === productId);
         if (item) {
           item.quantity = quantity;
-          item.lineTotal = item.currentPrice * quantity;
+          const effective = item.product.discountedPrice !== undefined && item.product.discountedPrice < item.product.basePrice
+            ? item.product.discountedPrice
+            : (item.currentDiscount && item.currentDiscount > 0 ? item.currentPrice * (1 - item.currentDiscount / 100) : item.currentPrice);
+          item.lineTotal = effective * item.quantity;
         }
       }
       saveGuestCart(state.guestItems);
@@ -170,8 +214,13 @@ export const selectGuestCartCount = (state: RootState) =>
 export const selectGuestCartTotal = (state: RootState) =>
   selectGuestCartItems(state).reduce((sum, i) => sum + i.lineTotal, 0);
 
+export const selectAppliedPromo = (state: RootState): AppliedPromoInfo | null =>
+  state.cart?.appliedPromo ?? null;
+
 // ── Exports ───────────────────────────────────────────────────────────────────
 export const {
+  applyPromo,
+  removePromo,
   addToGuestCart,
   updateGuestQuantity,
   removeFromGuestCart,
