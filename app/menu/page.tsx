@@ -359,14 +359,16 @@ export default function MenuPage() {
                     setSearchQuery(e.target.value);
                     setCurrentPage(1);
                   }}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <SearchIcon
-                          sx={{ color: theme.palette.text.secondary }}
-                        />
-                      </InputAdornment>
-                    ),
+                  slotProps={{
+                    input: {
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <SearchIcon
+                            sx={{ color: theme.palette.text.secondary }}
+                          />
+                        </InputAdornment>
+                      ),
+                    },
                   }}
                   sx={{
                     flex: 2,

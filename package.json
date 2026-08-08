@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@aimk/permissions": "file:../aimk-permissions",
     "@apollo/client": "^4.2.3",
     "@emotion/cache": "^11.14.0",
     "@emotion/react": "^11.14.0",

@@ -164,12 +164,14 @@ export default function ForgotPasswordPage() {
                         name="email"
                         type="email"
                         sx={{ mb: 3, textAlign: "left" }}
-                        InputProps={{
-                          startAdornment: (
-                            <InputAdornment position="start">
-                              <Email color="primary" />
-                            </InputAdornment>
-                          ),
+                        slotProps={{
+                          input: {
+                            startAdornment: (
+                              <InputAdornment position="start">
+                                <Email color="primary" />
+                              </InputAdornment>
+                            ),
+                          },
                         }}
                       />
 

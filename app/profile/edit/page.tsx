@@ -308,15 +308,17 @@ export default function ProfileEditPage() {
                             <MaterialTextField
                               label="First Name"
                               name="firstName"
-                              InputProps={{
-                                startAdornment: (
-                                  <InputAdornment position="start">
-                                    <PersonOutlined
-                                      color="primary"
-                                      sx={{ fontSize: "1.1rem" }}
-                                    />
-                                  </InputAdornment>
-                                ),
+                              slotProps={{
+                                input: {
+                                  startAdornment: (
+                                    <InputAdornment position="start">
+                                      <PersonOutlined
+                                        color="primary"
+                                        sx={{ fontSize: "1.1rem" }}
+                                      />
+                                    </InputAdornment>
+                                  ),
+                                },
                               }}
                             />
                           </Grid>
@@ -330,15 +332,17 @@ export default function ProfileEditPage() {
                             <MaterialTextField
                               label="Phone Number (Optional)"
                               name="phone"
-                              InputProps={{
-                                startAdornment: (
-                                  <InputAdornment position="start">
-                                    <PhoneOutlined
-                                      color="primary"
-                                      sx={{ fontSize: "1.1rem" }}
-                                    />
-                                  </InputAdornment>
-                                ),
+                              slotProps={{
+                                input: {
+                                  startAdornment: (
+                                    <InputAdornment position="start">
+                                      <PhoneOutlined
+                                        color="primary"
+                                        sx={{ fontSize: "1.1rem" }}
+                                      />
+                                    </InputAdornment>
+                                  ),
+                                },
                               }}
                             />
                           </Grid>

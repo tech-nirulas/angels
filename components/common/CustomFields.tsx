@@ -275,12 +275,15 @@ export const MaterialMultiSelectField = ({
             helperText={errorText}
           />
         )}
-        renderOption={(optionProps, option) => (
-          <MenuItem {...optionProps} key={String(option.value)}>
-            <Checkbox checked={selectedValues.includes(option.value)} />
-            <ListItemText primary={option.label} />
-          </MenuItem>
-        )}
+        renderOption={(optionProps, option) => {
+          const { key, ...rest } = optionProps;
+          return (
+            <Box component="li" key={key} {...rest}>
+              <Checkbox checked={selectedValues.includes(option.value)} />
+              <ListItemText primary={option.label} />
+            </Box>
+          );
+        }}
         isOptionEqualToValue={(option, value) =>
           option.value === value.value
         }
