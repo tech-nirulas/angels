@@ -1,5 +1,10 @@
 # Angels Consumer Web App — Development Log
 
+## [2026-08-08] Self-Contained Permissions Package (@aimk/permissions)
+- Bundled `@aimk/permissions` package inside `packages/aimk-permissions` within the `angels` repository.
+- Updated [package.json](file:///home/ujjwal/Desktop/angels_projects/angels/package.json#L12) dependency from `"file:../aimk-permissions"` to `"file:./packages/aimk-permissions"`.
+- Resolved Next.js Turbopack workspace root inference error caused by external relative file dependencies (`../`).
+
 ## [2026-08-06] Slashed Prices & Discount Consistency Fix (Category & Cart)
 - Added `discountedPrice`, `discountPct`, `discountFlat`, and `discountName` fields to `Product` interface in [interfaces/product.interface.ts](file:///home/ujjwal/Desktop/angels_projects/angels/interfaces/product.interface.ts#L15).
 - Updated `cartSlice.ts` (`loadGuestCart`, `saveGuestCart`, `addToGuestCart`, `updateGuestQuantity`) to store and calculate effective item prices (`discountedPrice ?? basePrice`) and line totals correctly for guest cart.
