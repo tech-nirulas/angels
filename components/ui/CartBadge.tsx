@@ -32,14 +32,14 @@ export default function CartBadge() {
 
   if (!mounted) {
     return (
-      <IconButton sx={{ color: "inherit" }}>
+      <IconButton>
         <ShoppingCartIcon />
       </IconButton>
     );
   }
 
   return (
-    <IconButton onClick={() => router.push("/cart")} sx={{ color: "inherit" }}>
+    <IconButton onClick={() => router.push("/cart")}>
       <Badge
         badgeContent={cartCount}
         color="primary"
