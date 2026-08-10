@@ -59,11 +59,26 @@ const PALETTE = {
   },
 };
 
+/**
+ * Two typographic roles, nothing more.
+ *
+ * The variables come from next/font in app/layout.tsx and already include Next's
+ * metric-adjusted fallback family (e.g. "Poppins", "Poppins Fallback"), so the
+ * generic families below are only a last resort if the webfont fails entirely.
+ *
+ * ⚠️ `displayFont` is currently the Cravelo DEMO cut — PERSONAL USE ONLY, not
+ *    licensed for production. See app/fonts/LICENCE-NOTICE.md.
+ *
+ * The demo maps only A-Z/a-z/space (56 codepoints): no digits, no punctuation,
+ * no ₹. Anything the font lacks falls back per character to Georgia, so the
+ * display role is reserved for headings, and prices / product names / dense
+ * product data are explicitly on `bodyFont` instead.
+ */
 const TYPOGRAPHY = {
-  fontFamily: '"Cormorant Garamond", "Georgia", serif',
-  displayFont: '"Playfair Display", serif',
-  monoFont: '"DM Mono", monospace',
-  bodyFont: '"Lato", sans-serif',
+  // No extra fallbacks appended here — next/font/local already builds
+  // `cravelo, cravelo Fallback, Georgia, Times New Roman, serif` into the variable.
+  displayFont: "var(--font-cravelo)",
+  bodyFont: 'var(--font-poppins), "Helvetica Neue", Arial, sans-serif',
 };
 
 const SHAPE = {
@@ -119,18 +134,18 @@ let theme = createTheme({
       color: PALETTE.text.primary,
     },
     h4: {
-      fontFamily: TYPOGRAPHY.fontFamily,
+      fontFamily: TYPOGRAPHY.displayFont,
       fontWeight: 600,
       lineHeight: 1.4,
       color: PALETTE.text.primary,
     },
     h5: {
-      fontFamily: TYPOGRAPHY.fontFamily,
+      fontFamily: TYPOGRAPHY.displayFont,
       fontWeight: 500,
       color: PALETTE.text.primary,
     },
     h6: {
-      fontFamily: TYPOGRAPHY.fontFamily,
+      fontFamily: TYPOGRAPHY.displayFont,
       fontWeight: 500,
       color: PALETTE.text.primary,
     },
@@ -200,7 +215,6 @@ let theme = createTheme({
           --shadow-glow: ${SHADOWS_CUSTOM.glow};
           --shadow-warm: ${SHADOWS_CUSTOM.warm};
           --font-display: ${TYPOGRAPHY.displayFont};
-          --font-serif: ${TYPOGRAPHY.fontFamily};
           --font-body: ${TYPOGRAPHY.bodyFont};
           --radius: ${SHAPE.borderRadius}px;
         }

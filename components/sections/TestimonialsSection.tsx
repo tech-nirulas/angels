@@ -135,7 +135,11 @@ export default function TestimonialsSection() {
               <Typography
                 variant="h5"
                 sx={{
-                  fontFamily: "var(--font-serif)",
+                  // Was var(--font-serif) (Cormorant Garamond), removed in the
+                  // Poppins migration. This component is currently not rendered
+                  // (commented out in app/page.tsx); pointed at the display font
+                  // so the pull-quote still reads as a serif if re-enabled.
+                  fontFamily: "var(--font-display)",
                   fontStyle: "italic",
                   fontWeight: 300,
                   lineHeight: 1.75,

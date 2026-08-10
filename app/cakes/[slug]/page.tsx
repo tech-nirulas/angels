@@ -206,7 +206,8 @@ export default function CategoryCakesPage({
               variant="h3"
               sx={{
                 fontWeight: 800,
-                fontFamily: "Playfair Display, serif",
+                // fontFamily removed: variant="h3" already resolves to the theme
+                // display font, so hardcoding the family here only risked drift.
                 color: theme.palette.text.primary,
                 mb: 1,
               }}
@@ -277,7 +278,7 @@ export default function CategoryCakesPage({
         {productsLoading ? (
           <Grid container spacing={3}>
             {Array.from({ length: 8 }).map((_, i) => (
-              <Grid item xs={12} sm={6} md={4} lg={3} key={i}>
+              <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={i}>
                 <Skeleton variant="rectangular" height={220} sx={{ borderRadius: 3 }} />
                 <Skeleton height={28} sx={{ mt: 1 }} />
                 <Skeleton width="60%" height={20} />
@@ -293,7 +294,7 @@ export default function CategoryCakesPage({
         ) : (
           <Grid container spacing={3}>
             {displayProducts.map((product) => (
-              <Grid item xs={12} sm={6} md={4} lg={3} key={product.id}>
+              <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={product.id}>
                 <ProductCard
                   product={product}
                   onClick={() => handleProductClick(product)}

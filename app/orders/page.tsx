@@ -73,7 +73,7 @@ function OrderCard({ order }: { order: Order }) {
         {/* Header */}
         <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2, flexWrap: "wrap", gap: 1 }}>
           <Box>
-            <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: "var(--font-display)" }}>
+            <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: "var(--font-body)" }}>
               {order.orderNumber}
             </Typography>
             <Typography variant="caption" sx={{ color: theme.palette.text.disabled }}>
@@ -82,7 +82,7 @@ function OrderCard({ order }: { order: Order }) {
           </Box>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <StatusChip status={order.status} />
-            <Typography variant="body2" sx={{ fontWeight: 700, color: theme.palette.primary.main, fontFamily: "var(--font-display)" }}>
+            <Typography variant="body2" sx={{ fontWeight: 700, color: theme.palette.primary.main, fontFamily: "var(--font-body)" }}>
               ₹{Number(order.grandTotal).toFixed(2)}
             </Typography>
           </Box>

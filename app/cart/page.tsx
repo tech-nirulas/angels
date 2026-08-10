@@ -367,7 +367,7 @@ function DeliveryConfirmModal({
                 <Typography
                   variant="h6"
                   sx={{
-                    fontFamily: "var(--font-display)",
+                    fontFamily: "var(--font-body)",
                     fontWeight: 800,
                     color: theme.palette.primary.main,
                   }}
@@ -782,11 +782,11 @@ export default function CartPage() {
                             <Box sx={{ flex: 1, minWidth: 0 }}>
                               <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 1 }}>
                                 <Box sx={{ minWidth: 0 }}>
-                                  <Typography variant="subtitle1" sx={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: { xs: "0.9rem", sm: "1rem" }, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                  <Typography variant="subtitle1" sx={{ fontFamily: "var(--font-body)", fontWeight: 600, fontSize: { xs: "0.9rem", sm: "1rem" }, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                                     {item.product.name}
                                   </Typography>
                                   <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.5 }}>
-                                    <Typography sx={{ fontWeight: 700, color: theme.palette.primary.main, fontSize: "0.95rem", fontFamily: "var(--font-display)" }}>
+                                    <Typography sx={{ fontWeight: 700, color: theme.palette.primary.main, fontSize: "0.95rem", fontFamily: "var(--font-body)" }}>
                                       ₹{unitPrice.toFixed(2)}
                                     </Typography>
                                     {hasDiscount && (
@@ -813,7 +813,7 @@ export default function CartPage() {
                                   onIncrement={() => handleUpdateQuantity(item.productId, item.quantity + 1)}
                                   disabled={isItemUpdating}
                                 />
-                                <Typography sx={{ fontWeight: 700, fontSize: "1rem", fontFamily: "var(--font-display)" }}>
+                                <Typography sx={{ fontWeight: 700, fontSize: "1rem", fontFamily: "var(--font-body)" }}>
                                   ₹{lineTotal.toFixed(2)}
                                 </Typography>
                               </Box>
@@ -906,7 +906,7 @@ export default function CartPage() {
 
                     <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}>
                       <Typography variant="h6" sx={{ fontFamily: "var(--font-display)", fontWeight: 700 }}>Total</Typography>
-                      <Typography variant="h6" sx={{ fontFamily: "var(--font-display)", fontWeight: 800, color: theme.palette.primary.main }}>
+                      <Typography variant="h6" sx={{ fontFamily: "var(--font-body)", fontWeight: 800, color: theme.palette.primary.main }}>
                         ₹{orderTotal.toFixed(2)}
                       </Typography>
                     </Box>

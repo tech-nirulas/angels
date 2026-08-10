@@ -194,7 +194,7 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
         <Typography
           variant="h6"
           sx={{
-            fontFamily: "var(--font-display)",
+            fontFamily: "var(--font-body)",
             fontWeight: 700,
             mb: 0.5,
             fontSize: "1rem",
@@ -238,7 +238,7 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
         <Box sx={{ display: "flex", alignItems: "baseline", gap: 1 }}>
           <Typography
             sx={{
-              fontFamily: "var(--font-display)",
+              fontFamily: "var(--font-body)",
               fontSize: "1.1rem",
               fontWeight: 800,
               color: theme.palette.primary.main,

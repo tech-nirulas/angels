@@ -561,7 +561,7 @@ export default function OrderDetailPage() {
                                 </Typography>
                               )}
                             </Box>
-                            <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: "var(--font-display)", flexShrink: 0 }}>
+                            <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: "var(--font-body)", flexShrink: 0 }}>
                               ₹{lineTotal.toFixed(2)}
                             </Typography>
                           </Box>
@@ -677,7 +677,7 @@ export default function OrderDetailPage() {
 
                   <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.5 }}>
                     <Typography variant="body1" sx={{ fontWeight: 700 }}>Grand Total</Typography>
-                    <Typography variant="h6" sx={{ fontFamily: "var(--font-display)", fontWeight: 800, color: theme.palette.primary.main }}>
+                    <Typography variant="h6" sx={{ fontFamily: "var(--font-body)", fontWeight: 800, color: theme.palette.primary.main }}>
                       ₹{Number(order.grandTotal).toFixed(2)}
                     </Typography>
                   </Box>

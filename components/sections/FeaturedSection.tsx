@@ -176,7 +176,7 @@ const FeaturedProductCard = ({
           <Typography
             variant="h6"
             sx={{
-              fontFamily: "var(--font-display)",
+              fontFamily: "var(--font-body)",
               fontWeight: 700,
               mb: 0.75,
               fontSize: "1rem",
@@ -232,7 +232,7 @@ const FeaturedProductCard = ({
           {/* Price */}
           <Typography
             sx={{
-              fontFamily: "var(--font-display)",
+              fontFamily: "var(--font-body)",
               fontSize: "1.25rem",
               fontWeight: 700,
               color: theme.palette.primary.main,
@@ -390,11 +390,12 @@ export default function FeaturedSection() {
         <Grid container spacing={3}>
           {featuredProducts.map((product, idx) => (
             <Grid
-              item
-              xs={12}
-              sm={6}
-              md={4}
-              lg={3}  // 4 items per row on large screens
+              size={{
+                xs: 12,
+                sm: 6,
+                md: 4,
+                lg: 3
+              }}  // 4 items per row on large screens
               key={product.id}
             >
               <ProductCard

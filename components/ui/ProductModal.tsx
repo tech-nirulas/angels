@@ -154,7 +154,7 @@ const ProductModal = memo(({ product, onAddToCart, onClose }: ProductModalProps)
           </Typography>
         )}
 
-        <Typography variant="h4" sx={{ fontFamily: "var(--font-display)", fontWeight: 700, mt: 0.5, mb: 1, lineHeight: 1.2 }}>
+        <Typography variant="h4" sx={{ fontFamily: "var(--font-body)", fontWeight: 700, mt: 0.5, mb: 1, lineHeight: 1.2 }}>
           {product.name}
         </Typography>
 
@@ -175,7 +175,7 @@ const ProductModal = memo(({ product, onAddToCart, onClose }: ProductModalProps)
 
         {/* Price row */}
         <Box sx={{ display: "flex", alignItems: "baseline", gap: 1.5, mb: 2 }}>
-          <Typography sx={{ fontFamily: "var(--font-display)", fontSize: "2rem", fontWeight: 800, color: theme.palette.primary.main }}>
+          <Typography sx={{ fontFamily: "var(--font-body)", fontSize: "2rem", fontWeight: 800, color: theme.palette.primary.main }}>
             ₹{discountedPrice.toFixed(2)}
           </Typography>
           {hasDiscount && (
