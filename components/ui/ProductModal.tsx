@@ -3,6 +3,7 @@
 
 import { Product } from "@/interfaces/product.interface";
 import { MEDIA_BASE_URL } from "@/utils/constants";
+import { IMAGE_SLOTS } from "@/utils/imageSpec";
 import LocalOfferIcon from "@mui/icons-material/LocalOffer";
 import Box from "@mui/material/Box";
 import Chip from "@mui/material/Chip";
@@ -12,7 +13,11 @@ import { useTheme } from "@mui/material/styles";
 import Tab from "@mui/material/Tab";
 import Tabs from "@mui/material/Tabs";
 import Typography from "@mui/material/Typography";
+import Image from "next/image";
 import { memo, useState } from "react";
+
+const GALLERY_SPEC = IMAGE_SLOTS.productGallery;
+const THUMB_SPEC = IMAGE_SLOTS.thumbnail;
 
 interface ProductModalProps {
   product: Product;
@@ -24,7 +29,7 @@ function getImageUrl(product: Product): string {
   const key = product.mainImage?.key ?? product.thumbnail?.key;
   return key
     ? MEDIA_BASE_URL + key
-    : "https://placehold.co/600x600?text=No+Image";
+    : "https://placehold.co/600x600.png?text=No+Image";
 }
 
 const ProductModal = memo(({ product, onAddToCart, onClose }: ProductModalProps) => {
@@ -70,11 +75,13 @@ const ProductModal = memo(({ product, onAddToCart, onClose }: ProductModalProps)
         {/* Main image */}
         <Box sx={{ position: "relative", flex: 1, minHeight: { xs: 280, md: 360 }, overflow: "hidden" }}>
           {!imageError ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <Image
               src={activeImageUrl}
               alt={activeImage?.alt ?? product.name}
-              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              fill
+              sizes={GALLERY_SPEC.sizes}
+              quality={GALLERY_SPEC.quality}
+              style={{ objectFit: "cover", objectPosition: "center" }}
               onError={() => setImageError(true)}
             />
           ) : (
@@ -119,11 +126,18 @@ const ProductModal = memo(({ product, onAddToCart, onClose }: ProductModalProps)
                   transition: "all 0.2s",
                 }}
               >
-                <img
-                  src={img.key ? MEDIA_BASE_URL + img.key : ""}
-                  alt={img.alt ?? `Image ${i + 1}`}
-                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                />
+                {/* next/image rejects an empty src, which the previous raw <img> tolerated. */}
+                {img.key && (
+                  <Image
+                    src={MEDIA_BASE_URL + img.key}
+                    alt={img.alt ?? `Image ${i + 1}`}
+                    width={56}
+                    height={56}
+                    sizes="56px"
+                    quality={THUMB_SPEC.quality}
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                )}
               </Box>
             ))}
           </Box>

@@ -167,7 +167,7 @@ function ReviewDialog({
         <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}>
           <Box sx={{ width: 56, height: 56, borderRadius: 2, overflow: "hidden", bgcolor: alpha(theme.palette.primary.main, 0.08), flexShrink: 0 }}>
             <Image
-              src={item?.productSnapshot?.image ? MEDIA_BASE_URL + item.productSnapshot.image : "https://placehold.co/80x80?text=🥐"}
+              src={item?.productSnapshot?.image ? MEDIA_BASE_URL + item.productSnapshot.image : "https://placehold.co/80x80.png?text=🥐"}
               width={56} height={56} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }}
             />
           </Box>
@@ -538,7 +538,7 @@ export default function OrderDetailPage() {
                           <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
                             <Box sx={{ width: 64, height: 64, borderRadius: 2, overflow: "hidden", bgcolor: alpha(theme.palette.primary.main, 0.06), flexShrink: 0 }}>
                               <Image
-                                src={item.productSnapshot?.image ? MEDIA_BASE_URL + item.productSnapshot.image : "https://placehold.co/80x80?text=🥐"}
+                                src={item.productSnapshot?.image ? MEDIA_BASE_URL + item.productSnapshot.image : "https://placehold.co/80x80.png?text=🥐"}
                                 width={64} height={64} alt={item.productSnapshot?.name ?? ""}
                                 style={{ width: "100%", height: "100%", objectFit: "cover" }}
                               />

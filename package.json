@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@aimk/image-spec": "file:./packages/aimk-image-spec",
     "@aimk/permissions": "file:./packages/aimk-permissions",
     "@emotion/cache": "^11.14.0",
     "@emotion/react": "^11.14.0",

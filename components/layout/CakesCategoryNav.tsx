@@ -3,6 +3,7 @@
 import { useGetCategoryTreeQuery } from "@/features/categories/categoriesApiService";
 import { CategoryWithChildren } from "@/interfaces/category.interface";
 import { MEDIA_BASE_URL } from "@/utils/constants";
+import { IMAGE_SLOTS } from "@/utils/imageSpec";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import CloseIcon from "@mui/icons-material/Close";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
@@ -18,6 +19,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useMemo, useRef, useState } from "react";
+
+const THUMB_SPEC = IMAGE_SLOTS.thumbnail;
 
 function getCategoryImageUrl(category: CategoryWithChildren): string | null {
   const key = category.categoryImage?.key;
@@ -247,6 +250,10 @@ export default function CakesCategoryNav() {
                             src={imageUrl}
                             alt={sub.name}
                             fill
+                            // Without `sizes`, Next assumes 100vw and builds a
+                            // srcset up to 3840w for a 36px thumbnail.
+                            sizes="36px"
+                            quality={THUMB_SPEC.quality}
                             style={{ objectFit: "cover" }}
                           />
                         </Box>
@@ -409,7 +416,7 @@ export default function CakesCategoryNav() {
                           overflow: "hidden",
                         }}
                       >
-                        <Image src={imageUrl} alt={sub.name} fill style={{ objectFit: "cover" }} />
+                        <Image src={imageUrl} alt={sub.name} fill sizes="40px" quality={THUMB_SPEC.quality} style={{ objectFit: "cover" }} />
                       </Box>
                     ) : (
                       <Box

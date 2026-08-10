@@ -3,7 +3,7 @@
 "use client";
 
 import Image from 'next/image';
-import { useState, useCallback, memo } from 'react';
+import { useState, useEffect, useCallback, memo } from 'react';
 import Box from '@mui/material/Box';
 import Skeleton from '@mui/material/Skeleton';
 import { alpha, useTheme } from '@mui/material/styles';
@@ -122,8 +122,12 @@ export const ImageWithFallback = memo<ImageWithFallbackProps>(({
         onError?.(new Error(`Failed to load image: ${src}`));
     }, [src, hasError, onError]);
 
-    // Reset state when src changes
-    useState(() => {
+    // Reset state when src changes.
+    // This was `useState`, which takes no dependency array — the initializer ran
+    // once on mount and the second argument was ignored, so an already-mounted
+    // instance kept the previous URL and stayed latched in its error state when
+    // `src` changed (carousel advance, category filter, pagination).
+    useEffect(() => {
         setImgSrc(src);
         setIsLoading(true);
         setHasError(false);

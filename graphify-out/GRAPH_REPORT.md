@@ -1,13 +1,18 @@
-# Graph Report - .  (2026-08-01)
+# Graph Report - angels  (2026-08-10)
 
 ## Corpus Check
-- 23 files · ~169,223 words
+- 118 files · ~175,110 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 483 nodes · 672 edges · 46 communities (26 shown, 20 thin omitted)
-- Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 6 edges (avg confidence: 0.83)
-- Token cost: 150 input · 100 output
+- 627 nodes · 992 edges · 60 communities (32 shown, 28 thin omitted)
+- Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 5 edges (avg confidence: 0.8)
+- Token cost: 0 input · 0 output
+
+## Graph Freshness
+- Built from commit: `75aae7ff`
+- Run `git rev-parse HEAD` and compare to check if the graph is stale.
+- Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
 - [[_COMMUNITY_Auth Pages & OTP Verification|Auth Pages & OTP Verification]]
@@ -53,103 +58,159 @@
 - [[_COMMUNITY_Community 43|Community 43]]
 - [[_COMMUNITY_Community 44|Community 44]]
 - [[_COMMUNITY_Community 45|Community 45]]
+- [[_COMMUNITY_loyalty.interface.ts|loyalty.interface.ts]]
+- [[_COMMUNITY_Session Lifespans & RTR|Session Lifespans & RTR]]
+- [[_COMMUNITY_Three.js Interactive Cakes|Three.js Interactive Cakes]]
+- [[_COMMUNITY_Documentation Maintenance Policy|Documentation Maintenance Policy]]
+- [[_COMMUNITY_Designing Premium UI|Designing Premium UI]]
+- [[_COMMUNITY_Consumer App Rules (AGENTS.md)|Consumer App Rules (AGENTS.md)]]
+- [[_COMMUNITY_Consumer App Log (LOG.md)|Consumer App Log (LOG.md)]]
+- [[_COMMUNITY_{   useGetAllCategoriesQuery,   useLazyGetAllCategoriesQuery,   useGetCategoryTreeQuery,   useLazyGetCategoryTreeQuery,   useGetCategoryBySlugQuery,   useLazyGetCategoryBySlugQuery,   useGetCategoryQuery,   useLazyGetCategoryQuery,   useGetAllCategoriesPaginatedQuery,   useLazyGetAllCategoriesPaginatedQuery, }|{
+  useGetAllCategoriesQuery,
+  useLazyGetAllCategoriesQuery,
+  useGetCategoryTreeQuery,
+  useLazyGetCategoryTreeQuery,
+  useGetCategoryBySlugQuery,
+  useLazyGetCategoryBySlugQuery,
+  useGetCategoryQuery,
+  useLazyGetCategoryQuery,
+  useGetAllCategoriesPaginatedQuery,
+  useLazyGetAllCategoriesPaginatedQuery,
+}]]
+- [[_COMMUNITY_{   useGetActiveOffersQuery,   useGetAvailableOffersQuery,   useValidateOfferCodeMutation, }|{
+  useGetActiveOffersQuery,
+  useGetAvailableOffersQuery,
+  useValidateOfferCodeMutation,
+}]]
+- [[_COMMUNITY_{   useGetAllProductsQuery,   useGetProductQuery,   useLazyGetAllProductsQuery,   useLazyGetProductQuery,   useGetPaginatedProductsQuery,   useLazyGetPaginatedProductsQuery,   useGetProductsByCategoryPaginatedQuery,   useGetProductsByCategorySlugPaginatedQuery,   useGetProductsByCategoryQuery,   useLazyGetProductsByCategoryPaginatedQuery,   useLazyGetProductsByCategorySlugPaginatedQuery,   useLazyGetProductsByCategoryQuery,   useGetFeaturedProductsPaginatedQuery,   useGetFeaturedProductsQuery,   useLazyGetFeaturedProductsPaginatedQuery,   useLazyGetFeaturedProductsQuery, }|{
+  useGetAllProductsQuery,
+  useGetProductQuery,
+  useLazyGetAllProductsQuery,
+  useLazyGetProductQuery,
+  useGetPaginatedProductsQuery,
+  useLazyGetPaginatedProductsQuery,
+  useGetProductsByCategoryPaginatedQuery,
+  useGetProductsByCategorySlugPaginatedQuery,
+  useGetProductsByCategoryQuery,
+  useLazyGetProductsByCategoryPaginatedQuery,
+  useLazyGetProductsByCategorySlugPaginatedQuery,
+  useLazyGetProductsByCategoryQuery,
+  useGetFeaturedProductsPaginatedQuery,
+  useGetFeaturedProductsQuery,
+  useLazyGetFeaturedProductsPaginatedQuery,
+  useLazyGetFeaturedProductsQuery,
+}]]
+- [[_COMMUNITY_{   useGetAllUsersQuery,   useLazyGetAllUsersQuery,   useGetUserQuery,   useLazyGetUserQuery,   useGetProfileQuery,   useLazyGetProfileQuery,   useGetMyLoyaltyProfileQuery,   useUpdateProfileMutation,   useChangePasswordMutation,   useForgotPasswordMutation,   useResetPasswordMutation, }|{
+  useGetAllUsersQuery,
+  useLazyGetAllUsersQuery,
+  useGetUserQuery,
+  useLazyGetUserQuery,
+  useGetProfileQuery,
+  useLazyGetProfileQuery,
+  useGetMyLoyaltyProfileQuery,
+  useUpdateProfileMutation,
+  useChangePasswordMutation,
+  useForgotPasswordMutation,
+  useResetPasswordMutation,
+}]]
 
 ## God Nodes (most connected - your core abstractions)
-1. `compilerOptions` - 16 edges
-2. `useAppSelector` - 16 edges
-3. `useToast()` - 11 edges
-4. `useAppDispatch()` - 11 edges
-5. `saveEncryptedToken()` - 9 edges
-6. `Root` - 9 edges
-7. `baseQueryWithReauth()` - 9 edges
-8. `VerifyOtpPage()` - 6 edges
-9. `RootPaginate` - 6 edges
-10. `LoginPage()` - 5 edges
+1. `useAppDispatch()` - 29 edges
+2. `useAppSelector` - 24 edges
+3. `getDecryptedToken()` - 18 edges
+4. `compilerOptions` - 16 edges
+5. `Product` - 15 edges
+6. `Angels Consumer Web App — Development Log` - 14 edges
+7. `useToast()` - 13 edges
+8. `saveEncryptedToken()` - 11 edges
+9. `useModal()` - 11 edges
+10. `baseQueryWithReauth()` - 10 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `AddressesPage()` --calls--> `useAppSelector`  [EXTRACTED]
   app/addresses/page.tsx → lib/store.ts
+- `ReviewDialog()` --calls--> `getDecryptedToken()`  [EXTRACTED]
+  app/orders/[id]/page.tsx → helpers/decryptToken.helper.ts
+- `OrderDetailPage()` --calls--> `useAppSelector`  [EXTRACTED]
+  app/orders/[id]/page.tsx → lib/store.ts
 - `OrdersPage()` --calls--> `useAppSelector`  [EXTRACTED]
   app/orders/page.tsx → lib/store.ts
-- `AddressFormDialog()` --calls--> `useToast()`  [EXTRACTED]
-  app/addresses/page.tsx → hooks/useToast.ts
-- `ForgotPasswordPage()` --calls--> `useToast()`  [EXTRACTED]
-  app/forgot-password/page.tsx → hooks/useToast.ts
 - `VerifyOtpPage()` --indirect_call--> `selectGuestCartItems()`  [INFERRED]
   app/verify-otp/page.tsx → features/cart/cartSlice.ts
 
 ## Import Cycles
 - 3-file cycle: `features/cart/cartSlice.ts -> lib/store.ts -> redux/reducer.ts -> features/cart/cartSlice.ts`
+- 5-file cycle: `features/cart/cartApiService.ts -> features/cart/cartEndpoints.ts -> features/cart/cartSlice.ts -> lib/store.ts -> redux/api.ts -> features/cart/cartApiService.ts`
 
-## Communities (46 total, 20 thin omitted)
+## Communities (60 total, 28 thin omitted)
 
 ### Community 0 - "Auth Pages & OTP Verification"
-Cohesion: 0.09
-Nodes (31): AuthStep, LoginPage(), VerifyOtpPage(), AddToCartButton(), CartBadge(), AuthStep, LoginModal(), LoginModalProps (+23 more)
+Cohesion: 0.05
+Nodes (51): CakesPage(), ProductModalDynamic, SORT_OPTIONS, CategoryCakesPage(), ProductModalDynamic, SORT_OPTIONS, MenuPage(), parseSortBy() (+43 more)
 
 ### Community 1 - "Cart Page & Delivery Checkout"
-Cohesion: 0.05
-Nodes (18): CartPage(), effectivePrice(), CAKE_SIZES, FLAVOR_OPTIONS, OCCASIONS, COMPLAINT_TYPES, ORDER_STEPS, OrderProgress() (+10 more)
+Cohesion: 0.22
+Nodes (6): COMPLAINT_TYPES, ORDER_STEPS, OrderDetailPage(), OrderProgress(), ReviewDialog(), STATUS_CONFIG
 
 ### Community 2 - "Category API Service & Buttons"
-Cohesion: 0.09
-Nodes (29): AddToCartButtonProps, baseQuery, categoryApiService, categoryEndpoints(), EndpointDefinitions, baseQuery, productApiService, EndpointDefinitions (+21 more)
+Cohesion: 0.11
+Nodes (19): CakesCategoryNav(), getCategoryImageUrl(), ProductModal, ProductModalProps, EndpointDefinitions, EndpointDefinitions, Category, CategoryWithChildren (+11 more)
 
 ### Community 3 - "API Services & Reauth Base Query"
-Cohesion: 0.09
-Nodes (20): addressApiService, baseQuery, baseQueryWithReauth(), cakeApiService, cakeEndpoints(), CustomCakePayload, EndpointDefinitions, cartApiService (+12 more)
+Cohesion: 0.07
+Nodes (24): CAKE_SIZES, FLAVOR_OPTIONS, OCCASIONS, addressApiService, addressEndpoints(), authApiService, cakeApiService, { useCreateCakeRequestMutation } (+16 more)
 
 ### Community 4 - "Password Recovery & Reset Pages"
-Cohesion: 0.10
-Nodes (19): ForgotPasswordPage(), schema, getStrength(), ResetPasswordPage(), schema, MaterialFreeInputMultiSelectProps, MaterialMultiSelectFieldProps, MaterialPasswordField() (+11 more)
+Cohesion: 0.09
+Nodes (24): ForgotPasswordPage(), schema, getStrength(), passwordSchema, ProfileEditPage(), profileSchema, ProfilePage(), getStrength() (+16 more)
 
 ### Community 5 - "Consumer App Layout & Typography"
-Cohesion: 0.09
-Nodes (19): cormorant, dmMono, lato, metadata, playfair, ModalContext, ModalContextValue, ModalProps (+11 more)
+Cohesion: 0.06
+Nodes (27): cormorant, dmMono, lato, metadata, playfair, FOOTER_LINKS, NAV_LINKS, AUTH_PREFIXES (+19 more)
 
 ### Community 6 - "GraphQL Codegen & Dev Dependencies"
-Cohesion: 0.09
-Nodes (22): devDependencies, eslint, eslint-config-next, @graphql-codegen/cli, @graphql-codegen/typescript, @graphql-codegen/typescript-operations, @graphql-codegen/typescript-react-apollo, tailwindcss (+14 more)
+Cohesion: 0.05
+Nodes (41): default, description, devDependencies, @nestjs/common, @nestjs/core, react, reflect-metadata, ts-node (+33 more)
 
 ### Community 7 - "Apollo Client & MUI Dependencies"
-Cohesion: 0.09
-Nodes (23): dependencies, @apollo/client, @emotion/cache, @emotion/react, @emotion/server, @emotion/styled, formik, framer-motion (+15 more)
+Cohesion: 0.05
+Nodes (40): dependencies, @aimk/permissions, @emotion/cache, @emotion/react, @emotion/server, @emotion/styled, formik, framer-motion (+32 more)
 
 ### Community 8 - "Saved Addresses Management"
-Cohesion: 0.13
-Nodes (15): ADDRESS_TYPE_OPTIONS, AddressesPage(), AddressFormDialog(), DEFAULT_CENTER, emptyForm(), INDIA_STATES, MAP_LIBRARIES, addressEndpoints() (+7 more)
+Cohesion: 0.09
+Nodes (22): ADDRESS_TYPE_OPTIONS, AddressesPage(), AddressFormDialog(), DEFAULT_CENTER, emptyForm(), INDIA_STATES, MAP_LIBRARIES, Builder (+14 more)
 
 ### Community 9 - "Home Page & Featured Products"
-Cohesion: 0.11
-Nodes (11): FeaturedProductCard(), FeaturedSection(), getImageUrl(), ProductModalDynamic, toCartItem(), CategoryChipProps, getImageUrl(), MenuSection() (+3 more)
+Cohesion: 0.13
+Nodes (14): CartPage(), effectivePrice(), CartBadge(), cartApiService, AddToCartDto, Builder, cartEndpoints(), MergeCartDto (+6 more)
 
 ### Community 10 - "Categories Section & Circular Cards"
-Cohesion: 0.10
-Nodes (9): CircularCategoryItem, CircularCategorySkeleton, containerVariants, itemVariants, shimmer, TESTIMONIALS, ImageWithFallback, ImageWithFallbackProps (+1 more)
+Cohesion: 0.06
+Nodes (15): CategoriesSection(), CircularCategoryItem, CircularCategorySkeleton, containerVariants, itemVariants, shimmer, CAKE_TYPES, MILESTONES (+7 more)
 
 ### Community 11 - "TypeScript Configuration"
 Cohesion: 0.10
 Nodes (19): compilerOptions, allowJs, esModuleInterop, incremental, isolatedModules, jsx, lib, module (+11 more)
 
 ### Community 12 - "User Service & Localization"
-Cohesion: 0.21
-Nodes (11): userApiService, EndpointDefinitions, userEndpoints(), Localization, Permission, Role, ChangePasswordResponse, GetAllUsersPaginatedResponse (+3 more)
+Cohesion: 0.27
+Nodes (9): EndpointDefinitions, Localization, Permission, Role, ChangePasswordResponse, GetAllUsersPaginatedResponse, GetAllUsersResponse, GetUserResponse (+1 more)
 
 ### Community 13 - "Server Cart Thunk Actions"
-Cohesion: 0.18
-Nodes (7): addToServerCart, clearServerCart, fetchServerCart, removeFromServerCart, updateServerCartQuantity, decryptToken(), getDecryptedToken()
+Cohesion: 0.10
+Nodes (20): [2026-07-31] Milestone 4: Customize Cake Request Feature (Step 3), [2026-07-31] Milestone 5: Offers System & Hero Carousel (Step 4 - Carousel Wireup), [2026-07-31] Milestone 6: Payment Service + Cash on Delivery (COD) (Step 3), [2026-07-31] Milestone 8: Product Reviews & Ratings System, [2026-07-31] Project Rules & Milestone Setup, [2026-08-01] Milestone 11: Customer Directory & Loyalty Profile, [2026-08-01] Milestone 14: Strict Interfaces Consolidation & Type Safety Refactoring, [2026-08-06] Global Category Nav Bar + Floating CTA Improvements (+12 more)
 
 ### Community 14 - "Consumer Environment & API URLs"
 Cohesion: 0.18
 Nodes (10): NEXT_PUBLIC_BASE_URL, NEXT_PUBLIC_ENV, NEXT_PUBLIC_GOOGLE_CLIENT_ID, NEXT_PUBLIC_GOOGLE_MAPS_KEY, NEXT_PUBLIC_MEDIA_BASE_URL, NEXT_PUBLIC_MSG91_TOKEN_AUTH, NEXT_PUBLIC_MSG91_WIDGET_ID, NEXT_PUBLIC_RAZORPAY_KEY (+2 more)
 
 ### Community 15 - "Product Reviews & Modal Components"
-Cohesion: 0.24
-Nodes (8): getImageUrl(), MenuPage(), parseSortBy(), ProductCard(), ProductCardProps, ProductModalDynamic, SidebarButtonProps, SORT_OPTIONS
+Cohesion: 0.18
+Nodes (10): 1. Directory Structure, 2. Special Features & Visual Systems, 3. Cart Sync & Checkout Flow, 3D Interactive Cakes (`components/3d/`), 4. Authentication & Security Flow (Passwordless & RTR), Address & Maps Integration, Architecture Reference: Angels Consumer Web App, Session Lifespans & Automatic Refresh (+2 more)
 
 ### Community 16 - "3D Cake Customizer Scene"
-Cohesion: 0.44
-Nodes (6): authApiService, LoginRequest, LoginResponse, SignupRequest, SignupResponse, AuthValidator
+Cohesion: 0.14
+Nodes (23): AuthStep, LoginPage(), AuthStep, LoginModal(), LoginModalProps, baseQuery, baseQueryWithReauth(), performRefresh() (+15 more)
 
 ### Community 17 - "Hero Banners & Campaign Offers"
 Cohesion: 0.29
@@ -159,41 +220,53 @@ Nodes (5): fadeInUp, float, pulse, rotate, shimmer
 Cohesion: 0.29
 Nodes (5): fadeInUp, float, pulse, rotate, shimmer
 
+### Community 19 - "Community 19"
+Cohesion: 0.18
+Nodes (10): 1. Ask (Information Gathering), 2. Plan (Designing Premium UI Changes), 3. Architect (Coding Patterns), 4. Orchestrate (Execution Steps), 5. Debug & Error Resolver, Agent Workflows: Angels Consumer Web App, Google Maps API keys, Port Collision (8080) (+2 more)
+
+### Community 20 - "Community 20"
+Cohesion: 0.20
+Nodes (9): compilerOptions, declaration, esModuleInterop, jsx, module, outDir, strict, target (+1 more)
+
 ### Community 21 - "Community 21"
 Cohesion: 0.40
 Nodes (4): @mui/material/styles, Palette, PaletteOptions, TypeBackground
 
-### Community 22 - "Community 22"
+### Community 25 - "Community 25"
+Cohesion: 0.32
+Nodes (4): OrdersPage(), STATUS_CONFIG, Order, OrderItem
+
+### Community 30 - "Community 30"
 Cohesion: 0.50
-Nodes (4): Styling & Animation System, Three.js Interactive Cakes, Documentation Maintenance Policy, Designing Premium UI
+Nodes (3): Critical Rules & Guidelines, Workspace Directories & References, Workspace Rules: Angels Consumer Web App (Next.js)
 
-### Community 23 - "Community 23"
-Cohesion: 0.67
-Nodes (3): Cart Sync & Checkout Flow, Unified Passwordless Experience, Session Lifespans & RTR
+### Community 41 - "Community 41"
+Cohesion: 0.50
+Nodes (3): 1. Trigger Events for Documentation Updates, 2. Synchronization Checklist, Documentation Maintenance Policy: Angels Consumer Web App
 
-### Community 26 - "Community 26"
-Cohesion: 0.67
-Nodes (3): 3D Cake Customization Flow, Consumer App Rules (AGENTS.md), Consumer App Log (LOG.md)
+### Community 43 - "Community 43"
+Cohesion: 0.50
+Nodes (3): Deploy on Vercel, Getting Started, Learn More
 
 ## Knowledge Gaps
-- **207 isolated node(s):** `AuthStep`, `DEFAULT_CENTER`, `MAP_LIBRARIES`, `ADDRESS_TYPE_OPTIONS`, `INDIA_STATES` (+202 more)
+- **284 isolated node(s):** `AuthStep`, `DEFAULT_CENTER`, `MAP_LIBRARIES`, `ADDRESS_TYPE_OPTIONS`, `INDIA_STATES` (+279 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **20 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **28 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `useAppSelector` connect `Auth Pages & OTP Verification` to `Saved Addresses Management`, `Cart Page & Delivery Checkout`?**
-  _High betweenness centrality (0.035) - this node is a cross-community bridge._
-- **Why does `useToast()` connect `Password Recovery & Reset Pages` to `Saved Addresses Management`, `Auth Pages & OTP Verification`, `Categories Section & Circular Cards`?**
-  _High betweenness centrality (0.035) - this node is a cross-community bridge._
-- **Why does `Root` connect `Category API Service & Buttons` to `Saved Addresses Management`, `3D Cake Customizer Scene`, `API Services & Reauth Base Query`, `User Service & Localization`?**
-  _High betweenness centrality (0.031) - this node is a cross-community bridge._
+- **Why does `useAppDispatch()` connect `Auth Pages & OTP Verification` to `3D Cake Customizer Scene`, `Home Page & Featured Products`, `Password Recovery & Reset Pages`?**
+  _High betweenness centrality (0.024) - this node is a cross-community bridge._
+- **Why does `useAppSelector` connect `Password Recovery & Reset Pages` to `Auth Pages & OTP Verification`, `Cart Page & Delivery Checkout`, `Saved Addresses Management`, `Home Page & Featured Products`, `3D Cake Customizer Scene`, `Community 25`?**
+  _High betweenness centrality (0.019) - this node is a cross-community bridge._
+- **Why does `Root` connect `Saved Addresses Management` to `3D Cake Customizer Scene`, `Home Page & Featured Products`, `Category API Service & Buttons`, `User Service & Localization`?**
+  _High betweenness centrality (0.016) - this node is a cross-community bridge._
 - **What connects `AuthStep`, `DEFAULT_CENTER`, `MAP_LIBRARIES` to the rest of the system?**
-  _211 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _288 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Auth Pages & OTP Verification` be split into smaller, more focused modules?**
-  _Cohesion score 0.08673469387755102 - nodes in this community are weakly interconnected._
-- **Should `Cart Page & Delivery Checkout` be split into smaller, more focused modules?**
-  _Cohesion score 0.05391120507399577 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.05269497139415839 - nodes in this community are weakly interconnected._
 - **Should `Category API Service & Buttons` be split into smaller, more focused modules?**
-  _Cohesion score 0.08536585365853659 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.1103448275862069 - nodes in this community are weakly interconnected._
+- **Should `API Services & Reauth Base Query` be split into smaller, more focused modules?**
+  _Cohesion score 0.07207207207207207 - nodes in this community are weakly interconnected._

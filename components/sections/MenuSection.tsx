@@ -48,7 +48,7 @@ function getImageUrl(product: Product): string {
   const key = product.mainImage?.key ?? product.thumbnail?.key;
   return key
     ? MEDIA_BASE_URL + key
-    : "https://placehold.co/400x400?text=Delicious+Bakery";
+    : "https://placehold.co/1200x900.png?text=Delicious+Bakery";
 }
 
 export default function MenuSection() {
@@ -219,8 +219,7 @@ export default function MenuSection() {
                   <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={`skel-${idx}`}>
                     <Skeleton
                       variant="rectangular"
-                      height={280}
-                      sx={{ borderRadius: 2.5 }}
+                      sx={{ borderRadius: 2.5, width: "100%", aspectRatio: "4 / 3" }}
                     />
                     <Skeleton width="75%" sx={{ mt: 1 }} />
                     <Skeleton width="50%" />

@@ -24,7 +24,9 @@ import { useGetAllCategoriesQuery } from '@/features/categories/categoriesApiSer
 import { useToast } from '@/hooks/useToast';
 import { Category } from '@/interfaces/category.interface';
 import { MEDIA_BASE_URL } from '@/utils/constants';
+import { IMAGE_SLOTS } from '@/utils/imageSpec';
 
+const CATEGORY_SPEC = IMAGE_SLOTS.categoryAvatar;
 
 // Stagger children horizontally for scroll-in feel
 const containerVariants = {
@@ -149,7 +151,11 @@ const CircularCategoryItem = memo(({
               src={MEDIA_BASE_URL + category.categoryImage.key}
               alt={category.name}
               fill
-              sizes="(max-width: 7200px) 140px, 170px"
+              // Matches AVATAR_SIZE (190). The previous value declared 140px
+              // against a 190px box, and `(max-width: 7200px)` never failed so
+              // the 170px branch was dead — under-fetching at DPR 3.
+              sizes={CATEGORY_SPEC.sizes}
+              quality={CATEGORY_SPEC.quality}
               priority={index < 5}
               objectFit="cover"
               accentColor={accentColor}

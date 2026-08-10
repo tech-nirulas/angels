@@ -1,16 +1,38 @@
 "use client";
 
 import { useGetActiveOffersQuery } from "@/features/offer/offerApiService";
-import { Box, Button, Chip, Typography, useTheme } from "@mui/material";
+import { IMAGE_SLOTS } from "@/utils/imageSpec";
+import { Box, Button, Chip, Skeleton, Typography, useTheme } from "@mui/material";
 import LocalOfferIcon from "@mui/icons-material/LocalOffer";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import Slider, { Settings } from "react-slick";
+
+const HERO_SPEC = IMAGE_SLOTS.heroBanner;
+
+/**
+ * Deterministic hero container ratio, replacing the previous 65vh/75vh sizing.
+ * Viewport-relative heights made the rendered aspect ratio a function of the
+ * device, so no single asset ratio could ever be specified to Marketing.
+ *
+ * Rendered heights (verified against the target devices):
+ *   1920x1080 -> 810px    1440x900 -> 608px    1366x768 -> 576px
+ *   768x1024  -> 576px     390x844 -> 487px     360x800 -> 450px
+ */
+const HERO_ASPECT_RATIO = { xs: "4 / 5", sm: "4 / 3", md: "2.37 / 1" } as const;
+
+/** Guard so ultrawide displays (e.g. 3440x1440) don't produce an absurdly tall hero. */
+const HERO_MAX_HEIGHT = "80vh";
 
 export default function HeroSection() {
   const theme = useTheme();
   const router = useRouter();
 
-  const { data: activeOffersResponse } = useGetActiveOffersQuery();
+  const {
+    data: activeOffersResponse,
+    isLoading,
+    isError,
+  } = useGetActiveOffersQuery();
   const activeOffers = activeOffersResponse?.data || activeOffersResponse || [];
 
   const settings: Settings = {
@@ -23,60 +45,59 @@ export default function HeroSection() {
     dots: true,
   };
 
-  const defaultSlides = [
-    {
-      image: "/assets/hero_section/Big boy.jpg",
-      badge: "⭐ Bestseller",
-      title: "Handcrafted Belgian Truffle & Gourmet Cakes",
-      description: "Baked fresh every morning using 100% real butter, Belgian couverture chocolate, and fresh cream.",
-      code: "ANGELS10",
-      actionUrl: "/menu",
-    },
-    {
-      image: "/assets/hero_section/Jus Chkn.jpg",
-      badge: "🥐 Fresh Baked Daily",
-      title: "Artisanal Breads & Savory Bakery Delights",
-      description: "Golden flaky French butter croissants, smoky paneer puffs, and wholesome sourdough rolls.",
-      code: "WELCOME50",
-      actionUrl: "/menu",
-    },
-  ];
-
-  // Extract all active banners from active offers
-  const dynamicBannerSlides: any[] = [];
+  // Extract all active banners from active offers.
+  // A banner only qualifies if it carries real uploaded media — offers without
+  // usable banner media contribute nothing rather than a synthetic slide.
+  const slides: any[] = [];
   if (Array.isArray(activeOffers) && activeOffers.length > 0) {
     activeOffers.forEach((offer: any) => {
-      if (Array.isArray(offer.banners) && offer.banners.length > 0) {
-        offer.banners.forEach((banner: any) => {
-          if (banner.media?.url) {
-            dynamicBannerSlides.push({
-              image: banner.media.url,
-              badge: offer.code ? `🎟️ Code: ${offer.code}` : "🔥 Special Campaign",
-              title: banner.headline || offer.title,
-              description: banner.subtext || offer.description || "Special promotional offer on our gourmet selection.",
-              code: offer.code,
-              linkType: banner.linkType,
-              linkCategoryId: banner.linkCategoryId,
-              linkProductId: banner.linkProductId,
-              linkUrl: banner.linkUrl,
-            });
-          }
-        });
-      } else {
-        // Fallback for offers without uploaded banner media
-        dynamicBannerSlides.push({
-          image: defaultSlides[dynamicBannerSlides.length % defaultSlides.length].image,
-          badge: offer.code ? `🎟️ Code: ${offer.code}` : "🔥 Special Campaign",
-          title: offer.title,
-          description: offer.description || "Limited time promotional offer on your favorite bakery items.",
-          code: offer.code,
-          actionUrl: "/menu",
-        });
-      }
+      if (!Array.isArray(offer.banners)) return;
+      offer.banners.forEach((banner: any) => {
+        if (banner.media?.url) {
+          slides.push({
+            image: banner.media.url,
+            alt: banner.altText || banner.headline || offer.title || "Promotional banner",
+            badge: offer.code ? `🎟️ Code: ${offer.code}` : "🔥 Special Campaign",
+            title: banner.headline || offer.title,
+            description: banner.subtext || offer.description || "Special promotional offer on our gourmet selection.",
+            code: offer.code,
+            linkType: banner.linkType,
+            linkCategoryId: banner.linkCategoryId,
+            linkProductId: banner.linkProductId,
+            linkUrl: banner.linkUrl,
+          });
+        }
+      });
     });
   }
 
-  const slides = dynamicBannerSlides.length > 0 ? dynamicBannerSlides : defaultSlides;
+  // Loading: hold the space with a skeleton at the final ratio so the page
+  // below doesn't jump when banners arrive.
+  if (isLoading) {
+    return (
+      <Box
+        sx={{
+          width: "100%",
+          aspectRatio: HERO_ASPECT_RATIO,
+          maxHeight: HERO_MAX_HEIGHT,
+        }}
+        id="home"
+      >
+        <Skeleton variant="rectangular" width="100%" height="100%" animation="wave" />
+      </Box>
+    );
+  }
+
+  // Error: the hero is *unavailable*. Deliberately distinct from the
+  // loaded-and-empty case below, even though both render nothing — we must not
+  // present stale promotional content when the backend cannot confirm what is
+  // currently active.
+  if (isError) return null;
+
+  // Loaded successfully with zero active banners: intentionally no hero.
+  // Returning before the wrapper guarantees no empty container is left behind,
+  // so the content below moves up naturally.
+  if (slides.length === 0) return null;
 
   const handleSlideClick = (slide: any) => {
     if (slide.linkUrl) {
@@ -95,24 +116,60 @@ export default function HeroSection() {
   };
 
   return (
-    <Box sx={{ width: "100%", height: { xs: "65vh", md: "75vh" }, position: "relative" }} id="home">
+    <Box
+      sx={{
+        width: "100%",
+        aspectRatio: HERO_ASPECT_RATIO,
+        maxHeight: HERO_MAX_HEIGHT,
+        position: "relative",
+      }}
+      id="home"
+    >
       <Slider {...settings}>
         {slides.map((item: any, index: number) => (
           <Box
             key={index}
             sx={{
               width: "100%",
-              height: { xs: "65vh", md: "75vh" },
-              backgroundImage: `linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.2) 60%, rgba(0,0,0,0.4) 100%), url('${item.image}')`,
-              backgroundSize: "cover",
-              backgroundRepeat: "no-repeat",
-              backgroundPosition: "center",
+              aspectRatio: HERO_ASPECT_RATIO,
+              maxHeight: HERO_MAX_HEIGHT,
               position: "relative",
+              overflow: "hidden",
               display: "flex !important",
               alignItems: "center",
               justifyContent: "center",
             }}
           >
+            {/*
+              Optimized banner. Previously a CSS `background-image`, which
+              bypassed next/image entirely — no srcset, no DPR selection, no
+              WebP/AVIF conversion, and full-size originals shipped to phones.
+            */}
+            <Image
+              src={item.image}
+              alt={item.alt}
+              fill
+              sizes={HERO_SPEC.sizes}
+              quality={HERO_SPEC.quality}
+              priority={index === 0}
+              style={{ objectFit: "cover", objectPosition: "center" }}
+            />
+
+            {/*
+              Gradient moved out of the CSS background stack into its own layer
+              so the image itself can be optimized. Values unchanged from the
+              original to preserve the existing look.
+            */}
+            <Box
+              sx={{
+                position: "absolute",
+                inset: 0,
+                background:
+                  "linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.2) 60%, rgba(0,0,0,0.4) 100%)",
+                pointerEvents: "none",
+              }}
+            />
+
             <Box
               sx={{
                 position: "absolute",

@@ -11,13 +11,13 @@ import { Product } from '@/interfaces/product.interface';
 import { useModal } from '@/lib/ModalProvider';
 import { useAppDispatch } from '@/lib/store';
 import { MEDIA_BASE_URL } from '@/utils/constants';
+import { IMAGE_SLOTS } from '@/utils/imageSpec';
 import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCart';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
 import CardActions from '@mui/material/CardActions';
 import CardContent from '@mui/material/CardContent';
-import CardMedia from '@mui/material/CardMedia';
 import Chip from '@mui/material/Chip';
 import Container from '@mui/material/Container';
 import Grid from '@mui/material/Grid';
@@ -27,9 +27,12 @@ import { useTheme } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
 import { motion } from 'framer-motion';
 import dynamic from 'next/dynamic';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useCallback, useMemo } from 'react';
 import AddToCartButton from '../ui/AddToCart';
+
+const FEATURED_SPEC = IMAGE_SLOTS.featuredCard;
 
 const ProductModalDynamic = dynamic(
   () => import("@/components/ui/ProductModal"),
@@ -41,7 +44,7 @@ function getImageUrl(product: Product): string {
   const key = product.mainImage?.key ?? product.thumbnail?.key;
   return key
     ? MEDIA_BASE_URL + key
-    : "https://placehold.co/400x400?text=Featured+Item";
+    : "https://placehold.co/1200x900.png?text=Featured+Item";
 }
 
 // Helper to normalize product for cart
@@ -113,28 +116,32 @@ const FeaturedProductCard = ({
           }}
         />
 
-        {/* Product Image */}
+        {/*
+          Product Image — fixed 4:3 ratio rather than a fixed pixel height.
+          The previous `height: 240` with a fluid grid width produced ratios
+          from 0.81:1 to 2.36:1 across breakpoints.
+        */}
         <Box
           sx={{
             position: "relative",
-            height: 240,
+            width: "100%",
+            aspectRatio: "4 / 3",
             overflow: "hidden",
             bgcolor: theme.palette.background.accent,
             flexShrink: 0,
+            "&:hover img": { transform: "scale(1.08)" },
           }}
         >
-          <CardMedia
-            component="img"
-            image={imageUrl}
+          <Image
+            src={imageUrl}
             alt={product.name}
-            sx={{
-              width: "100%",
-              height: "100%",
+            fill
+            sizes={FEATURED_SPEC.sizes}
+            quality={FEATURED_SPEC.quality}
+            style={{
               objectFit: "cover",
+              objectPosition: "center",
               transition: "transform 0.5s ease",
-              '&:hover': {
-                transform: "scale(1.08)",
-              },
             }}
           />
 
@@ -251,8 +258,7 @@ const LoadingSkeleton = () => (
       <Grid size={{ xs: 12, sm: 6, md: 3 }} key={`featured-skel-${idx}`}>
         <Skeleton
           variant="rectangular"
-          height={280}
-          sx={{ borderRadius: 3 }}
+          sx={{ borderRadius: 3, width: "100%", aspectRatio: "4 / 3" }}
         />
         <Skeleton width="80%" sx={{ mt: 1.5 }} />
         <Skeleton width="60%" />

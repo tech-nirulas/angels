@@ -50,7 +50,7 @@ function getImageUrl(product: Product): string {
   const key = product.mainImage?.key ?? product.thumbnail?.key;
   return key
     ? MEDIA_BASE_URL + key
-    : "https://placehold.co/400x400?text=Delicious+Bakery";
+    : "https://placehold.co/1200x900.png?text=Delicious+Bakery";
 }
 
 export default function CakesPage() {
@@ -241,7 +241,7 @@ export default function CakesPage() {
           <Grid container spacing={3}>
             {Array.from({ length: 8 }).map((_, i) => (
               <Grid item xs={12} sm={6} md={4} lg={3} key={i}>
-                <Skeleton variant="rectangular" height={220} sx={{ borderRadius: 3 }} />
+                <Skeleton variant="rectangular" sx={{ borderRadius: 3, width: "100%", aspectRatio: "4 / 3" }} />
                 <Skeleton height={28} sx={{ mt: 1 }} />
                 <Skeleton width="60%" height={20} />
               </Grid>

@@ -107,7 +107,7 @@ function OrderCard({ order }: { order: Order }) {
                 }}
               >
                 <Image
-                  src={item.productSnapshot?.image ? MEDIA_BASE_URL + item.productSnapshot.image : "https://placehold.co/80x80?text=🥐"}
+                  src={item.productSnapshot?.image ? MEDIA_BASE_URL + item.productSnapshot.image : "https://placehold.co/80x80.png?text=🥐"}
                   width={40} height={40} alt={item.productSnapshot?.name ?? ""}
                   style={{ width: "100%", height: "100%", objectFit: "cover" }}
                 />

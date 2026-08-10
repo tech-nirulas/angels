@@ -16,6 +16,7 @@ import { Product } from "@/interfaces/product.interface";
 import { useModal } from "@/lib/ModalProvider";
 import { useAppDispatch } from "@/lib/store";
 import { MEDIA_BASE_URL } from "@/utils/constants";
+import { IMAGE_SLOTS } from "@/utils/imageSpec";
 import SearchIcon from "@mui/icons-material/Search";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
@@ -40,6 +41,7 @@ import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+const ICON_SPEC = IMAGE_SLOTS.categoryIcon;
 const ALL_CATEGORY_ID = "__all__";
 const ITEMS_PER_PAGE = 12;
 
@@ -60,7 +62,7 @@ function getImageUrl(product: Product): string {
   const key = product.mainImage?.key ?? product.thumbnail?.key;
   return key
     ? MEDIA_BASE_URL + key
-    : "https://placehold.co/400x400?text=Delicious+Bakery";
+    : "https://placehold.co/1200x900.png?text=Delicious+Bakery";
 }
 
 export default function MenuPage() {
@@ -561,9 +563,13 @@ function SidebarButton({
     >
       <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
         {iconUrl && (
-          <img
+          <Image
             src={iconUrl}
             alt={iconAlt ?? label}
+            width={24}
+            height={24}
+            sizes={ICON_SPEC.sizes}
+            quality={ICON_SPEC.quality}
             style={{
               width: 24,
               height: 24,

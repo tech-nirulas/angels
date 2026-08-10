@@ -773,7 +773,7 @@ export default function CartPage() {
                           >
                             <Box sx={{ flexShrink: 0, width: { xs: 72, sm: 88 }, height: { xs: 72, sm: 88 }, borderRadius: 2, overflow: "hidden", bgcolor: alpha(theme.palette.primary.main, 0.06) }}>
                               <Image
-                                src={item.product.mainImage?.key ? MEDIA_BASE_URL + item.product.mainImage.key : "https://placehold.co/200x200?text=🥐"}
+                                src={item.product.mainImage?.key ? MEDIA_BASE_URL + item.product.mainImage.key : "https://placehold.co/200x200.png?text=🥐"}
                                 width={200} height={200} alt={item.product.name}
                                 style={{ width: "100%", height: "100%", objectFit: "cover" }}
                               />

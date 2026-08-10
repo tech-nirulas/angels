@@ -2,12 +2,16 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  transpilePackages: ["@aimk/permissions"],
+  transpilePackages: ["@aimk/permissions", "@aimk/image-spec"],
   /* config options here */
   typescript: {
     ignoreBuildErrors: true,
   },
   images: {
+    // Next.js 16 changed the default to `[75]` and silently coerces any `quality`
+    // prop outside this allowlist to the nearest permitted value. These three tiers
+    // mirror IMAGE_QUALITY in utils/imageSpec.ts — keep them in sync.
+    qualities: [75, 85, 90],
     remotePatterns: [
       {
         protocol: "https",

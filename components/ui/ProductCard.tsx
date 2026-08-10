@@ -3,15 +3,18 @@
 import AddToCartButton from "@/components/ui/AddToCart";
 import { Product } from "@/interfaces/product.interface";
 import { getImageUrl } from "@/utils/imageUtils";
+import { IMAGE_SLOTS } from "@/utils/imageSpec";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
 import CardActions from "@mui/material/CardActions";
 import CardContent from "@mui/material/CardContent";
-import CardMedia from "@mui/material/CardMedia";
 import Chip from "@mui/material/Chip";
 import Rating from "@mui/material/Rating";
 import Typography from "@mui/material/Typography";
 import { useTheme } from "@mui/material/styles";
+import Image from "next/image";
+
+const CARD_SPEC = IMAGE_SLOTS.productCard;
 
 interface ProductCardProps {
   product: Product;
@@ -53,26 +56,33 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
       }}
       onClick={onClick}
     >
-      {/* Media Box */}
+      {/*
+        Media Box — fixed 4:3 ratio rather than a fixed pixel height. A fixed
+        height with a fluid grid width made the rendered ratio swing from
+        1.33:1 to 2.84:1 across breakpoints, so the same image was cropped
+        differently on every screen and no single upload ratio could be specified.
+      */}
       <Box
         sx={{
           position: "relative",
-          height: 200,
+          width: "100%",
+          aspectRatio: "4 / 3",
           overflow: "hidden",
           bgcolor: theme.palette.background.accent,
           flexShrink: 0,
+          "&:hover img": { transform: "scale(1.05)" },
         }}
       >
-        <CardMedia
-          component="img"
-          image={imageUrl}
+        <Image
+          src={imageUrl}
           alt={product.name}
-          sx={{
-            width: "100%",
-            height: "100%",
+          fill
+          sizes={CARD_SPEC.sizes}
+          quality={CARD_SPEC.quality}
+          style={{
             objectFit: "cover",
+            objectPosition: "center",
             transition: "transform 0.5s ease",
-            "&:hover": { transform: "scale(1.05)" },
           }}
         />
 
