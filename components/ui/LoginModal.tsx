@@ -368,17 +368,25 @@ export default function LoginModal({ open, onClose, onSuccess }: LoginModalProps
     console.log('[MSG91] verifyOtp called. reqId present:', !!phoneReqIdRef.current);
     win.verifyOtp(
       otp,
-      (data: any) => {
+      (response: any) => {
         // This is the documented-authoritative callback for exposeMethods/custom UI —
         // MSG91's own docs say the global configuration.success can be skipped when
         // this callback is used, so all real handling lives here.
-        console.log('[MSG91] verifyOtp success callback fired. response keys:', Object.keys(data || {}));
-        const token = data?.message || data?.['access-token'] || data?.token;
+        //
+        // Confirmed against MSG91's actual otp-provider.js source: for the explicit
+        // verifyOtp path (verifyOtpService → POST widget/verifyOtp), this callback is
+        // invoked with the RAW HTTP response body untransformed — i.e. exactly the
+        // { type, data, activity_response } shape seen on the wire. The token is under
+        // `.data`. (The `.message`-carries-the-token mapping only exists in the separate
+        // generateOtpService/sendOtp code path, for MSG91's "invisible OTP" auto-verify
+        // feature — it does not apply here.)
+        console.log('[MSG91] verifyOtp success callback fired. response keys:', Object.keys(response || {}));
+        const token = response?.data || response?.message || response?.['access-token'] || response?.token;
         console.log('[MSG91] token extracted:', !!token);
         if (!token) {
           setLoading(false);
           setError('OTP verified but no access token was returned. Please try again.');
-          console.log('[MSG91] no recognizable token field on success payload:', Object.keys(data || {}));
+          console.log('[MSG91] no recognizable token field on success payload:', Object.keys(response || {}));
           return;
         }
         // handleMsg91Success manages its own loading state (sets true immediately,
