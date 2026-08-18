@@ -22,7 +22,7 @@ import {
   Typography,
   Divider,
 } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface LoginModalProps {
   open: boolean;
@@ -56,6 +56,10 @@ export default function LoginModal({ open, onClose, onSuccess }: LoginModalProps
 
   const dispatch = useAppDispatch();
   const guestCart = useAppSelector((state) => state.cart.items);
+
+  // reqId returned by MSG91's sendOtp; passed explicitly to verifyOtp per MSG91's
+  // documented custom-UI signature: window.verifyOtp(otp, success, failure, reqId)
+  const phoneReqIdRef = useRef<string | undefined>(undefined);
 
   // Mutations
   const [requestOtp] = useRequestOtpMutation();
@@ -123,13 +127,16 @@ export default function LoginModal({ open, onClose, onSuccess }: LoginModalProps
     }
   };
 
-  // MSG91 Callback handler (hooked to script load)
+  // Handles a verified MSG91 phone token, called from the verifyOtp per-call
+  // success callback (the documented-authoritative channel for exposeMethods/custom UI)
   const handleMsg91Success = async (token: string) => {
+    console.log('[AUTH] handleMsg91Success called. primaryProvider:', primaryProvider);
     setLoading(true);
     setError('');
     try {
       if (!primaryProvider) {
         // Phone is primary verification
+        console.log('[AUTH] loginPasswordless called (provider=phone, primary)');
         const result = await loginPasswordless({
           primaryToken: token,
           provider: 'phone',
@@ -137,6 +144,7 @@ export default function LoginModal({ open, onClose, onSuccess }: LoginModalProps
         }).unwrap();
 
         const data = result.data; // ResponseInterceptor unwrapping
+        console.log('[AUTH] loginPasswordless response status:', data?.status);
 
         if (data.status === 'EXISTING_USER') {
           handleLoginSuccess(data.accessToken, data.refreshToken, data.user);
@@ -168,6 +176,7 @@ export default function LoginModal({ open, onClose, onSuccess }: LoginModalProps
         }
       }
     } catch (err: any) {
+      console.log('[AUTH] handleMsg91Success failed:', err?.data?.message || err.message);
       setError(err?.data?.message || err.message || 'Phone verification failed');
     } finally {
       setLoading(false);
@@ -181,6 +190,16 @@ export default function LoginModal({ open, onClose, onSuccess }: LoginModalProps
       const loadMsg91Script = () => {
         if ((window as any).initSendOTP) {
           initOtpWidget();
+          return;
+        }
+        // Avoid appending a second <script> tag (and re-registering the widget
+        // on top of an in-flight load) if the modal is opened again before
+        // the first load has finished.
+        const existing = document.querySelector(
+          'script[src="https://verify.msg91.com/otp-provider.js"]'
+        ) as HTMLScriptElement | null;
+        if (existing) {
+          existing.addEventListener('load', initOtpWidget, { once: true });
           return;
         }
         const script = document.createElement('script');
@@ -197,14 +216,18 @@ export default function LoginModal({ open, onClose, onSuccess }: LoginModalProps
           widgetId: process.env.NEXT_PUBLIC_MSG91_WIDGET_ID || '366644664c4a323237353039',
           tokenAuth: process.env.NEXT_PUBLIC_MSG91_TOKEN_AUTH || '512331Tv4ORqfJ6a436578P1',
           exposeMethods: true,
+          // NOTE: authentication is handled via the callbacks passed directly into
+          // window.verifyOtp() in handleVerifyPhoneOtp (the documented channel for
+          // exposeMethods/custom-UI integrations). MSG91's docs warn that listening
+          // to both the per-call callbacks AND these config-level ones fires "2
+          // events" for the same result, so these are left as diagnostics only —
+          // if you see these logs fire, it means MSG91 is invoking this path too/instead,
+          // which is useful signal if the per-call callback ever appears not to fire.
           success: (data: any) => {
-            const token = data?.message || data?.['access-token'];
-            if (token) {
-              handleMsg91Success(token);
-            }
+            console.log('[MSG91] global configuration.success fired (diagnostic only). keys:', Object.keys(data || {}));
           },
           failure: (err: any) => {
-            setError(typeof err === 'string' ? err : err.message || 'OTP verification failed');
+            console.log('[MSG91] global configuration.failure fired (diagnostic only):', err);
           },
         };
         if (typeof (window as any).initSendOTP === 'function') {
@@ -313,7 +336,12 @@ export default function LoginModal({ open, onClose, onSuccess }: LoginModalProps
       }
       win.sendOtp(
         cleanedPhone,
-        () => {
+        (data: any) => {
+          // MSG91 returns the reqId for this OTP request; store it so verifyOtp
+          // can be called with an explicit reqId per the documented signature
+          // window.verifyOtp(otp, success, failure, reqId).
+          phoneReqIdRef.current = data?.reqId ?? data?.reqid ?? data?.message ?? undefined;
+          console.log('[MSG91] sendOtp success. reqId captured:', !!phoneReqIdRef.current);
           setLoading(false);
           setStep('phone-otp');
         },
@@ -329,24 +357,41 @@ export default function LoginModal({ open, onClose, onSuccess }: LoginModalProps
 
   // Handle Verify Phone OTP
   const handleVerifyPhoneOtp = () => {
+    if (loading) return; // guard against double-submit (button is also disabled while loading)
     setError('');
     const win = window as any;
-    if (win.verifyOtp) {
-      setLoading(true);
-      win.verifyOtp(
-        otp,
-        () => {
-          setLoading(false);
-          // Success is handled by the global configuration.success callback
-        },
-        (err: any) => {
-          setLoading(false);
-          setError(typeof err === 'string' ? err : err.message || 'OTP verification failed');
-        }
-      );
-    } else {
+    if (!win.verifyOtp) {
       setError('MSG91 Widget error: verify method not found');
+      return;
     }
+    setLoading(true);
+    console.log('[MSG91] verifyOtp called. reqId present:', !!phoneReqIdRef.current);
+    win.verifyOtp(
+      otp,
+      (data: any) => {
+        // This is the documented-authoritative callback for exposeMethods/custom UI —
+        // MSG91's own docs say the global configuration.success can be skipped when
+        // this callback is used, so all real handling lives here.
+        console.log('[MSG91] verifyOtp success callback fired. response keys:', Object.keys(data || {}));
+        const token = data?.message || data?.['access-token'] || data?.token;
+        console.log('[MSG91] token extracted:', !!token);
+        if (!token) {
+          setLoading(false);
+          setError('OTP verified but no access token was returned. Please try again.');
+          console.log('[MSG91] no recognizable token field on success payload:', Object.keys(data || {}));
+          return;
+        }
+        // handleMsg91Success manages its own loading state (sets true immediately,
+        // false in its finally block) once it takes over.
+        handleMsg91Success(token);
+      },
+      (err: any) => {
+        console.log('[MSG91] verifyOtp failure callback fired:', err);
+        setLoading(false);
+        setError(typeof err === 'string' ? err : err.message || 'OTP verification failed');
+      },
+      phoneReqIdRef.current
+    );
   };
 
   // Handle Register Complete Profile
