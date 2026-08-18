@@ -33,6 +33,13 @@ type AuthStep =
   | 'phone-otp'
   | 'complete-profile';
 
+// Diagnostic-only: hashes a token for cross-checking against the backend's
+// logged hash of the same value, without ever logging the token itself.
+async function sha256Hex(text: string): Promise<string> {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -341,13 +348,18 @@ export default function LoginPage() {
         // verifyOtp path this callback receives the RAW HTTP response body
         // untransformed — { type, data, activity_response } — and the token is
         // under `.data`. See LoginModal.tsx for the full trace.
-        console.log('[MSG91] verifyOtp success callback fired. response keys:', Object.keys(response || {}));
         const token = response?.data || response?.message || response?.['access-token'] || response?.token;
-        console.log('[MSG91] token extracted:', !!token);
+        console.log('[MSG91] verifyOtp response diagnostic:', {
+          keys: Object.keys(response || {}),
+          tokenLength: token?.length,
+          tokenParts: token?.split('.')?.length,
+        });
+        if (token) {
+          sha256Hex(token).then((hash) => console.log('[MSG91] token sha256:', hash));
+        }
         if (!token) {
           setLoading(false);
           setError('OTP verified but no access token was returned. Please try again.');
-          console.log('[MSG91] no recognizable token field on success payload:', Object.keys(response || {}));
           return;
         }
         handleMsg91Success(token);
