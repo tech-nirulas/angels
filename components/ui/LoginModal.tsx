@@ -198,8 +198,9 @@ export default function LoginModal({ open, onClose, onSuccess }: LoginModalProps
           tokenAuth: process.env.NEXT_PUBLIC_MSG91_TOKEN_AUTH || '512331Tv4ORqfJ6a436578P1',
           exposeMethods: true,
           success: (data: any) => {
-            if (data && data['access-token']) {
-              handleMsg91Success(data['access-token']);
+            const token = data?.message || data?.['access-token'];
+            if (token) {
+              handleMsg91Success(token);
             }
           },
           failure: (err: any) => {

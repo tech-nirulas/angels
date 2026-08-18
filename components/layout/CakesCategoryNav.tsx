@@ -68,11 +68,20 @@ export default function CakesCategoryNav() {
     setHoveredCategory(cat);
   }, [clearLeaveTimer]);
 
-  const { data: treeData, isLoading } = useGetCategoryTreeQuery(null);
+  // Eligibility (isActive + showInSubNavbar + parent-only + ordering) is decided
+  // entirely by the backend in CategoryService.findTree(). This component is
+  // presentation only — do not re-apply visibility rules here, or the two would
+  // drift. refetchOnFocus/Reconnect let an already-open tab pick up an admin
+  // change without a hard reload.
+  const { data: treeData, isLoading } = useGetCategoryTreeQuery(null, {
+    refetchOnFocus: true,
+    refetchOnReconnect: true,
+  });
 
-  const categories: CategoryWithChildren[] = useMemo(() => {
-    return treeData?.data?.filter((c) => c.isActive) ?? [];
-  }, [treeData]);
+  const categories: CategoryWithChildren[] = useMemo(
+    () => treeData?.data ?? [],
+    [treeData]
+  );
 
   if (isLoading || categories.length === 0) {
     return null;

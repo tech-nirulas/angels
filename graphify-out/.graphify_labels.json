@@ -59,5 +59,7 @@
   "57": "{\n  useGetAllProductsQuery,\n  useGetProductQuery,\n  useLazyGetAllProductsQuery,\n  useLazyGetProductQuery,\n  useGetPaginatedProductsQuery,\n  useLazyGetPaginatedProductsQuery,\n  useGetProductsByCategoryPaginatedQuery,\n  useGetProductsByCategorySlugPaginatedQuery,\n  useGetProductsByCategoryQuery,\n  useLazyGetProductsByCategoryPaginatedQuery,\n  useLazyGetProductsByCategorySlugPaginatedQuery,\n  useLazyGetProductsByCategoryQuery,\n  useGetFeaturedProductsPaginatedQuery,\n  useGetFeaturedProductsQuery,\n  useLazyGetFeaturedProductsPaginatedQuery,\n  useLazyGetFeaturedProductsQuery,\n}",
   "58": "{\n  useGetAllUsersQuery,\n  useLazyGetAllUsersQuery,\n  useGetUserQuery,\n  useLazyGetUserQuery,\n  useGetProfileQuery,\n  useLazyGetProfileQuery,\n  useGetMyLoyaltyProfileQuery,\n  useUpdateProfileMutation,\n  useChangePasswordMutation,\n  useForgotPasswordMutation,\n  useResetPasswordMutation,\n}",
   "59": "local.ps1",
-  "60": "Image Guidelines — Angels in My Kitchen"
+  "60": "Image Guidelines — Angels in My Kitchen",
+  "61": "⚠️ Cravelo DEMO — NOT LICENSED FOR PRODUCTION",
+  "62": "authApi.ts"
 }
