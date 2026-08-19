@@ -8,6 +8,8 @@ import {
   useRegisterPasswordlessMutation,
 } from '@/features/auth/authApiService';
 import { setCredentials } from '@/features/auth/authSlice';
+import { usePasswordlessAuth } from '@/features/auth/usePasswordlessAuth';
+import { ensureMsg91Widget } from '@/features/auth/msg91Widget';
 import { saveEncryptedToken, saveRefreshToken } from '@/helpers/encryptToken.helper';
 import { useAppDispatch, useAppSelector } from '@/lib/store';
 import {
@@ -28,13 +30,6 @@ interface LoginModalProps {
   open: boolean;
   onClose: () => void;
   onSuccess?: () => void;
-}
-
-// Diagnostic-only: hashes a token for cross-checking against the backend's
-// logged hash of the same value, without ever logging the token itself.
-async function sha256Hex(text: string): Promise<string> {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
-  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
 type AuthStep =
@@ -73,6 +68,9 @@ export default function LoginModal({ open, onClose, onSuccess }: LoginModalProps
   const [verifyEmailOtp] = useVerifyEmailOtpMutation();
   const [loginPasswordless] = useLoginPasswordlessMutation();
   const [registerPasswordless] = useRegisterPasswordlessMutation();
+
+  // Shared passwordless auth path (identical to the standalone /login page)
+  const { requestPhoneOtp, verifyPhoneAndAuthenticate } = usePasswordlessAuth();
 
   // Reset modal state
   const resetModal = () => {
@@ -134,115 +132,14 @@ export default function LoginModal({ open, onClose, onSuccess }: LoginModalProps
     }
   };
 
-  // Handles a verified MSG91 phone token, called from the verifyOtp per-call
-  // success callback (the documented-authoritative channel for exposeMethods/custom UI)
-  const handleMsg91Success = async (token: string) => {
-    console.log('[AUTH] handleMsg91Success called. primaryProvider:', primaryProvider);
-    setLoading(true);
-    setError('');
-    try {
-      if (!primaryProvider) {
-        // Phone is primary verification
-        console.log('[AUTH] loginPasswordless called (provider=phone, primary)');
-        const result = await loginPasswordless({
-          primaryToken: token,
-          provider: 'phone',
-          guestCart,
-        }).unwrap();
-
-        const data = result.data; // ResponseInterceptor unwrapping
-        console.log('[AUTH] loginPasswordless response status:', data?.status);
-
-        if (data.status === 'EXISTING_USER') {
-          handleLoginSuccess(data.accessToken, data.refreshToken, data.user);
-        } else if (data.status === 'NEW_USER') {
-          setPrimaryToken(token);
-          setPrimaryProvider('phone');
-          // Single provider flow: register directly without mandatory email
-          setStep('complete-profile');
-        }
-      } else {
-        // Phone is secondary verification
-        setSecondaryToken(token);
-        // Google provider already contains names, so we can register immediately
-        if (primaryProvider === 'google') {
-          const result = await registerPasswordless({
-            primaryToken,
-            primaryProvider,
-            secondaryToken: token,
-            secondaryProvider: 'phone',
-            firstName,
-            lastName,
-            guestCart,
-          }).unwrap();
-          const data = result.data; // ResponseInterceptor unwrapping
-          handleLoginSuccess(data.accessToken, data.refreshToken, data.user);
-        } else {
-          // Go to Complete Profile step
-          setStep('complete-profile');
-        }
-      }
-    } catch (err: any) {
-      console.log('[AUTH] handleMsg91Success failed:', err?.data?.message || err.message);
-      setError(err?.data?.message || err.message || 'Phone verification failed');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   // Script loaders
   useEffect(() => {
     if (open) {
-      // Load MSG91 script
-      const loadMsg91Script = () => {
-        if ((window as any).initSendOTP) {
-          initOtpWidget();
-          return;
-        }
-        // Avoid appending a second <script> tag (and re-registering the widget
-        // on top of an in-flight load) if the modal is opened again before
-        // the first load has finished.
-        const existing = document.querySelector(
-          'script[src="https://verify.msg91.com/otp-provider.js"]'
-        ) as HTMLScriptElement | null;
-        if (existing) {
-          existing.addEventListener('load', initOtpWidget, { once: true });
-          return;
-        }
-        const script = document.createElement('script');
-        script.src = 'https://verify.msg91.com/otp-provider.js';
-        script.async = true;
-        script.onload = () => {
-          initOtpWidget();
-        };
-        document.head.appendChild(script);
-      };
-
-      const initOtpWidget = () => {
-        const configuration = {
-          widgetId: process.env.NEXT_PUBLIC_MSG91_WIDGET_ID || '366644664c4a323237353039',
-          tokenAuth: process.env.NEXT_PUBLIC_MSG91_TOKEN_AUTH || '512331Tv4ORqfJ6a436578P1',
-          exposeMethods: true,
-          // NOTE: authentication is handled via the callbacks passed directly into
-          // window.verifyOtp() in handleVerifyPhoneOtp (the documented channel for
-          // exposeMethods/custom-UI integrations). MSG91's docs warn that listening
-          // to both the per-call callbacks AND these config-level ones fires "2
-          // events" for the same result, so these are left as diagnostics only —
-          // if you see these logs fire, it means MSG91 is invoking this path too/instead,
-          // which is useful signal if the per-call callback ever appears not to fire.
-          success: (data: any) => {
-            console.log('[MSG91] global configuration.success fired (diagnostic only). keys:', Object.keys(data || {}));
-          },
-          failure: (err: any) => {
-            console.log('[MSG91] global configuration.failure fired (diagnostic only):', err);
-          },
-        };
-        if (typeof (window as any).initSendOTP === 'function') {
-          (window as any).initSendOTP(configuration);
-        }
-      };
-
-      loadMsg91Script();
+      // Initialise the MSG91 widget through the shared singleton. It must only
+      // ever be initialised once per page load — see features/auth/msg91Widget.ts.
+      ensureMsg91Widget().catch((err) =>
+        console.log('[MSG91] widget init failed:', err?.message)
+      );
 
       // Load Google GSI SDK
       const loadGoogleScript = () => {
@@ -330,88 +227,52 @@ export default function LoginModal({ open, onClose, onSuccess }: LoginModalProps
     }
   };
 
-  // Handle Request Phone OTP
-  const handleRequestPhoneOtp = () => {
+  // Handle Request Phone OTP — via the shared MSG91 widget
+  const handleRequestPhoneOtp = async () => {
     setError('');
-    const win = window as any;
-    if (win.sendOtp) {
-      setLoading(true);
-      // Clean phone: ensure only digits (add country code 91 for India)
-      let cleanedPhone = phone.replace(/\D/g, '');
-      if (!cleanedPhone.startsWith('91')) {
-        cleanedPhone = '91' + cleanedPhone;
-      }
-      win.sendOtp(
-        cleanedPhone,
-        (data: any) => {
-          // MSG91 returns the reqId for this OTP request; store it so verifyOtp
-          // can be called with an explicit reqId per the documented signature
-          // window.verifyOtp(otp, success, failure, reqId).
-          phoneReqIdRef.current = data?.reqId ?? data?.reqid ?? data?.message ?? undefined;
-          console.log('[MSG91] sendOtp success. reqId captured:', !!phoneReqIdRef.current);
-          setLoading(false);
-          setStep('phone-otp');
-        },
-        (err: any) => {
-          setLoading(false);
-          setError(typeof err === 'string' ? err : err.message || 'Failed to send SMS OTP');
-        }
-      );
-    } else {
-      setError('MSG91 Widget is not initialized yet. Please try again.');
+    setLoading(true);
+    try {
+      phoneReqIdRef.current = await requestPhoneOtp(phone);
+      setStep('phone-otp');
+    } catch (err: any) {
+      setError(err?.message || 'Failed to send SMS OTP');
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Handle Verify Phone OTP
-  const handleVerifyPhoneOtp = () => {
-    if (loading) return; // guard against double-submit (button is also disabled while loading)
+  // Handle Verify Phone OTP — via the shared passwordless auth path
+  const handleVerifyPhoneOtp = async () => {
+    if (loading) return; // guard against double-submit while verification is in flight
     setError('');
-    const win = window as any;
-    if (!win.verifyOtp) {
-      setError('MSG91 Widget error: verify method not found');
-      return;
-    }
     setLoading(true);
-    console.log('[MSG91] verifyOtp called. reqId present:', !!phoneReqIdRef.current);
-    win.verifyOtp(
-      otp,
-      (response: any) => {
-        // This is the documented-authoritative callback for exposeMethods/custom UI —
-        // MSG91's own docs say the global configuration.success can be skipped when
-        // this callback is used, so all real handling lives here.
-        //
-        // Confirmed against MSG91's actual otp-provider.js source: for the explicit
-        // verifyOtp path (verifyOtpService → POST widget/verifyOtp), this callback is
-        // invoked with the RAW HTTP response body untransformed — i.e. exactly the
-        // { type, data, activity_response } shape seen on the wire. The token is under
-        // `.data`. (The `.message`-carries-the-token mapping only exists in the separate
-        // generateOtpService/sendOtp code path, for MSG91's "invisible OTP" auto-verify
-        // feature — it does not apply here.)
-        const token = response?.data || response?.message || response?.['access-token'] || response?.token;
-        console.log('[MSG91] verifyOtp response diagnostic:', {
-          keys: Object.keys(response || {}),
-          tokenLength: token?.length,
-          tokenParts: token?.split('.')?.length,
-        });
-        if (token) {
-          sha256Hex(token).then((hash) => console.log('[MSG91] token sha256:', hash));
-        }
-        if (!token) {
-          setLoading(false);
-          setError('OTP verified but no access token was returned. Please try again.');
-          return;
-        }
-        // handleMsg91Success manages its own loading state (sets true immediately,
-        // false in its finally block) once it takes over.
-        handleMsg91Success(token);
-      },
-      (err: any) => {
-        console.log('[MSG91] verifyOtp failure callback fired:', err);
-        setLoading(false);
-        setError(typeof err === 'string' ? err : err.message || 'OTP verification failed');
-      },
-      phoneReqIdRef.current
-    );
+    try {
+      const result = await verifyPhoneAndAuthenticate({
+        otp,
+        reqId: phoneReqIdRef.current,
+        primaryProvider,
+        primaryToken,
+        firstName,
+        lastName,
+      });
+
+      if (result.status === 'AUTHENTICATED') {
+        onSuccess?.();
+        handleClose();
+      } else if (result.status === 'NEW_USER') {
+        setPrimaryToken(result.token);
+        setPrimaryProvider('phone');
+        setStep('complete-profile');
+      } else {
+        setSecondaryToken(result.token);
+        setSecondaryProvider('phone');
+        setStep('complete-profile');
+      }
+    } catch (err: any) {
+      setError(err?.data?.message || err?.message || 'OTP verification failed');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Handle Register Complete Profile
