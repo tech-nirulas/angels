@@ -276,7 +276,7 @@ export default function FeaturedSection() {
   const { openModal, closeModal } = useModal();
 
   // Fetch featured products
-  const { data: featuredData, isLoading, error } = useGetFeaturedProductsQuery(null);
+  const { data: featuredData, isLoading, error } = useGetFeaturedProductsQuery({ isActive: true });
 
   const featuredProducts = useMemo(() => {
     if (!featuredData?.data) return [];

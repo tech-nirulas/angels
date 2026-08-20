@@ -82,6 +82,7 @@ export default function CakesPage() {
   const { data: productsData, isLoading } = useGetPaginatedProductsQuery({
     page: currentPage,
     limit: ITEMS_PER_PAGE,
+    isActive: true,
     ...(searchQuery && { search: searchQuery }),
     ...(sortBy !== "default" && parseSortBy(sortBy)),
   });

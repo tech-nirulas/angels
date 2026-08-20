@@ -64,7 +64,7 @@ export default function MenuSection() {
 
   // ── Categories ────────────────────────────────────────────────────────────
   const { data: categoriesData, isLoading: isCategoriesLoading } =
-    useGetAllCategoriesPaginatedQuery({ limit: 4, page: 1 });
+    useGetAllCategoriesPaginatedQuery({ limit: 4, page: 1, isActive: true });
 
   const categories = useMemo(
     () => categoriesData?.data?.filter(Boolean) ?? [],
@@ -74,14 +74,14 @@ export default function MenuSection() {
   // ── Products — all ────────────────────────────────────────────────────────
   const { data: allProductsData, isLoading: allProductsLoading } =
     useGetPaginatedProductsQuery(
-      { page: 1, limit: PREVIEW_LIMIT },
+      { page: 1, limit: PREVIEW_LIMIT, isActive: true },
       { skip: selectedCategoryId !== ALL_ID }
     );
 
   // ── Products — by category ────────────────────────────────────────────────
   const { data: categoryProductsData, isLoading: categoryProductsLoading } =
     useGetProductsByCategoryPaginatedQuery(
-      { id: selectedCategoryId, filterDto: { page: 1, limit: PREVIEW_LIMIT } },
+      { id: selectedCategoryId, filterDto: { page: 1, limit: PREVIEW_LIMIT, isActive: true } },
       { skip: selectedCategoryId === ALL_ID }
     );
 

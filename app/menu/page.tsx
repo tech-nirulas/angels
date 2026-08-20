@@ -89,7 +89,7 @@ export default function MenuPage() {
 
   // ── Categories ──────────────────────────────────────────────────────────
   const { data: categoriesData, isLoading: categoriesLoading } =
-    useGetAllCategoriesQuery(null);
+    useGetAllCategoriesQuery({ isActive: true });
 
   const categories: Category[] = useMemo(
     () => categoriesData?.data?.filter(Boolean) ?? [],
@@ -110,6 +110,7 @@ export default function MenuPage() {
       {
         page: currentPage,
         limit: ITEMS_PER_PAGE,
+        isActive: true,
         ...(searchQuery && { search: searchQuery }),
         ...(sortBy !== "default" && parseSortBy(sortBy)),
       },
@@ -124,6 +125,7 @@ export default function MenuPage() {
         filterDto: {
           page: currentPage,
           limit: ITEMS_PER_PAGE,
+          isActive: true,
           ...(searchQuery && { search: searchQuery }),
           ...(sortBy !== "default" && parseSortBy(sortBy)),
         },

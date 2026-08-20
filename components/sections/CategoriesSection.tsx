@@ -262,7 +262,7 @@ export default function CategoriesSection() {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   // Fetch categories data
-  const { data: categoriesData, error, isLoading } = useGetAllCategoriesQuery();
+  const { data: categoriesData, error, isLoading } = useGetAllCategoriesQuery({ isActive: true });
 
   // Filter and sort categories (only active ones, by display order)
   const categories = useMemo(() => {

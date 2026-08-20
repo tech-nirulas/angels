@@ -1,5 +1,23 @@
 # Angels Consumer Web App — Development Log
 
+## [2026-08-20] Active Product Filtering on Menu, Featured, and Cakes Pages
+
+- Updated `productsEndpoints.ts` (`features/products/productsEndpoints.ts`):
+  - Added query parameter serialization to `getAllProducts`, `getProductsByCategory`, and `getFeaturedProducts`.
+  - Fixed endpoint URL for `getFeaturedProductsPaginated` to `product/featured/paginated`.
+- Updated `app/menu/page.tsx`: Passed `isActive: true` in `useGetPaginatedProductsQuery` and `useGetProductsByCategoryPaginatedQuery`.
+- Updated `components/sections/MenuSection.tsx`: Passed `isActive: true` in `useGetPaginatedProductsQuery` and `useGetProductsByCategoryPaginatedQuery`.
+- Updated `components/sections/FeaturedSection.tsx`: Passed `{ isActive: true }` in `useGetFeaturedProductsQuery`.
+- Updated `app/cakes/page.tsx`: Passed `isActive: true` in `useGetPaginatedProductsQuery`.
+- Updated `app/cakes/[slug]/page.tsx`: Passed `isActive: true` in `useGetProductsByCategorySlugPaginatedQuery`.
+
+## [2026-08-20] Active Category Filtering on Menu and Home Sections
+
+- Updated `categoryEndpoints.ts` (`features/categories/categoryEndpoints.ts`): Extended `getAllCategories` to accept `{ isActive?: boolean; search?: string } | void` and serialize parameters to `GET /category`.
+- Updated `app/menu/page.tsx`: Requested `useGetAllCategoriesQuery({ isActive: true })` so only active categories appear in the menu sidebar and mobile category dropdown.
+- Updated `components/sections/CategoriesSection.tsx`: Requested `useGetAllCategoriesQuery({ isActive: true })`.
+- Updated `components/sections/MenuSection.tsx`: Passed `isActive: true` to `useGetAllCategoriesPaginatedQuery`.
+
 ## [2026-08-08] Self-Contained Permissions Package (@aimk/permissions)
 - Bundled `@aimk/permissions` package inside `packages/aimk-permissions` within the `angels` repository.
 - Updated [package.json](file:///home/ujjwal/Desktop/angels_projects/angels/package.json#L12) dependency from `"file:../aimk-permissions"` to `"file:./packages/aimk-permissions"`.

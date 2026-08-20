@@ -11,10 +11,19 @@ import { EndpointBuilder } from "@reduxjs/toolkit/query";
 type EndpointDefinitions = EndpointBuilder<any, any, any>;
 
 export const categoryEndpoints = (builder: EndpointDefinitions) => ({
-  getAllCategories: builder.query<GetAllCategoriesResponse, null>({
-    query: () => ({
+  getAllCategories: builder.query<
+    GetAllCategoriesResponse,
+    { isActive?: boolean; search?: string } | void | null
+  >({
+    query: (params) => ({
       url: `category`,
       method: "GET",
+      params: params
+        ? {
+            ...(params.isActive !== undefined && { isActive: params.isActive }),
+            ...(params.search && { search: params.search }),
+          }
+        : undefined,
     }),
   }),
   getCategoryTree: builder.query<GetCategoryTreeResponse, null>({

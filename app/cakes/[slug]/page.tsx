@@ -98,6 +98,7 @@ export default function CategoryCakesPage({
       filterDto: {
         page: currentPage,
         limit: ITEMS_PER_PAGE,
+        isActive: true,
         ...(searchQuery && { search: searchQuery }),
         ...(sortBy !== "default" && parseSortBy(sortBy)),
       },
