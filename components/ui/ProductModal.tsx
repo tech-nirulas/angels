@@ -1,28 +1,45 @@
 // components/ui/ProductModal.tsx
 "use client";
 
+import {
+  useAddToCartMutation,
+  useGetCartQuery,
+  useRemoveFromCartMutation,
+  useUpdateCartQuantityMutation,
+} from "@/features/cart/cartApiService";
+import { addToGuestCart, openCart, updateGuestQuantity } from "@/features/cart/cartSlice";
 import { Product } from "@/interfaces/product.interface";
+import { useAppDispatch, useAppSelector } from "@/lib/store";
 import { MEDIA_BASE_URL } from "@/utils/constants";
 import { IMAGE_SLOTS } from "@/utils/imageSpec";
+import AddIcon from "@mui/icons-material/Add";
 import LocalOfferIcon from "@mui/icons-material/LocalOffer";
+import RemoveIcon from "@mui/icons-material/Remove";
+import ShoppingCartOutlinedIcon from "@mui/icons-material/ShoppingCartOutlined";
+import StarIcon from "@mui/icons-material/Star";
+import Avatar from "@mui/material/Avatar";
 import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
 import Chip from "@mui/material/Chip";
+import CircularProgress from "@mui/material/CircularProgress";
 import Divider from "@mui/material/Divider";
+import IconButton from "@mui/material/IconButton";
 import Rating from "@mui/material/Rating";
-import { useTheme } from "@mui/material/styles";
+import Skeleton from "@mui/material/Skeleton";
+import { alpha, useTheme } from "@mui/material/styles";
 import Tab from "@mui/material/Tab";
 import Tabs from "@mui/material/Tabs";
 import Typography from "@mui/material/Typography";
 import Image from "next/image";
-import { memo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 
 const GALLERY_SPEC = IMAGE_SLOTS.productGallery;
 const THUMB_SPEC = IMAGE_SLOTS.thumbnail;
 
 interface ProductModalProps {
   product: Product;
-  onAddToCart: (product: Product) => void;
-  onClose: () => void;
+  onAddToCart?: (e: React.MouseEvent, product: Product) => void;
+  onClose?: () => void;
 }
 
 function getImageUrl(product: Product): string {
@@ -34,9 +51,33 @@ function getImageUrl(product: Product): string {
 
 const ProductModal = memo(({ product, onAddToCart, onClose }: ProductModalProps) => {
   const theme = useTheme();
+  const dispatch = useAppDispatch();
+  const isAuthenticated = useAppSelector((s) => s.auth.isAuthenticated);
+
   const [imageError, setImageError] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
   const [galleryIndex, setGalleryIndex] = useState(0);
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  // Cart API mutations
+  const [addToCartMutation, { isLoading: isAdding }] = useAddToCartMutation();
+  const [updateCartQuantity] = useUpdateCartQuantityMutation();
+  const [removeFromCart] = useRemoveFromCartMutation();
+
+  // Active user's cart
+  const { data: serverCartResponse } = useGetCartQuery(undefined, {
+    skip: !isAuthenticated,
+  });
+  const serverCart = serverCartResponse?.data ?? [];
+  const guestItems = useAppSelector((s) => s.cart.guestItems);
+
+  const quantity = useMemo(() => {
+    if (!product?.id) return 0;
+    if (isAuthenticated) {
+      return serverCart.find((i: any) => i.productId === product.id)?.quantity ?? 0;
+    }
+    return guestItems.find((i: any) => i.productId === product.id)?.quantity ?? 0;
+  }, [isAuthenticated, serverCart, guestItems, product?.id]);
 
   if (!product) return null;
 
@@ -52,6 +93,10 @@ const ProductModal = memo(({ product, onAddToCart, onClose }: ProductModalProps)
       : null);
 
   const isOutOfStock = !product.inStock;
+  const isLowStock =
+    product.inStock &&
+    product.stockQuantity <= product.lowStockThreshold &&
+    product.stockQuantity > 0;
 
   // Build gallery: mainImage first, then gallery items
   const allImages = [
@@ -63,17 +108,110 @@ const ProductModal = memo(({ product, onAddToCart, onClose }: ProductModalProps)
     ? MEDIA_BASE_URL + activeImage.key
     : getImageUrl(product);
 
-  // Nutritional info — stored as JSON, shape may vary
+  // Nutritional & allergen info
   const nutritional = product.nutritionalInfo as Record<string, string | number> | null;
   const allergens = product.allergenInfo as Record<string, boolean> | null;
+  const declaredAllergens = allergens
+    ? Object.entries(allergens).filter(([, present]) => present).map(([name]) => name)
+    : [];
+
+  const hasNutrition = Boolean(nutritional && Object.keys(nutritional).length > 0);
+
+  // Direct, rock-solid add to cart handler
+  const handleAdd = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+
+    if (isAuthenticated) {
+      await addToCartMutation({ productId: product.id, quantity: 1 });
+    } else {
+      dispatch(
+        addToGuestCart({
+          productId: product.id,
+          product: {
+            id: product.id,
+            name: product.name,
+            slug: product.slug,
+            description: product.shortDescription || "",
+            basePrice: Number(product.basePrice),
+            discountedPrice: hasDiscount ? discountedPrice : undefined,
+            discountPct: discountPct ?? null,
+            inStock: product.inStock ?? true,
+            mainImage: product.mainImage ?? product.thumbnail ?? null,
+          },
+        })
+      );
+    }
+
+    dispatch(openCart());
+
+    if (onAddToCart) {
+      try {
+        onAddToCart(e, product);
+      } catch (err) {
+        console.error("Error in parent onAddToCart callback:", err);
+      }
+    }
+  };
+
+  // Quantity increment / decrement handler
+  const handleUpdateQty = async (e: React.MouseEvent, delta: number) => {
+    e.stopPropagation();
+    const newQty = quantity + delta;
+
+    if (isAuthenticated) {
+      setIsUpdating(true);
+      try {
+        if (newQty <= 0) {
+          await removeFromCart(product.id);
+        } else {
+          await updateCartQuantity({ productId: product.id, quantity: newQty });
+        }
+      } finally {
+        setIsUpdating(false);
+      }
+    } else {
+      dispatch(updateGuestQuantity({ productId: product.id, quantity: newQty }));
+    }
+  };
 
   return (
-    <Box sx={{ display: "flex", flexDirection: { xs: "column", md: "row" }, minHeight: { md: 480 } }}>
-
-      {/* ── Left: image + gallery strip ── */}
-      <Box sx={{ flex: "0 0 45%", display: "flex", flexDirection: "column", bgcolor: theme.palette.background.accent }}>
-        {/* Main image */}
-        <Box sx={{ position: "relative", flex: 1, minHeight: { xs: 280, md: 360 }, overflow: "hidden" }}>
+    <Box
+      sx={{
+        display: "grid",
+        gridTemplateColumns: {
+          xs: "minmax(0, 1fr)",
+          md: "minmax(0, 430px) minmax(0, 1fr)",
+        },
+        bgcolor: theme.palette.background.paper,
+        borderRadius: 3,
+        overflow: "hidden",
+      }}
+    >
+      {/* ── Left: Square Image (1:1) + Gallery Strip ── */}
+      <Box
+        sx={{
+          bgcolor: theme.palette.background.accent,
+          p: { xs: 2.5, md: 3 },
+          display: "flex",
+          flexDirection: "column",
+          gap: 2,
+          minWidth: 0,
+          borderRight: { md: `1px solid ${theme.palette.divider}` },
+        }}
+      >
+        {/* Strict 1:1 Square Hero Image Box */}
+        <Box
+          sx={{
+            position: "relative",
+            width: "100%",
+            aspectRatio: "1 / 1",
+            borderRadius: 3,
+            overflow: "hidden",
+            bgcolor: alpha(theme.palette.common.black, 0.03),
+            boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
+            border: `1px solid ${alpha(theme.palette.common.black, 0.06)}`,
+          }}
+        >
           {!imageError ? (
             <Image
               src={activeImageUrl}
@@ -81,17 +219,42 @@ const ProductModal = memo(({ product, onAddToCart, onClose }: ProductModalProps)
               fill
               sizes={GALLERY_SPEC.sizes}
               quality={GALLERY_SPEC.quality}
+              priority
               style={{ objectFit: "cover", objectPosition: "center" }}
               onError={() => setImageError(true)}
             />
           ) : (
-            <Box sx={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Typography variant="body2" color="text.secondary">Image not available</Typography>
+            <Box
+              sx={{
+                width: "100%",
+                height: "100%",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 1,
+              }}
+            >
+              <Typography variant="h3">🥐</Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                Image not available
+              </Typography>
             </Box>
           )}
 
-          {/* Top-left badge cluster */}
-          <Box sx={{ position: "absolute", top: 12, left: 12, display: "flex", flexDirection: "column", gap: 0.5 }}>
+          {/* Badges Cluster with Glassmorphism */}
+          <Box
+            sx={{
+              position: "absolute",
+              top: 12,
+              left: 12,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "flex-start",
+              gap: 0.75,
+              zIndex: 2,
+            }}
+          >
             {hasDiscount && (
               <Chip
                 label={
@@ -101,39 +264,109 @@ const ProductModal = memo(({ product, onAddToCart, onClose }: ProductModalProps)
                 }
                 size="small"
                 color="error"
-                sx={{ color: "white", fontWeight: 800, fontSize: "0.65rem" }}
+                sx={{
+                  color: "white",
+                  fontWeight: 800,
+                  fontSize: "0.7rem",
+                  boxShadow: "0 2px 8px rgba(220, 38, 38, 0.4)",
+                  borderRadius: 1.5,
+                }}
               />
             )}
-            {product.bestSeller && <Chip label="Best Seller" size="small" sx={{ bgcolor: theme.palette.warning.main, color: "white", fontWeight: 700, fontSize: "0.65rem" }} />}
-            {product.newArrival && <Chip label="New Arrival" size="small" sx={{ bgcolor: theme.palette.info.main, color: "white", fontWeight: 700, fontSize: "0.65rem" }} />}
-            {product.featured && <Chip label="Featured" size="small" sx={{ bgcolor: theme.palette.primary.main, color: "white", fontWeight: 700, fontSize: "0.65rem" }} />}
-            {product.isSeasonal && <Chip label="Seasonal" size="small" sx={{ bgcolor: theme.palette.success.main, color: "white", fontWeight: 700, fontSize: "0.65rem" }} />}
+            {product.bestSeller && (
+              <BadgeChip label="Best Seller" color={theme.palette.warning.main} />
+            )}
+            {product.newArrival && (
+              <BadgeChip label="New Arrival" color={theme.palette.info.main} />
+            )}
+            {product.featured && (
+              <BadgeChip label="Featured" color={theme.palette.primary.main} />
+            )}
+            {product.isSeasonal && (
+              <BadgeChip label="Seasonal" color={theme.palette.success.main} />
+            )}
           </Box>
+
+          {isOutOfStock && (
+            <Box
+              sx={{
+                position: "absolute",
+                inset: 0,
+                bgcolor: alpha(theme.palette.common.black, 0.55),
+                backdropFilter: "blur(2px)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                zIndex: 3,
+              }}
+            >
+              <Chip
+                label="Out of Stock"
+                sx={{
+                  bgcolor: "#fff",
+                  color: theme.palette.error.main,
+                  fontWeight: 800,
+                  fontSize: "0.85rem",
+                  px: 1,
+                  py: 2,
+                  borderRadius: 2,
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+                }}
+              />
+            </Box>
+          )}
         </Box>
 
-        {/* Gallery thumbnails */}
+        {/* Gallery Thumbnails Strip (Square 1:1) */}
         {allImages.length > 1 && (
-          <Box sx={{ display: "flex", gap: 1, p: 1.5, overflowX: "auto" }}>
+          <Box
+            sx={{
+              display: "flex",
+              gap: 1.25,
+              overflowX: "auto",
+              pb: 0.5,
+              minWidth: 0,
+              "&::-webkit-scrollbar": { height: 4 },
+              "&::-webkit-scrollbar-thumb": {
+                bgcolor: alpha(theme.palette.primary.main, 0.2),
+                borderRadius: 2,
+              },
+            }}
+          >
             {allImages.map((img, i) => (
               <Box
-                key={img.id}
-                onClick={() => { setGalleryIndex(i); setImageError(false); }}
+                key={img.id || i}
+                onClick={() => {
+                  setGalleryIndex(i);
+                  setImageError(false);
+                }}
                 sx={{
-                  width: 56, height: 56, flexShrink: 0,
-                  borderRadius: 1.5, overflow: "hidden",
-                  border: `2px solid ${i === galleryIndex ? theme.palette.primary.main : "transparent"}`,
-                  cursor: "pointer", opacity: i === galleryIndex ? 1 : 0.6,
-                  transition: "all 0.2s",
+                  width: 58,
+                  height: 58,
+                  flexShrink: 0,
+                  borderRadius: 2,
+                  overflow: "hidden",
+                  border: `2px solid ${
+                    i === galleryIndex ? theme.palette.primary.main : alpha(theme.palette.divider, 0.8)
+                  }`,
+                  boxShadow:
+                    i === galleryIndex
+                      ? `0 0 0 2px ${alpha(theme.palette.primary.main, 0.25)}`
+                      : "none",
+                  cursor: "pointer",
+                  opacity: i === galleryIndex ? 1 : 0.6,
+                  transform: i === galleryIndex ? "scale(1.04)" : "scale(1)",
+                  transition: "all 0.2s ease",
+                  "&:hover": { opacity: 1, transform: "scale(1.04)" },
                 }}
               >
-                {/* next/image rejects an empty src, which the previous raw <img> tolerated. */}
                 {img.key && (
                   <Image
                     src={MEDIA_BASE_URL + img.key}
-                    alt={img.alt ?? `Image ${i + 1}`}
-                    width={56}
-                    height={56}
-                    sizes="56px"
+                    alt={img.alt ?? `Thumbnail ${i + 1}`}
+                    width={58}
+                    height={58}
+                    sizes="58px"
                     quality={THUMB_SPEC.quality}
                     style={{ width: "100%", height: "100%", objectFit: "cover" }}
                   />
@@ -144,180 +377,432 @@ const ProductModal = memo(({ product, onAddToCart, onClose }: ProductModalProps)
         )}
       </Box>
 
-      {/* ── Right: content ── */}
-      <Box sx={{ flex: 1, p: { xs: 2.5, md: 3.5 }, overflowY: "auto", maxHeight: { md: 560 } }}>
-
-        {/* Category breadcrumb */}
-        {product.category?.name && (
-          <Typography variant="caption" sx={{ color: theme.palette.text.disabled, letterSpacing: 1, textTransform: "uppercase", fontSize: "0.65rem" }}>
-            {product.category.name}
-          </Typography>
-        )}
-
-        <Typography variant="h4" sx={{ fontFamily: "var(--font-body)", fontWeight: 700, mt: 0.5, mb: 1, lineHeight: 1.2 }}>
-          {product.name}
-        </Typography>
-
-        {/* SKU */}
-        <Typography variant="caption" sx={{ color: theme.palette.text.disabled, display: "block", mb: 1.5 }}>
-          SKU: {product.sku}
-        </Typography>
-
-        {/* Rating */}
-        {Number(product.rating) > 0 && (
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
-            <Rating value={Number(product.rating)} precision={0.1} size="small" readOnly />
-            <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
-              {Number(product.rating).toFixed(1)} ({product.totalReviews} reviews)
-            </Typography>
-          </Box>
-        )}
-
-        {/* Price row */}
-        <Box sx={{ display: "flex", alignItems: "baseline", gap: 1.5, mb: 2 }}>
-          <Typography sx={{ fontFamily: "var(--font-body)", fontSize: "2rem", fontWeight: 800, color: theme.palette.primary.main }}>
-            ₹{discountedPrice.toFixed(2)}
-          </Typography>
-          {hasDiscount && (
-            <Typography sx={{ fontSize: "1.2rem", color: theme.palette.text.disabled, textDecoration: "line-through", fontWeight: 600 }}>
-              ₹{basePrice.toFixed(2)}
-            </Typography>
+      {/* ── Right: Content & Sticky Purchase Bar ── */}
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          minHeight: 0,
+          minWidth: 0,
+          maxHeight: { md: "80vh" },
+        }}
+      >
+        {/* Scrollable Detail Area */}
+        <Box sx={{ flex: 1, overflowY: "auto", p: { xs: 2.5, md: 3.5 }, pb: { xs: 1.5, md: 2 } }}>
+          {product.category?.name && (
+            <Chip
+              label={product.category.name}
+              size="small"
+              sx={{
+                bgcolor: alpha(theme.palette.primary.main, 0.08),
+                color: theme.palette.primary.main,
+                fontWeight: 800,
+                fontSize: "0.68rem",
+                letterSpacing: 0.6,
+                textTransform: "uppercase",
+                borderRadius: 1.5,
+                mb: 1,
+              }}
+            />
           )}
-          <Typography variant="body2" sx={{ color: theme.palette.text.disabled }}>
-            / {product.baseUnit?.toLowerCase()}
+
+          <Typography
+            variant="h4"
+            sx={{
+              fontFamily: "var(--font-display)",
+              fontWeight: 800,
+              fontSize: { xs: "1.4rem", md: "1.75rem" },
+              lineHeight: 1.25,
+              color: "#1E293B",
+              pr: 4,
+            }}
+          >
+            {product.name}
           </Typography>
-          {product.gstRate && (
-            <Typography variant="caption" sx={{ color: theme.palette.text.disabled }}>
-              +{Number(product.gstRate)}% GST
-            </Typography>
-          )}
-        </Box>
 
-        {/* Dietary tags */}
-        {product.dietaryTags?.length > 0 && (
-          <Box sx={{ display: "flex", gap: 0.75, mb: 2, flexWrap: "wrap" }}>
-            {product.dietaryTags.map((tag) => (
-              <Chip
-                key={tag}
-                icon={<LocalOfferIcon sx={{ fontSize: "0.7rem !important" }} />}
-                label={tag.replace(/_/g, " ")}
-                size="small"
-                sx={{ bgcolor: `${theme.palette.success.main}18`, color: theme.palette.success.dark, fontSize: "0.65rem", height: 22 }}
-              />
-            ))}
-          </Box>
-        )}
-
-        {/* Out of stock notice */}
-        {isOutOfStock && (
-          <Chip label="Currently Out of Stock" color="error" sx={{ mb: 2, fontWeight: 600 }} />
-        )}
-
-        {/* Stock quantity nudge */}
-        {product.inStock && product.stockQuantity <= product.lowStockThreshold && product.stockQuantity > 0 && (
-          <Typography variant="caption" sx={{ color: theme.palette.warning.main, fontWeight: 600, display: "block", mb: 1.5 }}>
-            ⚠ Only {product.stockQuantity} left in stock!
-          </Typography>
-        )}
-
-        <Divider sx={{ my: 2 }} />
-
-        {/* ── Tabs: Details / Nutrition / Storage / Reviews ── */}
-        <Tabs value={activeTab} onChange={(_, v) => setActiveTab(v)} sx={{ mb: 2, minHeight: 36 }}
-          TabIndicatorProps={{ style: { height: 2 } }}>
-          <Tab label="Details" sx={{ fontSize: "0.75rem", minHeight: 36, py: 0 }} />
-          <Tab label="Nutrition" sx={{ fontSize: "0.75rem", minHeight: 36, py: 0 }} disabled={!nutritional} />
-          <Tab label="Storage" sx={{ fontSize: "0.75rem", minHeight: 36, py: 0 }} disabled={!product.storageInstructions} />
-          <Tab label="Reviews" sx={{ fontSize: "0.75rem", minHeight: 36, py: 0 }} />
-        </Tabs>
-
-        {/* Tab: Details */}
-        {activeTab === 0 && (
-          <Box>
-            <Typography variant="body2" sx={{ color: theme.palette.text.primary, lineHeight: 1.7, mb: 2 }}>
-              {product.description}
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mt: 1, flexWrap: "wrap" }}>
+            <Typography
+              variant="caption"
+              sx={{
+                color: "text.secondary",
+                bgcolor: alpha(theme.palette.text.secondary, 0.08),
+                px: 1,
+                py: 0.25,
+                borderRadius: 1,
+                fontWeight: 600,
+                fontSize: "0.7rem",
+              }}
+            >
+              SKU: {product.sku}
             </Typography>
 
-            {/* Quick facts grid */}
-            <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1.5 }}>
-              {product.weight && (
-                <FactItem label="Weight" value={`${Number(product.weight)}${product.weightUnit}`} />
-              )}
-              {product.piecesPerPack && (
-                <FactItem label="Pieces/Pack" value={String(product.piecesPerPack)} />
-              )}
-              {product.shelfLife && (
-                <FactItem label="Shelf Life" value={`${product.shelfLife} days`} />
-              )}
-              {product.maxPerOrder && (
-                <FactItem label="Max/Order" value={String(product.maxPerOrder)} />
-              )}
-              {product.preorderEnabled && (
-                <FactItem label="Pre-order" value={`${product.preorderLeadDays ?? 2} day lead`} />
-              )}
-            </Box>
-
-            {/* Allergens */}
-            {allergens && Object.keys(allergens).length > 0 && (
-              <Box sx={{ mt: 2, p: 1.5, bgcolor: `${theme.palette.error.main}10`, borderRadius: 2 }}>
-                <Typography variant="caption" sx={{ fontWeight: 700, color: theme.palette.error.main, display: "block", mb: 0.5 }}>
-                  ⚠ Allergen Information
+            {Number(product.rating) > 0 ? (
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.6 }}>
+                <Rating value={Number(product.rating)} precision={0.1} size="small" readOnly />
+                <Typography variant="caption" sx={{ fontWeight: 700, color: "text.primary" }}>
+                  {Number(product.rating).toFixed(1)}
                 </Typography>
-                <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
-                  {Object.entries(allergens)
-                    .filter(([, present]) => present)
-                    .map(([name]) => name)
-                    .join(", ") || "None declared"}
+                <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                  ({product.totalReviews} {product.totalReviews === 1 ? "review" : "reviews"})
                 </Typography>
               </Box>
+            ) : (
+              <Typography variant="caption" sx={{ color: "text.disabled", fontStyle: "italic" }}>
+                New Product
+              </Typography>
             )}
           </Box>
-        )}
 
-        {/* Tab: Nutrition */}
-        {activeTab === 1 && nutritional && (
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
-            {Object.entries(nutritional).map(([key, val]) => (
-              <Box key={key} sx={{ display: "flex", justifyContent: "space-between", py: 0.5, borderBottom: `1px solid ${theme.palette.divider}` }}>
-                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, textTransform: "capitalize" }}>
-                  {key.replace(/([A-Z])/g, " $1")}
+          {/* Dietary Tags */}
+          {product.dietaryTags && product.dietaryTags.length > 0 && (
+            <Box sx={{ display: "flex", gap: 0.75, mt: 1.5, flexWrap: "wrap" }}>
+              {product.dietaryTags.map((tag) => (
+                <Chip
+                  key={tag}
+                  icon={<LocalOfferIcon sx={{ fontSize: "0.75rem !important" }} />}
+                  label={tag.replace(/_/g, " ")}
+                  size="small"
+                  sx={{
+                    bgcolor: alpha(theme.palette.success.main, 0.08),
+                    color: theme.palette.success.dark,
+                    fontWeight: 700,
+                    fontSize: "0.68rem",
+                    height: 24,
+                    textTransform: "capitalize",
+                    border: `1px solid ${alpha(theme.palette.success.main, 0.2)}`,
+                  }}
+                />
+              ))}
+            </Box>
+          )}
+
+          <Divider sx={{ my: 2 }} />
+
+          {/* Tab Navigation */}
+          <Tabs
+            value={activeTab}
+            onChange={(_, v) => setActiveTab(v)}
+            variant="scrollable"
+            scrollButtons={false}
+            sx={{
+              minHeight: 40,
+              mb: 2.5,
+              borderBottom: `1px solid ${theme.palette.divider}`,
+              "& .MuiTab-root": {
+                fontSize: "0.8rem",
+                fontWeight: 700,
+                minHeight: 40,
+                py: 0.5,
+                px: 2,
+                textTransform: "none",
+                color: "text.secondary",
+                "&.Mui-selected": {
+                  color: theme.palette.primary.main,
+                },
+              },
+            }}
+            slotProps={{ indicator: { style: { height: 3, borderRadius: "3px 3px 0 0" } } }}
+          >
+            <Tab label="Overview" />
+            <Tab label="Nutrition" disabled={!hasNutrition} />
+            <Tab label="Storage & Care" disabled={!product.storageInstructions} />
+            <Tab label={`Reviews (${product.totalReviews || 0})`} />
+          </Tabs>
+
+          {/* Tab 0: Overview */}
+          {activeTab === 0 && (
+            <Box>
+              {product.description && (
+                <Typography
+                  variant="body2"
+                  sx={{ color: "text.secondary", lineHeight: 1.8, mb: 2.5, fontSize: "0.88rem" }}
+                >
+                  {product.description}
                 </Typography>
-                <Typography variant="body2" sx={{ fontWeight: 600 }}>{String(val)}</Typography>
+              )}
+
+              {/* Facts Grid */}
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: { xs: "1fr 1fr", sm: "repeat(3, 1fr)" },
+                  gap: 1.25,
+                }}
+              >
+                {product.weight && (
+                  <FactItem label="Weight" value={`${Number(product.weight)} ${product.weightUnit}`} />
+                )}
+                {product.piecesPerPack && (
+                  <FactItem label="Pieces" value={`${product.piecesPerPack} pcs`} />
+                )}
+                {product.shelfLife && (
+                  <FactItem label="Shelf Life" value={`${product.shelfLife} days`} />
+                )}
+                {product.maxPerOrder && (
+                  <FactItem label="Max/Order" value={`${product.maxPerOrder} units`} />
+                )}
+                {product.preorderEnabled && (
+                  <FactItem label="Pre-order" value={`${product.preorderLeadDays ?? 2} day lead`} />
+                )}
               </Box>
-            ))}
-          </Box>
-        )}
 
-        {/* Tab: Storage */}
-        {activeTab === 2 && product.storageInstructions && (
-          <Typography variant="body2" sx={{ color: theme.palette.text.primary, lineHeight: 1.7 }}>
-            {product.storageInstructions}
-          </Typography>
-        )}
+              {declaredAllergens.length > 0 && (
+                <Box
+                  sx={{
+                    mt: 2.5,
+                    p: 2,
+                    bgcolor: alpha(theme.palette.error.main, 0.05),
+                    borderRadius: 2.5,
+                    border: `1px solid ${alpha(theme.palette.error.main, 0.16)}`,
+                  }}
+                >
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      fontWeight: 800,
+                      color: theme.palette.error.main,
+                      display: "block",
+                      mb: 0.5,
+                      textTransform: "uppercase",
+                      letterSpacing: 0.5,
+                    }}
+                  >
+                    ⚠️ Allergen Information
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{ color: "text.secondary", textTransform: "capitalize", fontSize: "0.8rem" }}
+                  >
+                    Contains: <strong>{declaredAllergens.join(", ")}</strong>
+                  </Typography>
+                </Box>
+              )}
+            </Box>
+          )}
 
-        {/* Tab: Reviews */}
-        {activeTab === 3 && (
-          <ProductReviewsTab productId={product.id} />
-        )}
+          {/* Tab 1: Nutrition */}
+          {activeTab === 1 && hasNutrition && (
+            <Box sx={{ display: "flex", flexDirection: "column" }}>
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  p: 1.25,
+                  bgcolor: alpha(theme.palette.primary.main, 0.05),
+                  borderRadius: 1.5,
+                  mb: 1,
+                }}
+              >
+                <Typography variant="caption" sx={{ fontWeight: 800, color: "primary.main" }}>
+                  NUTRIENT
+                </Typography>
+                <Typography variant="caption" sx={{ fontWeight: 800, color: "primary.main", textAlign: "right" }}>
+                  AMOUNT
+                </Typography>
+              </Box>
+              {Object.entries(nutritional!).map(([key, val]) => (
+                <Box
+                  key={key}
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    py: 1,
+                    px: 1,
+                    borderBottom: `1px solid ${theme.palette.divider}`,
+                  }}
+                >
+                  <Typography
+                    variant="body2"
+                    sx={{ color: "text.secondary", textTransform: "capitalize", fontSize: "0.85rem" }}
+                  >
+                    {key.replace(/([A-Z])/g, " $1")}
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 700, fontSize: "0.85rem" }}>
+                    {String(val)}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
+          )}
 
-        <Divider sx={{ my: 2.5 }} />
+          {/* Tab 2: Storage */}
+          {activeTab === 2 && product.storageInstructions && (
+            <Box
+              sx={{
+                p: 2.5,
+                borderRadius: 2.5,
+                bgcolor: theme.palette.background.accent,
+                border: `1px solid ${theme.palette.divider}`,
+              }}
+            >
+              <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 1, color: "primary.main" }}>
+                Recommended Storage
+              </Typography>
+              <Typography variant="body2" sx={{ color: "text.secondary", lineHeight: 1.8 }}>
+                {product.storageInstructions}
+              </Typography>
+            </Box>
+          )}
 
-        {/* Add to cart */}
+          {/* Tab 3: Reviews */}
+          {activeTab === 3 && <ProductReviewsTab productId={product.id} />}
+        </Box>
+
+        {/* ── Sticky Purchase Bar ── */}
         <Box
-          component="button"
-          onClick={() => !isOutOfStock && onAddToCart(product)}
-          disabled={isOutOfStock}
           sx={{
-            width: "100%", py: 1.5, borderRadius: 2.5,
-            border: "none", cursor: isOutOfStock ? "not-allowed" : "pointer",
-            bgcolor: isOutOfStock ? "action.disabledBackground" : "primary.main",
-            color: "white", fontWeight: 700, fontSize: "0.95rem",
-            fontFamily: "inherit", letterSpacing: 0.5,
-            transition: "all 0.2s ease",
-            "&:hover:not(:disabled)": { filter: "brightness(0.88)", transform: "translateY(-1px)" },
+            borderTop: `1px solid ${theme.palette.divider}`,
+            bgcolor: theme.palette.background.paper,
+            p: { xs: 2, md: 2.5 },
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 2,
+            boxShadow: "0 -4px 16px rgba(0,0,0,0.04)",
           }}
         >
-          {isOutOfStock ? "Out of Stock" : "Add to Cart"}
+          {/* Price breakdown */}
+          <Box sx={{ minWidth: 0 }}>
+            <Box sx={{ display: "flex", alignItems: "baseline", gap: 1 }}>
+              <Typography
+                sx={{
+                  fontFamily: "var(--font-body)",
+                  fontSize: { xs: "1.4rem", md: "1.7rem" },
+                  fontWeight: 800,
+                  color: theme.palette.primary.main,
+                  lineHeight: 1,
+                }}
+              >
+                ₹{discountedPrice.toFixed(2)}
+              </Typography>
+              {hasDiscount && (
+                <Typography
+                  sx={{
+                    fontSize: "0.95rem",
+                    color: "text.disabled",
+                    textDecoration: "line-through",
+                    fontWeight: 600,
+                  }}
+                >
+                  ₹{basePrice.toFixed(2)}
+                </Typography>
+              )}
+            </Box>
+            <Typography variant="caption" sx={{ color: "text.secondary", display: "block", mt: 0.25 }}>
+              per {product.baseUnit?.toLowerCase() || "item"}
+              {product.gstRate ? ` · incl. ${Number(product.gstRate)}% GST` : ""}
+            </Typography>
+            {isLowStock && (
+              <Typography
+                variant="caption"
+                sx={{ color: theme.palette.warning.main, fontWeight: 800, display: "block" }}
+              >
+                🔥 Only {product.stockQuantity} left in stock
+              </Typography>
+            )}
+          </Box>
+
+          {/* Interactive Cart CTA */}
+          <Box sx={{ minWidth: { xs: 150, sm: 200 } }}>
+            {isOutOfStock ? (
+              <Button
+                fullWidth
+                variant="contained"
+                disabled
+                sx={{
+                  py: 1.25,
+                  borderRadius: 2.5,
+                  fontWeight: 700,
+                  fontSize: "0.9rem",
+                  bgcolor: theme.palette.grey[400],
+                }}
+              >
+                Out of Stock
+              </Button>
+            ) : quantity > 0 ? (
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  border: `2px solid ${theme.palette.primary.main}`,
+                  borderRadius: 2.5,
+                  overflow: "hidden",
+                  bgcolor: alpha(theme.palette.primary.main, 0.04),
+                  py: 0.25,
+                  px: 0.5,
+                  opacity: isUpdating ? 0.6 : 1,
+                  transition: "opacity 0.2s ease",
+                }}
+              >
+                <IconButton
+                  size="small"
+                  onClick={(e) => handleUpdateQty(e, -1)}
+                  disabled={isUpdating}
+                  sx={{
+                    color: theme.palette.primary.main,
+                    "&:hover": { bgcolor: alpha(theme.palette.primary.main, 0.12) },
+                  }}
+                >
+                  <RemoveIcon fontSize="small" />
+                </IconButton>
+
+                <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                  <Typography
+                    sx={{
+                      fontWeight: 800,
+                      fontSize: "1rem",
+                      minWidth: 28,
+                      textAlign: "center",
+                      color: theme.palette.primary.main,
+                    }}
+                  >
+                    {isUpdating ? <CircularProgress size={14} /> : quantity}
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 700 }}>
+                    in cart
+                  </Typography>
+                </Box>
+
+                <IconButton
+                  size="small"
+                  onClick={(e) => handleUpdateQty(e, 1)}
+                  disabled={isUpdating}
+                  sx={{
+                    color: theme.palette.primary.main,
+                    "&:hover": { bgcolor: alpha(theme.palette.primary.main, 0.12) },
+                  }}
+                >
+                  <AddIcon fontSize="small" />
+                </IconButton>
+              </Box>
+            ) : (
+              <Button
+                fullWidth
+                variant="contained"
+                size="large"
+                disableElevation
+                startIcon={isAdding ? null : <ShoppingCartOutlinedIcon />}
+                onClick={handleAdd}
+                disabled={isAdding}
+                sx={{
+                  py: 1.25,
+                  borderRadius: 2.5,
+                  fontWeight: 800,
+                  fontSize: "0.92rem",
+                  textTransform: "none",
+                  boxShadow: `0 4px 14px ${alpha(theme.palette.primary.main, 0.35)}`,
+                  transition: "all 0.2s ease",
+                  "&:hover": {
+                    transform: "translateY(-1px)",
+                    boxShadow: `0 6px 20px ${alpha(theme.palette.primary.main, 0.45)}`,
+                  },
+                }}
+              >
+                {isAdding ? <CircularProgress size={22} sx={{ color: "white" }} /> : "Add to Cart"}
+              </Button>
+            )}
+          </Box>
         </Box>
       </Box>
     </Box>
@@ -327,26 +812,57 @@ const ProductModal = memo(({ product, onAddToCart, onClose }: ProductModalProps)
 ProductModal.displayName = "ProductModal";
 export default ProductModal;
 
-// ── FactItem helper ───────────────────────────────────────────────────────────
+// ── BadgeChip Helper ──────────────────────────────────────────────────────────
+function BadgeChip({ label, color }: { label: string; color: string }) {
+  return (
+    <Chip
+      label={label}
+      size="small"
+      sx={{
+        bgcolor: color,
+        color: "white",
+        fontWeight: 800,
+        fontSize: "0.68rem",
+        borderRadius: 1.5,
+        boxShadow: "0 2px 8px rgba(0,0,0,0.18)",
+      }}
+    />
+  );
+}
+
+// ── FactItem Helper ───────────────────────────────────────────────────────────
 function FactItem({ label, value }: { label: string; value: string }) {
   const theme = useTheme();
   return (
-    <Box sx={{ p: 1.25, bgcolor: theme.palette.background.accent, borderRadius: 1.5 }}>
-      <Typography variant="caption" sx={{ color: theme.palette.text.disabled, display: "block", fontSize: "0.6rem", textTransform: "uppercase", letterSpacing: 0.5 }}>
+    <Box
+      sx={{
+        p: 1.5,
+        bgcolor: theme.palette.background.accent,
+        borderRadius: 2,
+        border: `1px solid ${theme.palette.divider}`,
+      }}
+    >
+      <Typography
+        variant="caption"
+        sx={{
+          color: "text.secondary",
+          display: "block",
+          fontSize: "0.62rem",
+          textTransform: "uppercase",
+          letterSpacing: 0.6,
+          fontWeight: 700,
+        }}
+      >
         {label}
       </Typography>
-      <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.25 }}>
+      <Typography variant="body2" sx={{ fontWeight: 800, mt: 0.25, color: "#1E293B" }}>
         {value}
       </Typography>
     </Box>
   );
 }
 
-// ── ProductReviewsTab helper ───────────────────────────────────────────────
-import Skeleton from "@mui/material/Skeleton";
-import Avatar from "@mui/material/Avatar";
-import { useEffect } from "react";
-
+// ── ProductReviewsTab Helper ──────────────────────────────────────────────────
 function ProductReviewsTab({ productId }: { productId: string }) {
   const theme = useTheme();
   const [loading, setLoading] = useState(true);
@@ -369,15 +885,17 @@ function ProductReviewsTab({ productId }: { productId: string }) {
       }
     };
     fetchReviews();
-    return () => { isMounted = false; };
+    return () => {
+      isMounted = false;
+    };
   }, [productId]);
 
   if (loading) {
     return (
       <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-        <Skeleton width="60%" height={24} />
-        <Skeleton height={60} sx={{ borderRadius: 2 }} />
-        <Skeleton height={60} sx={{ borderRadius: 2 }} />
+        <Skeleton width="50%" height={28} />
+        <Skeleton height={70} sx={{ borderRadius: 2 }} />
+        <Skeleton height={70} sx={{ borderRadius: 2 }} />
       </Box>
     );
   }
@@ -387,45 +905,92 @@ function ProductReviewsTab({ productId }: { productId: string }) {
   const avgRating = meta?.averageRating || 0;
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", gap: 2, maxHeight: 220, overflowY: "auto", pr: 0.5 }}>
-      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, pb: 1, borderBottom: `1px solid ${theme.palette.divider}` }}>
-        <Typography variant="h5" sx={{ fontWeight: 800, color: theme.palette.primary.main }}>
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: 1.5,
+          pb: 1.5,
+          borderBottom: `1px solid ${theme.palette.divider}`,
+        }}
+      >
+        <Typography variant="h4" sx={{ fontWeight: 800, color: theme.palette.primary.main }}>
           {avgRating > 0 ? avgRating.toFixed(1) : "N/A"}
         </Typography>
         <Box>
           <Rating value={avgRating} readOnly precision={0.5} size="small" />
-          <Typography variant="caption" sx={{ color: theme.palette.text.secondary, display: "block" }}>
-            {meta?.totalItems || 0} customer {meta?.totalItems === 1 ? "review" : "reviews"}
+          <Typography variant="caption" sx={{ color: "text.secondary", display: "block", fontWeight: 600 }}>
+            Based on {meta?.totalItems || 0} verified customer {meta?.totalItems === 1 ? "review" : "reviews"}
           </Typography>
         </Box>
       </Box>
 
       {reviews.length === 0 ? (
-        <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontStyle: "italic", py: 2, textAlign: "center" }}>
+        <Typography
+          variant="body2"
+          sx={{ color: "text.secondary", fontStyle: "italic", py: 3, textAlign: "center" }}
+        >
           No customer reviews yet for this product.
         </Typography>
       ) : (
         reviews.map((rev: any) => {
           const user = rev.customer?.user;
-          const name = user ? `${user.firstName} ${user.lastName}`.trim() : "Anonymous Customer";
+          const name = user ? `${user.firstName} ${user.lastName}`.trim() : "Verified Customer";
           return (
-            <Box key={rev.id} sx={{ p: 1.5, borderRadius: 2, bgcolor: theme.palette.background.accent }}>
-              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 0.5 }}>
+            <Box
+              key={rev.id}
+              sx={{
+                p: 2,
+                borderRadius: 2.5,
+                bgcolor: theme.palette.background.accent,
+                border: `1px solid ${alpha(theme.palette.divider, 0.6)}`,
+              }}
+            >
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  mb: 0.75,
+                }}
+              >
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  <Avatar sx={{ width: 24, height: 24, fontSize: "0.75rem", bgcolor: theme.palette.primary.main }}>
+                  <Avatar
+                    sx={{
+                      width: 28,
+                      height: 28,
+                      fontSize: "0.8rem",
+                      fontWeight: 700,
+                      bgcolor: theme.palette.primary.main,
+                    }}
+                  >
                     {name.charAt(0)}
                   </Avatar>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: "0.8rem" }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: "0.85rem" }}>
                     {name}
                   </Typography>
                   {rev.isVerified && (
-                    <Chip label="✓ Verified" size="small" sx={{ height: 16, fontSize: "0.55rem", bgcolor: "#DCFCE7", color: "#15803D", fontWeight: 700 }} />
+                    <Chip
+                      label="✓ Verified Buyer"
+                      size="small"
+                      sx={{
+                        height: 18,
+                        fontSize: "0.6rem",
+                        bgcolor: "#DCFCE7",
+                        color: "#15803D",
+                        fontWeight: 800,
+                      }}
+                    />
                   )}
                 </Box>
-                <Rating value={rev.rating} readOnly size="small" sx={{ fontSize: "0.85rem" }} />
+                <Rating value={rev.rating} readOnly size="small" sx={{ fontSize: "0.9rem" }} />
               </Box>
               {rev.comment && (
-                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontSize: "0.8rem", mt: 0.5 }}>
+                <Typography
+                  variant="body2"
+                  sx={{ color: "text.secondary", fontSize: "0.85rem", mt: 0.5, lineHeight: 1.6 }}
+                >
                   {rev.comment}
                 </Typography>
               )}

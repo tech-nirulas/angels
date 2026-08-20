@@ -2,6 +2,7 @@
 "use client";
 
 import { useGetOrdersPaginatedQuery } from "@/features/order/orderApiService";
+import { getOrderStatusConfig } from "@/utils/orderStatus";
 import { useAppSelector } from "@/lib/store";
 import { MEDIA_BASE_URL } from "@/utils/constants";
 import ReceiptLongOutlinedIcon from "@mui/icons-material/ReceiptLongOutlined";
@@ -19,21 +20,9 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-// ── Status config ─────────────────────────────────────────────────────────────
-const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-  pending: { label: "Pending", color: "#B45309", bg: "#FEF3C7" },
-  confirmed: { label: "Confirmed", color: "#1D4ED8", bg: "#DBEAFE" },
-  processing: { label: "Processing", color: "#6D28D9", bg: "#EDE9FE" },
-  ready: { label: "Ready", color: "#047857", bg: "#D1FAE5" },
-  out_for_delivery: { label: "Out for Delivery", color: "#0369A1", bg: "#E0F2FE" },
-  delivered: { label: "Delivered", color: "#065F46", bg: "#D1FAE5" },
-  cancelled: { label: "Cancelled", color: "#991B1B", bg: "#FEE2E2" },
-  payment_failed: { label: "Payment Failed", color: "#991B1B", bg: "#FEE2E2" },
-  refunded: { label: "Refunded", color: "#6B7280", bg: "#F3F4F6" },
-};
 
 function StatusChip({ status }: { status: string }) {
-  const cfg = STATUS_CONFIG[status] ?? { label: status, color: "#374151", bg: "#F3F4F6" };
+  const cfg = getOrderStatusConfig(status);
   return (
     <Chip
       label={cfg.label}

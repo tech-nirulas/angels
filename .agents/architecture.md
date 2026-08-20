@@ -57,6 +57,18 @@ angels/
 
 ---
 
+### Product Modal (`components/ui/ProductModal.tsx`)
+
+- Opened from `/menu`, `/cakes`, `/cakes/[slug]`, `MenuSection` and `FeaturedSection` via `useModal().openModal(...)`.
+- **`onAddToCart` is event-first — `(e: React.MouseEvent, product: Product)`** — deliberately identical to `ProductCard`'s prop, because every page hands the same `handleAddToCart` to both and those handlers call `e.stopPropagation()`. A single-argument signature here silently breaks Add to Cart at every call site.
+- Callers pass **no `title`** (the modal renders the product name itself) and `disableContentPadding: true` so the image panel runs edge-to-edge. `ModalProvider` renders its title bar only when a title is supplied, and floats a close button over the content otherwise.
+- The image is locked to 1:1 with an aspect-ratio box, matching `IMAGE_SLOTS.productGallery`.
+- The layout grid uses `minmax(0, 1fr)` tracks with `minWidth: 0` on both columns — a bare `1fr` cannot shrink below the thumbnail strip's min-content width and overflows narrow dialogs.
+
+### Order Status Vocabulary
+
+- `utils/orderStatus.ts` mirrors the Prisma `OrderStatus` enum and backs both `/orders` and `/orders/[id]`. `aimk_admin/utils/orderStatus.ts` is a byte-identical copy — **change both together**.
+
 ## 3. Cart Sync & Checkout Flow
 
 ```mermaid

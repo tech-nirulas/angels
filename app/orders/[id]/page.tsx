@@ -44,23 +44,13 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
+import { getOrderStatusConfig } from "@/utils/orderStatus";
 
-// ── Re-use status config ──────────────────────────────────────────────────────
-const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-  pending: { label: "Pending", color: "#B45309", bg: "#FEF3C7" },
-  confirmed: { label: "Confirmed", color: "#1D4ED8", bg: "#DBEAFE" },
-  processing: { label: "Processing", color: "#6D28D9", bg: "#EDE9FE" },
-  ready: { label: "Ready", color: "#047857", bg: "#D1FAE5" },
-  out_for_delivery: { label: "Out for Delivery", color: "#0369A1", bg: "#E0F2FE" },
-  delivered: { label: "Delivered", color: "#065F46", bg: "#D1FAE5" },
-  cancelled: { label: "Cancelled", color: "#991B1B", bg: "#FEE2E2" },
-  payment_failed: { label: "Payment Failed", color: "#991B1B", bg: "#FEE2E2" },
-  refunded: { label: "Refunded", color: "#6B7280", bg: "#F3F4F6" },
-};
 
 // Order progress steps
 const ORDER_STEPS = [
-  { key: "confirmed", label: "Order Confirmed" },
+  { key: "pending", label: "Order Placed" },
+  { key: "confirmed", label: "Confirmed" },
   { key: "processing", label: "Being Prepared" },
   { key: "ready", label: "Ready" },
   { key: "out_for_delivery", label: "Out for Delivery" },
@@ -340,7 +330,7 @@ function OrderProgress({ status }: { status: string }) {
       <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, p: 2, borderRadius: 2, bgcolor: "#FEE2E2" }}>
         <CancelOutlinedIcon sx={{ color: "#991B1B" }} />
         <Typography variant="body2" sx={{ fontWeight: 600, color: "#991B1B" }}>
-          {STATUS_CONFIG[status]?.label ?? status}
+          {getOrderStatusConfig(status).label}
         </Typography>
       </Box>
     );
@@ -436,7 +426,7 @@ export default function OrderDetailPage() {
   };
 
   const canCancel = order && ["pending", "confirmed"].includes(order.status);
-  const canReview = order && ["delivered", "completed"].includes(order.status);
+  const canReview = order && order.status === "delivered";
   const canComplain = order && !["pending", "payment_failed"].includes(order.status);
 
   const payment = order?.payments?.[0];
@@ -458,7 +448,7 @@ export default function OrderDetailPage() {
     );
   }
 
-  const cfg = STATUS_CONFIG[order.status] ?? { label: order.status, color: "#374151", bg: "#F3F4F6" };
+  const cfg = getOrderStatusConfig(order.status);
 
   return (
     <>

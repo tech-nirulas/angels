@@ -1,5 +1,41 @@
 # Angels Consumer Web App — Development Log
 
+## [2026-08-20] Product Info Modal Redesign, Reactive Quantity Controls & Order Tracking Progress
+
+- **Product Modal (`components/ui/ProductModal.tsx`)**:
+  - Redesigned with a strict 1:1 square aspect ratio image container, square thumbnail gallery strip (`58px × 58px`), modern badge cluster with frosted blur backdrop, display typography, allergen warnings, and four detailed tabs (Overview, Nutrition Facts, Storage & Care, Customer Reviews with verified buyer badges).
+  - Built self-contained, reactive Add to Cart & quantity increment/decrement controls (`-` `[qty]` `+`) using RTK Query `useAddToCartMutation`, `useGetCartQuery`, `useUpdateCartQuantityMutation`, `useRemoveFromCartMutation`, and local guest cart synchronization.
+- **Consumer Order Tracking (`app/orders/[id]/page.tsx`)**:
+  - Aligned `ORDER_STEPS` to include `pending` as the first milestone ("Order Placed"), resolving the 0% empty bar issue for newly placed orders.
+- **`FeaturedSection.tsx`**:
+  - Converted thunk dispatches to RTK Query `useAddToCartMutation` to ensure cart caches and badge counts remain perfectly synchronized across the entire site.
+
+## [2026-08-20] Product Modal Fix & Redesign, Shared Order Status Config
+
+**Add to Cart in the product modal never worked**
+
+`ProductModal` declared `onAddToCart: (product) => void` and called `onAddToCart(product)`, but every page passes the same `handleAddToCart(e, product)` it gives `ProductCard` — event first. So `e` was the product object and `e.stopPropagation()` threw a `TypeError` on the first line, killing the click silently. This affected `/menu`, `/cakes`, `/cakes/[slug]` and `MenuSection`.
+
+`FeaturedSection` was broken differently: its modal passed an inline `(p) => dispatch(addToCart(toCartItem(product)))` where **`addToCart` was never imported** (`TS2304: Cannot find name 'addToCart'`), and it bypassed the auth/guest split its own `handleAddToCart` implements.
+
+- `ProductModal`'s prop is now `(e: React.MouseEvent, product: Product)`, matching `ProductCard`, and it invokes `onAddToCart(e, product)`.
+- `FeaturedSection` now passes its real `handleAddToCart`, so the modal and the cards share one path (server cart when logged in, guest cart otherwise, then open the cart).
+
+**Modal redesign**
+
+- The product image is now locked to **1:1** via an aspect-ratio box. The image spec for this slot (`IMAGE_SLOTS.productGallery`) has always been `1:1`, but the old flex layout stretched it to fill the panel height.
+- Removed the duplicated title: the shell rendered `DialogTitle` with the product name *and* the modal rendered it again as an `h4`. `ModalProvider` now renders the title bar only when a title is given, and floats a close button over the content otherwise. Added an opt-in `disableContentPadding` so the image panel can run edge-to-edge.
+- Price and Add to Cart moved into a sticky footer bar so they stay reachable while the details/nutrition/reviews area scrolls, instead of sitting below the fold.
+- Fixed a mobile overflow: the grid track used `1fr` (i.e. `minmax(auto, 1fr)`), so it could not shrink below the min-content width of the fixed-width thumbnail strip — the 380px image overflowed a 311px dialog. Now `minmax(0, 1fr)` with `minWidth: 0` on both columns.
+- Migrated the deprecated `TabIndicatorProps` to `slotProps={{ indicator }}` for MUI v9.
+
+**Order statuses**
+
+- Added `utils/orderStatus.ts` and removed the two duplicated inline `STATUS_CONFIG` maps in `app/orders/page.tsx` and `app/orders/[id]/page.tsx`. It is a byte-identical copy of `aimk_admin/utils/orderStatus.ts`; the storefront's list was already correct, the admin's was not. **Change both together.**
+- Dropped a dead `"completed"` status check in the review gate — not a value in the Prisma enum.
+
+**Verified in the browser**: adding to cart from the modal moved the badge 0→1 on `/menu` and 1→2 on the home page with no page errors; the image measures exactly 380×380 at 1280px and 271×271 at 375px, with no horizontal overflow at either size.
+
 ## [2026-08-20] Active Product Filtering on Menu, Featured, and Cakes Pages
 
 - Updated `productsEndpoints.ts` (`features/products/productsEndpoints.ts`):

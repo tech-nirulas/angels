@@ -3,8 +3,8 @@
 
 import ProductCard from "@/components/ui/ProductCard";
 import SectionLabel from '@/components/ui/SectionLabel';
+import { useAddToCartMutation } from '@/features/cart/cartApiService';
 import { addToGuestCart, openCart } from '@/features/cart/cartSlice';
-import { addToServerCart } from '@/features/cart/cartThunk';
 import { useGetFeaturedProductsQuery } from '@/features/products/productApiService';
 import getDecryptedToken from '@/helpers/decryptToken.helper';
 import { Product } from '@/interfaces/product.interface';
@@ -277,6 +277,7 @@ export default function FeaturedSection() {
 
   // Fetch featured products
   const { data: featuredData, isLoading, error } = useGetFeaturedProductsQuery({ isActive: true });
+  const [addToCartMutation] = useAddToCartMutation();
 
   const featuredProducts = useMemo(() => {
     if (!featuredData?.data) return [];
@@ -303,8 +304,8 @@ export default function FeaturedSection() {
       };
 
       if (token) {
-        // Authenticated user - add to server cart
-        dispatch(addToServerCart({ productId: product.id, quantity: 1 }));
+        // Authenticated user - add to server cart with RTK Query
+        await addToCartMutation({ productId: product.id, quantity: 1 });
       } else {
         // Guest user - add to local storage
         dispatch(addToGuestCart(cartItem));
@@ -312,25 +313,26 @@ export default function FeaturedSection() {
 
       dispatch(openCart());
     },
-    [dispatch]
+    [dispatch, addToCartMutation]
   );
 
   const handleProductClick = useCallback(
     (product: Product) => {
-      const imageUrl = getImageUrl(product);
       openModal({
-        title: product.name,
+        // No title: the modal renders the product name itself, and an empty
+        // DialogTitle bar would just duplicate it above a full-bleed image.
         maxWidth: "md",
+        disableContentPadding: true,
         content: (
           <ProductModalDynamic
             product={product}
-            onAddToCart={(p) => dispatch(addToCart(toCartItem(product)))}
+            onAddToCart={handleAddToCart}
             onClose={closeModal}
           />
         ),
       });
     },
-    [openModal, closeModal, dispatch]
+    [openModal, closeModal, handleAddToCart]
   );
 
   if (error) {

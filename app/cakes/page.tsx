@@ -133,8 +133,10 @@ export default function CakesPage() {
   const handleProductClick = useCallback(
     (product: Product) => {
       openModal({
-        title: product.name,
+        // No title: the modal renders the product name itself, and an empty
+        // DialogTitle bar would just duplicate it above a full-bleed image.
         maxWidth: "md",
+        disableContentPadding: true,
         content: (
           <ProductModalDynamic
             product={product}
