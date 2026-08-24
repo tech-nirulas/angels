@@ -140,21 +140,6 @@ export default function FloatingCustomizeCTA() {
             >
               Customize Now →
             </Button>
-
-            <IconButton
-              size="small"
-              onClick={() => setDismissed(true)}
-              sx={{
-                color: "rgba(255, 255, 255, 0.5)",
-                p: 0.5,
-                "&:hover": {
-                  color: "#FFFFFF",
-                  backgroundColor: "rgba(255, 255, 255, 0.1)",
-                },
-              }}
-            >
-              <CloseIcon sx={{ fontSize: 16 }} />
-            </IconButton>
           </Box>
         </Box>
       )}

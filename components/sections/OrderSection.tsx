@@ -1,35 +1,47 @@
 "use client";
 
-import { useState } from "react";
 import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
 import Grid from "@mui/material/Grid";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
-import TextField from "@mui/material/TextField";
-import MenuItem from "@mui/material/MenuItem";
-import Alert from "@mui/material/Alert";
-import { useTheme } from "@mui/material/styles";
+import CakeOutlinedIcon from "@mui/icons-material/CakeOutlined";
+import WhatsAppIcon from "@mui/icons-material/WhatsApp";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import { alpha, useTheme } from "@mui/material/styles";
 import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
 import SectionLabel from "@/components/ui/SectionLabel";
 
-const CAKE_TYPES = [
-  "Wedding Cake",
-  "Birthday Cake",
-  "Anniversary Cake",
-  "Corporate Event",
-  "Custom Design",
-  "Other",
+// Official WhatsApp contact number, same one used on the /customize form.
+const WHATSAPP_NUMBER = "919478370346";
+
+const INFO_ITEMS = [
+  {
+    icon: "📅",
+    title: "Advance Booking",
+    text: "Custom cakes need at least 48 hours notice. Tiered wedding cakes need 1–2 weeks.",
+  },
+  {
+    icon: "🎨",
+    title: "Share Your Vision",
+    text: "Reference photos, flavour picks, theme, guest count — our bakers take it from there.",
+  },
+  {
+    icon: "🚚",
+    title: "Delivery & Pickup",
+    text: "We deliver across Delhi NCR, or you can pick up from our Defence Colony outlet.",
+  },
 ];
 
+/**
+ * A compact teaser for the homepage, not a second form. The full custom-cake
+ * request flow (image uploads, delivery address, WhatsApp handoff) already
+ * lives at /customize — this section's only job is to point people there.
+ */
 export default function OrderSection() {
   const theme = useTheme();
-  const [submitted, setSubmitted] = useState(false);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitted(true);
-  };
+  const router = useRouter();
 
   return (
     <Box
@@ -58,35 +70,18 @@ export default function OrderSection() {
       />
 
       <Container maxWidth="lg">
-        <Grid container spacing={{ xs: 6, md: 10 }} alignItems="flex-start">
+        <Grid container spacing={{ xs: 6, md: 10 }} component="div" sx={{ alignItems: "center" }}>
           {/* Left: Info */}
-          <Grid size={{ xs: 12, md: 5 }}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <SectionLabel
-              label="Place Your Order"
+              label="Custom Cakes"
               title="Let's Create Something Unforgettable"
               subtitle="Every custom cake begins with a conversation. Tell us your vision — we'll handle the rest."
               center={false}
             />
 
-            {/* Info boxes */}
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              {[
-                {
-                  icon: "📅",
-                  title: "Advance Booking",
-                  text: "Custom cakes require 2–3 weeks notice. Wedding cakes 3–6 months.",
-                },
-                {
-                  icon: "🎨",
-                  title: "Design Consultation",
-                  text: "Complimentary 30-minute tasting and design session for orders over €200.",
-                },
-                {
-                  icon: "🚚",
-                  title: "Delivery",
-                  text: "We deliver across Paris and Île-de-France. White-glove setup available.",
-                },
-              ].map((item) => (
+              {INFO_ITEMS.map((item) => (
                 <motion.div
                   key={item.title}
                   initial={{ opacity: 0, x: -20 }}
@@ -128,8 +123,8 @@ export default function OrderSection() {
             </Box>
           </Grid>
 
-          {/* Right: Form */}
-          <Grid size={{ xs: 12, md: 7 }}>
+          {/* Right: CTA — the one real custom-cake form lives at /customize */}
+          <Grid size={{ xs: 12, md: 6 }}>
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -137,115 +132,79 @@ export default function OrderSection() {
               transition={{ duration: 0.7 }}
             >
               <Box
-                component="form"
-                onSubmit={handleSubmit}
                 sx={{
-                  p: { xs: 3, md: 5 },
+                  p: { xs: 4, md: 5 },
                   borderRadius: 4,
+                  textAlign: "center",
                   background: theme.palette.background.paper,
                   boxShadow: "var(--shadow-medium)",
+                  border: `1px solid ${alpha(theme.palette.primary.main, 0.12)}`,
                 }}
               >
+                <Box
+                  sx={{
+                    width: 72,
+                    height: 72,
+                    borderRadius: "50%",
+                    mx: "auto",
+                    mb: 3,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark ?? theme.palette.primary.main})`,
+                    boxShadow: `0 8px 24px ${alpha(theme.palette.primary.main, 0.35)}`,
+                  }}
+                >
+                  <CakeOutlinedIcon sx={{ fontSize: 34, color: "#fff" }} />
+                </Box>
+
                 <Typography
                   variant="h5"
-                  sx={{ fontFamily: "var(--font-display)", mb: 0.5 }}
+                  sx={{ fontFamily: "var(--font-display)", mb: 1.5 }}
                 >
-                  Enquire About a Custom Cake
+                  Design Your Dream Cake
                 </Typography>
                 <Typography
                   variant="body2"
-                  sx={{ color: theme.palette.text.secondary, mb: 4 }}
+                  sx={{ color: theme.palette.text.secondary, mb: 4, maxWidth: 420, mx: "auto", lineHeight: 1.8 }}
                 >
-                  We respond within 24 hours on business days.
+                  From tiered wedding cakes to birthday surprises — upload your inspiration,
+                  pick your flavours, and our bakers will bring it to life.
                 </Typography>
 
-                {submitted ? (
-                  <Alert
-                    severity="success"
+                <Box sx={{ display: "flex", flexDirection: { xs: "column", sm: "row" }, gap: 1.5, justifyContent: "center" }}>
+                  <Button
+                    variant="contained"
+                    size="large"
+                    endIcon={<ArrowForwardIcon />}
+                    onClick={() => router.push("/customize")}
+                    sx={{ py: 1.5, px: 4 }}
+                  >
+                    Start Customizing
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    size="large"
+                    startIcon={<WhatsAppIcon />}
+                    onClick={() =>
+                      window.open(
+                        `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
+                          "Hello Angels in My Kitchen team, I would like to discuss a custom cake!"
+                        )}`,
+                        "_blank"
+                      )
+                    }
                     sx={{
-                      borderRadius: 2,
-                      background: `${theme.palette.accent?.sage ?? "#8BAF85"}20`,
-                      color: theme.palette.text.primary,
-                      "& .MuiAlert-icon": { color: theme.palette.accent?.sage ?? "#8BAF85" },
+                      py: 1.5,
+                      px: 3,
+                      borderColor: "#25D366",
+                      color: "#1F9E52",
+                      "&:hover": { borderColor: "#1F9E52", background: "#25D36612" },
                     }}
                   >
-                    Thank you! We've received your enquiry and will be in touch shortly.
-                  </Alert>
-                ) : (
-                  <Grid container spacing={2.5}>
-                    {[
-                      { label: "First Name", name: "firstName", xs: 6 },
-                      { label: "Last Name", name: "lastName", xs: 6 },
-                      { label: "Email Address", name: "email", xs: 12, type: "email" },
-                      { label: "Phone", name: "phone", xs: 12, type: "tel" },
-                    ].map((f) => (
-                      <Grid size={{ xs: f.xs }} key={f.name}>
-                        <TextField
-                          label={f.label}
-                          name={f.name}
-                          type={f.type || "text"}
-                          fullWidth
-                          size="small"
-                          required
-                          sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
-                        />
-                      </Grid>
-                    ))}
-
-                    <Grid size={{ xs: 12, sm: 6 }}>
-                      <TextField
-                        select
-                        label="Occasion"
-                        defaultValue=""
-                        fullWidth
-                        size="small"
-                        required
-                        sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
-                      >
-                        {CAKE_TYPES.map((t) => (
-                          <MenuItem key={t} value={t}>
-                            {t}
-                          </MenuItem>
-                        ))}
-                      </TextField>
-                    </Grid>
-
-                    <Grid size={{ xs: 12, sm: 6 }}>
-                      <TextField
-                        label="Date of Event"
-                        type="date"
-                        fullWidth
-                        size="small"
-                        required
-                        InputLabelProps={{ shrink: true }}
-                        sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
-                      />
-                    </Grid>
-
-                    <Grid size={{ xs: 12 }}>
-                      <TextField
-                        label="Tell us about your vision"
-                        multiline
-                        rows={4}
-                        fullWidth
-                        placeholder="Flavour preferences, design ideas, theme, number of guests..."
-                        sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
-                      />
-                    </Grid>
-
-                    <Grid size={{ xs: 12 }}>
-                      <Button
-                        type="submit"
-                        variant="contained"
-                        size="large"
-                        fullWidth
-                        sx={{ py: 1.5 }}
-                      >
-                        Send Enquiry
-                      </Button>
-                    </Grid>
-                  </Grid>
-                )}
+                    Chat on WhatsApp
+                  </Button>
+                </Box>
               </Box>
             </motion.div>
           </Grid>

@@ -270,7 +270,7 @@ export default function CategoriesSection() {
     return categoriesData.data
       .filter(category => category?.isActive !== false) // Only active categories
       .sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0))
-      .slice(0, 6); // Limit to 6 for performance
+      .slice(0, 5); // Limit to 5 for performance
   }, [categoriesData]);
 
   // Error handling with toast
@@ -306,13 +306,13 @@ export default function CategoriesSection() {
       <Box component="section" sx={{ py: { xs: 5, md: 7 }, background: theme.palette.background.accent }}>
         <Container maxWidth="lg">
           <SectionLabel
-            label="Explore Our World"
-            title="Baked With Love"
-            subtitle="From classic favourites to seasonal specials, discover the perfect treat for every moment."
+            label="Explore the world of Angel's"
+            title="Made to be desired"
+            subtitle="An irresistible collection of handcrafted treats, made to delight."
           />
           {/* Mirror the scroll row geometry exactly so skeletons match real items */}
           <Box sx={{ display: 'flex', justifyContent: "center", alignItems: "center", gap: 3, overflowX: 'auto', pb: 1, px: 0.5, scrollbarWidth: 'none', '&::-webkit-scrollbar': { display: 'none' } }}>
-            {Array.from({ length: 6 }).map((_, i) => (
+            {Array.from({ length: 5 }).map((_, i) => (
               <CircularCategorySkeleton key={i} />
             ))}
           </Box>
@@ -333,9 +333,9 @@ export default function CategoriesSection() {
       >
         <Container maxWidth="lg">
           <SectionLabel
-            label="Explore Our World"
-            title="Baked With Love"
-            subtitle="From classic favourites to seasonal specials, discover the perfect treat for every moment."
+            label="Explore the world of Angel's"
+            title="Made to be desired"
+            subtitle="An irresistible collection of handcrafted treats, made to delight."
           />
           <EmptyState />
         </Container>
@@ -377,9 +377,9 @@ export default function CategoriesSection() {
           transition={{ duration: 0.5 }}
         >
           <SectionLabel
-            label="Explore Our World"
-            title="Baked With Love"
-            subtitle="From classic favourites to seasonal specials, discover the perfect treat for every moment."
+            label="Explore the world of Angel's"
+            title="Made to be desired"
+            subtitle="An irresistible collection of handcrafted treats, made to delight."
           />
         </motion.div>
 

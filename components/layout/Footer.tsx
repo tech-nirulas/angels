@@ -4,25 +4,51 @@ import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
 import Grid from "@mui/material/Grid";
 import Typography from "@mui/material/Typography";
-import Button from "@mui/material/Button";
 import IconButton from "@mui/material/IconButton";
 import Divider from "@mui/material/Divider";
-import TextField from "@mui/material/TextField";
 import { useTheme } from "@mui/material/styles";
 import { motion } from "framer-motion";
 import InstagramIcon from "@mui/icons-material/Instagram";
 import FacebookIcon from "@mui/icons-material/Facebook";
-import PinterestIcon from "@mui/icons-material/Pinterest";
+import WhatsAppIcon from "@mui/icons-material/WhatsApp";
+import LocationOnOutlinedIcon from "@mui/icons-material/LocationOnOutlined";
+import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
+import CallOutlinedIcon from "@mui/icons-material/CallOutlined";
 import Image from "next/image";
+import Link from "next/link";
 
+// Angels in My Kitchen Foods Pvt Ltd — verified against the legal entity record
+// (GET /legal-entity) rather than invented. Keep in sync if the registered
+// office ever changes.
+const CONTACT = {
+  address: "E-42, Defence Colony, Main Market, New Delhi 110024",
+  email: "contact@angelsinmykitchen.com",
+  phone: "+91 11 4165 5000",
+  phoneHref: "tel:+911141655000",
+  whatsappNumber: "919478370346", // same number used on the /customize form
+};
+
+// Every link here is a real route on this site — no placeholder pages.
 const FOOTER_LINKS = {
-  Bakery: ["Our Story", "Menu", "Seasonal Specials", "Gift Cards"],
-  "Custom Orders": ["Wedding Cakes", "Birthday Cakes", "Corporate Events", "Classes"],
-  Visit: ["Hours & Location", "Catering", "Wholesale", "Careers"],
+  Shop: [
+    { label: "Home", href: "/" },
+    { label: "Menu", href: "/menu" },
+    { label: "Cakes", href: "/cakes" },
+    { label: "Customize a Cake", href: "/customize" },
+  ],
+  "My Account": [
+    { label: "My Orders", href: "/orders" },
+    { label: "My Addresses", href: "/addresses" },
+    { label: "My Profile", href: "/profile" },
+    { label: "Cart", href: "/cart" },
+  ],
 };
 
 export default function Footer() {
   const theme = useTheme();
+  const whatsappHref = `https://wa.me/${CONTACT.whatsappNumber}?text=${encodeURIComponent(
+    "Hello Angels in My Kitchen team, I have a question!"
+  )}`;
 
   return (
     <Box
@@ -101,24 +127,58 @@ export default function Footer() {
 
               {/* Social icons */}
               <Box sx={{ display: "flex", gap: 1 }}>
-                {[InstagramIcon, FacebookIcon, PinterestIcon].map((Icon, i) => (
-                  <IconButton
-                    key={i}
-                    sx={{
-                      color: `${theme.palette.primary.contrastText}60`,
-                      border: `1px solid rgba(200,149,108,0.2)`,
-                      borderRadius: 2,
-                      "&:hover": {
-                        color: theme.palette.primary.main,
-                        borderColor: theme.palette.primary.main,
-                        background: `${theme.palette.primary.main}15`,
-                      },
-                      transition: "all 0.25s",
-                    }}
-                  >
-                    <Icon fontSize="small" />
-                  </IconButton>
-                ))}
+                <IconButton
+                  aria-label="Instagram"
+                  sx={{
+                    color: `${theme.palette.primary.contrastText}60`,
+                    border: `1px solid rgba(200,149,108,0.2)`,
+                    borderRadius: 2,
+                    "&:hover": {
+                      color: theme.palette.primary.main,
+                      borderColor: theme.palette.primary.main,
+                      background: `${theme.palette.primary.main}15`,
+                    },
+                    transition: "all 0.25s",
+                  }}
+                >
+                  <InstagramIcon fontSize="small" />
+                </IconButton>
+                <IconButton
+                  aria-label="Facebook"
+                  sx={{
+                    color: `${theme.palette.primary.contrastText}60`,
+                    border: `1px solid rgba(200,149,108,0.2)`,
+                    borderRadius: 2,
+                    "&:hover": {
+                      color: theme.palette.primary.main,
+                      borderColor: theme.palette.primary.main,
+                      background: `${theme.palette.primary.main}15`,
+                    },
+                    transition: "all 0.25s",
+                  }}
+                >
+                  <FacebookIcon fontSize="small" />
+                </IconButton>
+                <IconButton
+                  aria-label="Chat on WhatsApp"
+                  component="a"
+                  href={whatsappHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  sx={{
+                    color: `${theme.palette.primary.contrastText}60`,
+                    border: `1px solid rgba(200,149,108,0.2)`,
+                    borderRadius: 2,
+                    "&:hover": {
+                      color: "#25D366",
+                      borderColor: "#25D366",
+                      background: "#25D36615",
+                    },
+                    transition: "all 0.25s",
+                  }}
+                >
+                  <WhatsAppIcon fontSize="small" />
+                </IconButton>
               </Box>
             </motion.div>
           </Grid>
@@ -141,9 +201,9 @@ export default function Footer() {
                 <Box sx={{ display: "flex", flexDirection: "column", gap: 1.2 }}>
                   {links.map((link) => (
                     <Typography
-                      key={link}
-                      component="a"
-                      href="#"
+                      key={link.label}
+                      component={Link}
+                      href={link.href}
                       variant="body2"
                       sx={{
                         color: `${theme.palette.primary.contrastText}60`,
@@ -152,7 +212,7 @@ export default function Footer() {
                         "&:hover": { color: theme.palette.primary.light },
                       }}
                     >
-                      {link}
+                      {link.label}
                     </Typography>
                   ))}
                 </Box>
@@ -160,7 +220,7 @@ export default function Footer() {
             </Grid>
           ))}
 
-          {/* Newsletter */}
+          {/* Get in touch */}
           <Grid size={{ xs: 12, md: 4 }}>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -170,52 +230,80 @@ export default function Footer() {
             >
               <Typography
                 variant="subtitle1"
-                sx={{ color: theme.palette.primary.main, mb: 1 }}
+                sx={{ color: theme.palette.primary.main, mb: 2.5 }}
               >
-                Stay Sweet
+                Get in Touch
               </Typography>
-              <Typography
-                variant="body2"
-                sx={{ color: `${theme.palette.primary.contrastText}60`, mb: 3, lineHeight: 1.8 }}
-              >
-                Get seasonal menus, new arrivals, and exclusive recipes delivered to your inbox.
-              </Typography>
-              <Box sx={{ display: "flex", gap: 1 }}>
-                <TextField
-                  placeholder="your@email.com"
-                  size="small"
-                  sx={{
-                    flex: 1,
-                    "& .MuiOutlinedInput-root": {
-                      background: "rgba(255,248,240,0.06)",
-                      borderRadius: 1,
-                      "& fieldset": { borderColor: "rgba(200,149,108,0.25)" },
-                      "&:hover fieldset": { borderColor: theme.palette.primary.main },
-                      "& input": {
-                        color: theme.palette.primary.contrastText,
-                        "&::placeholder": { color: "rgba(255,248,240,0.35)" },
-                      },
-                    },
-                  }}
-                />
-                <Button variant="contained" size="small" sx={{ px: 2.5, whiteSpace: "nowrap" }}>
-                  Join
-                </Button>
-              </Box>
 
-              {/* Contact */}
-              <Box sx={{ mt: 4, display: "flex", flexDirection: "column", gap: 1 }}>
-                {["12 Rue du Pain, Paris 75004", "hello@lafarine.com", "+33 1 42 77 88 99"].map(
-                  (info) => (
-                    <Typography
-                      key={info}
-                      variant="body2"
-                      sx={{ color: `${theme.palette.primary.contrastText}55` }}
-                    >
-                      {info}
-                    </Typography>
-                  )
-                )}
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 1.75 }}>
+                <Box sx={{ display: "flex", gap: 1.25, alignItems: "flex-start" }}>
+                  <LocationOnOutlinedIcon
+                    fontSize="small"
+                    sx={{ color: `${theme.palette.primary.contrastText}50`, mt: 0.2 }}
+                  />
+                  <Typography
+                    variant="body2"
+                    sx={{ color: `${theme.palette.primary.contrastText}70`, lineHeight: 1.7 }}
+                  >
+                    {CONTACT.address}
+                  </Typography>
+                </Box>
+
+                <Box sx={{ display: "flex", gap: 1.25, alignItems: "center" }}>
+                  <EmailOutlinedIcon
+                    fontSize="small"
+                    sx={{ color: `${theme.palette.primary.contrastText}50` }}
+                  />
+                  <Typography
+                    component="a"
+                    href={`mailto:${CONTACT.email}`}
+                    variant="body2"
+                    sx={{
+                      color: `${theme.palette.primary.contrastText}70`,
+                      textDecoration: "none",
+                      "&:hover": { color: theme.palette.primary.light },
+                    }}
+                  >
+                    {CONTACT.email}
+                  </Typography>
+                </Box>
+
+                <Box sx={{ display: "flex", gap: 1.25, alignItems: "center" }}>
+                  <CallOutlinedIcon
+                    fontSize="small"
+                    sx={{ color: `${theme.palette.primary.contrastText}50` }}
+                  />
+                  <Typography
+                    component="a"
+                    href={CONTACT.phoneHref}
+                    variant="body2"
+                    sx={{
+                      color: `${theme.palette.primary.contrastText}70`,
+                      textDecoration: "none",
+                      "&:hover": { color: theme.palette.primary.light },
+                    }}
+                  >
+                    {CONTACT.phone}
+                  </Typography>
+                </Box>
+
+                <Box sx={{ display: "flex", gap: 1.25, alignItems: "center" }}>
+                  <WhatsAppIcon fontSize="small" sx={{ color: "#25D366" }} />
+                  <Typography
+                    component="a"
+                    href={whatsappHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    variant="body2"
+                    sx={{
+                      color: `${theme.palette.primary.contrastText}70`,
+                      textDecoration: "none",
+                      "&:hover": { color: "#25D366" },
+                    }}
+                  >
+                    Chat with us on WhatsApp
+                  </Typography>
+                </Box>
               </Box>
             </motion.div>
           </Grid>
@@ -226,36 +314,16 @@ export default function Footer() {
         <Box
           sx={{
             display: "flex",
-            flexDirection: { xs: "column", md: "row" },
-            justifyContent: "space-between",
+            justifyContent: "center",
             alignItems: "center",
-            gap: 2,
           }}
         >
           <Typography
             variant="body2"
             sx={{ color: `${theme.palette.primary.contrastText}35` }}
           >
-            © {new Date().getFullYear()} La Farine. All rights reserved.
+            © {new Date().getFullYear()} Angels in My Kitchen. All rights reserved.
           </Typography>
-          <Box sx={{ display: "flex", gap: 3 }}>
-            {["Privacy Policy", "Terms of Use", "Cookie Settings"].map((item) => (
-              <Typography
-                key={item}
-                component="a"
-                href="#"
-                variant="body2"
-                sx={{
-                  color: `${theme.palette.primary.contrastText}35`,
-                  textDecoration: "none",
-                  "&:hover": { color: theme.palette.primary.main },
-                  transition: "color 0.2s",
-                }}
-              >
-                {item}
-              </Typography>
-            ))}
-          </Box>
         </Box>
       </Container>
     </Box>

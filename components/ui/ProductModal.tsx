@@ -144,13 +144,11 @@ const ProductModal = memo(({ product, onAddToCart, onClose }: ProductModalProps)
 
     dispatch(openCart());
 
-    if (onAddToCart) {
-      try {
-        onAddToCart(e, product);
-      } catch (err) {
-        console.error("Error in parent onAddToCart callback:", err);
-      }
-    }
+    // NOTE: `onAddToCart` is intentionally not invoked here. This handler
+    // already performs the complete add-to-cart flow (auth-aware mutation or
+    // guest dispatch, then opening the cart drawer) — every caller's
+    // `onAddToCart` prop is a second, independent implementation of that same
+    // flow. Calling both added the item twice per click.
   };
 
   // Quantity increment / decrement handler

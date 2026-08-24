@@ -1,5 +1,26 @@
 # Angels Consumer Web App — Development Log
 
+## [2026-08-22] Homepage Order Section Simplified; Footer Rebuilt with Real Business Info
+
+**Homepage "Order" section was a second, non-functional custom-cake form**
+
+`OrderSection` (rendered on `/`) duplicated the full custom-cake enquiry — first/last name, email, phone, occasion, event date, a vision textarea — but its submit handler was `e.preventDefault(); setSubmitted(true)`. It never called an API. Meanwhile `/customize` (`app/customize/page.tsx`) already implements the real version of this exact flow: image upload to the media API, delivery address, a real `useCreateCakeRequestMutation`, and a WhatsApp handoff. Two forms for the same task, only one of which worked.
+
+- Replaced the form with a compact info block (booking lead time, what to share, delivery area) plus two buttons: **Start Customizing** → `/customize`, and **Chat on WhatsApp** → `wa.me/919478370346` (the same number `/customize` already uses).
+- Also dropped placeholder content left over from the original template: "orders over €200", "Paris and Île-de-France" → replaced with real, checkable copy ("Delhi NCR", "our Defence Colony outlet" — matching the seeded `Outlet` named "Defence Colony Outlet").
+
+**Footer pointed to a bakery in Paris**
+
+`components/layout/Footer.tsx` was unmodified template content: address "12 Rue du Pain, Paris 75004", phone "+33 1 42 77 88 99", email "hello@lafarine.com", copyright "© La Farine". The three link columns (`Our Story`, `Gift Cards`, `Wedding Cakes`, `Classes`, `Hours & Location`, `Wholesale`, `Careers`, etc.) all had `href="#"` — none of those pages exist on this site.
+
+- Verified real contact info against the backend rather than guessing: `GET /legal-entity` → "Angels in My Kitchen Foods Pvt Ltd", address `E-42, Defence Colony, Main Market, New Delhi 110024`, `contact@angelsinmykitchen.com`, `+91 11 4165 5000`. WhatsApp number reused from `/customize`.
+- Link columns rebuilt to only the routes that actually exist: **Shop** (Home, Menu, Cakes, Customize a Cake) and **My Account** (My Orders, My Addresses, My Profile, Cart), using `next/link` instead of dead `href="#"` anchors.
+- The "Stay Sweet" newsletter box had no backend (`aimk_backend` has no subscribe endpoint) and its "Join" button had no `onClick` at all — replaced with a real "Get in Touch" block (address, `mailto:`, `tel:`, WhatsApp).
+- Dropped the bottom-bar Privacy Policy / Terms of Use / Cookie Settings links — those pages don't exist either, so they were dead links; left just the (corrected) copyright line.
+- Social icons: Instagram/Facebook kept decorative (no real handles to link to, so none were invented); WhatsApp icon now links to the real number.
+
+**Verified in the browser**: `/` → `#order` section shows no form fields, both CTAs work (Start Customizing routes to `/customize`, confirmed via `location.pathname`); footer confirmed to have zero `href="#"` links — all 11 hrefs resolve to real routes, `mailto:`, `tel:`, or a real `wa.me` link; no horizontal overflow at 375px or 1280px.
+
 ## [2026-08-20] Product Info Modal Redesign, Reactive Quantity Controls & Order Tracking Progress
 
 - **Product Modal (`components/ui/ProductModal.tsx`)**:

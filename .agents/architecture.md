@@ -69,6 +69,19 @@ angels/
 
 - `utils/orderStatus.ts` mirrors the Prisma `OrderStatus` enum and backs both `/orders` and `/orders/[id]`. `aimk_admin/utils/orderStatus.ts` is a byte-identical copy — **change both together**.
 
+### Homepage "Order" Section (`components/sections/OrderSection.tsx`)
+
+- **Not a form.** It used to duplicate the full custom-cake enquiry (name, email, phone, occasion, date, vision) as a second form that submitted nowhere (`setSubmitted(true)` was the entire handler). The one real, working custom-cake request flow — image upload, delivery address, backend mutation, WhatsApp handoff — lives at `/customize` (`app/customize/page.tsx`).
+- The section is now a compact info block + CTA: three info bullets (booking lead time, what to share, delivery area) and two buttons — **Start Customizing** (`router.push('/customize')`) and **Chat on WhatsApp** (`wa.me/919478370346`, the same number `/customize` uses).
+- Keep it that way: if this section grows a form field again, it is duplicating `/customize` and will drift out of sync with it (delivery city, flavour list, etc. are only defined once, in `/customize`).
+
+### Footer (`components/layout/Footer.tsx`)
+
+- Contact info is **verified against the backend**, not invented: `GET /legal-entity` returns the "Angels in My Kitchen Foods Pvt Ltd" record (address, email, phone) used here. If those details change in the DB, update this file to match — do not guess.
+- Link columns (`FOOTER_LINKS`) point only to routes that exist on this site (`/`, `/menu`, `/cakes`, `/customize`, `/orders`, `/addresses`, `/profile`, `/cart`) via `next/link`. Do not add a link here for a page that doesn't exist yet — that was the original problem (`Wedding Cakes`, `Wholesale`, `Careers`, etc. all pointed at `href="#"`).
+- No newsletter signup: the previous one had no backend and no handler at all (the "Join" button did nothing). There is no subscribe endpoint in `aimk_backend`, so it was replaced with the real contact block instead of being wired to nothing.
+- Social icons: Instagram/Facebook are decorative (no verified handles exist to link to — do not fabricate one). WhatsApp is a real, working `wa.me` link.
+
 ## 3. Cart Sync & Checkout Flow
 
 ```mermaid

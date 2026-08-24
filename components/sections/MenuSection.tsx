@@ -163,9 +163,9 @@ export default function MenuSection() {
     >
       <Container maxWidth="lg">
         <SectionLabel
-          label="À La Carte"
+          label="Fresh from the oven"
           title="Our Menu"
-          subtitle="Baked fresh every morning. Seasonal ingredients sourced from trusted farms and markets."
+          subtitle="Authentic bakes, pure ingredients, irresistible moments."
         />
 
         {/* ── Category filter chips ── */}
@@ -202,11 +202,11 @@ export default function MenuSection() {
                     label={cat.name}
                     isSelected={selectedCategoryId === cat.id}
                     color={theme.palette.primary.main}
-                    iconUrl={
-                      cat.categoryImageId
-                        ? MEDIA_BASE_URL + cat?.categoryImage?.key
-                        : undefined
-                    }
+                    // iconUrl={
+                    //   cat.categoryImageId
+                    //     ? MEDIA_BASE_URL + cat?.categoryImage?.key
+                    //     : undefined
+                    // }
                     onClick={() => setSelectedCategoryId(cat.id)}
                   />
                 ) : null
