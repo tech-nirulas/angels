@@ -1,6 +1,5 @@
 "use client";
 
-import { useGetCustomizationFormQuery } from "@/features/cake-customization/cakeCustomizationApiService";
 import { useCreateCakeRequestMutation } from "@/features/cake-customization/cakeApiService";
 import { MEDIA_BASE_URL } from "@/utils/constants";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
@@ -12,6 +11,7 @@ import LocationOnOutlinedIcon from "@mui/icons-material/LocationOnOutlined";
 import PersonOutlinedIcon from "@mui/icons-material/PersonOutlined";
 import PhoneOutlinedIcon from "@mui/icons-material/PhoneOutlined";
 import WhatsAppIcon from "@mui/icons-material/WhatsApp";
+import BoltOutlinedIcon from "@mui/icons-material/BoltOutlined";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
@@ -312,22 +312,157 @@ export default function CustomizeCakePage() {
               </Paper>
             </motion.div>
           ) : (
-            /* Main Form */
-            <Paper
-              elevation={2}
-              sx={{
-                p: { xs: 3, md: 5 },
-                borderRadius: 4,
-                bgcolor: "#FFF",
-                boxShadow: "0 10px 40px rgba(0,0,0,0.06)",
-              }}
-            >
-              <form onSubmit={handleSubmit}>
-                {error && (
-                  <Alert severity="error" sx={{ mb: 4 }}>
-                    Unable to submit customization request. Please check your inputs or try again.
-                  </Alert>
-                )}
+            <>
+              {/* Quick Fast-Track WhatsApp Consultation Card */}
+              <motion.div
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+              >
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: { xs: 3, sm: 4 },
+                    mb: 3.5,
+                    borderRadius: 4,
+                    background: "linear-gradient(135deg, #FFFFFF 0%, #F5FBF6 100%)",
+                    border: `2px solid rgba(37, 211, 102, 0.35)`,
+                    boxShadow: "0 10px 30px rgba(37, 211, 102, 0.08)",
+                    position: "relative",
+                    overflow: "hidden",
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: "flex",
+                      flexDirection: { xs: "column", md: "row" },
+                      alignItems: { xs: "flex-start", md: "center" },
+                      justifyContent: "space-between",
+                      gap: 3,
+                    }}
+                  >
+                    <Box sx={{ flex: 1 }}>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1.2, mb: 1, flexWrap: "wrap" }}>
+                        <Chip
+                          icon={<BoltOutlinedIcon sx={{ color: "#059669 !important", fontSize: 18 }} />}
+                          label="Instant Baker Consultation"
+                          size="small"
+                          sx={{
+                            bgcolor: "rgba(5, 150, 105, 0.1)",
+                            color: "#059669",
+                            fontWeight: 700,
+                            borderRadius: 2,
+                          }}
+                        />
+                        <Chip
+                          label="Skip the Form"
+                          size="small"
+                          sx={{
+                            bgcolor: "rgba(217, 119, 6, 0.1)",
+                            color: "#B45309",
+                            fontWeight: 700,
+                            borderRadius: 2,
+                          }}
+                        />
+                      </Box>
+
+                      <Typography
+                        variant="h5"
+                        sx={{
+                          fontWeight: 800,
+                          color: "#1E293B",
+                          fontFamily: "var(--font-display)",
+                          mb: 0.8,
+                          fontSize: { xs: "1.35rem", sm: "1.55rem" },
+                        }}
+                      >
+                        Chat Directly on WhatsApp with our Master Bakers
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: "#475569", lineHeight: 1.6, maxWidth: 620 }}>
+                        Want to skip filling out the form? Click below to instantly connect with our pastry team on WhatsApp to share reference photos, discuss custom flavors, and finalize your cake in real time.
+                      </Typography>
+                    </Box>
+
+                    <Box sx={{ flexShrink: 0, width: { xs: "100%", md: "auto" } }}>
+                      <Button
+                        variant="contained"
+                        size="large"
+                        fullWidth
+                        startIcon={<WhatsAppIcon sx={{ fontSize: 26 }} />}
+                        onClick={() => {
+                          const waText = encodeURIComponent(
+                            "Hello Angels in My Kitchen team, I would like to discuss a custom cake order!"
+                          );
+                          window.open(`https://wa.me/919478370346?text=${waText}`, "_blank");
+                        }}
+                        sx={{
+                          py: 1.6,
+                          px: 3.5,
+                          bgcolor: "#25D366",
+                          color: "#FFF",
+                          fontWeight: 800,
+                          fontSize: "1rem",
+                          boxShadow: "0 8px 24px rgba(37, 211, 102, 0.35)",
+                          "&:hover": {
+                            bgcolor: "#1EBE57",
+                            boxShadow: "0 10px 28px rgba(37, 211, 102, 0.45)",
+                            transform: "translateY(-1px)",
+                          },
+                          transition: "all 0.2s ease",
+                          borderRadius: 3,
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        Start WhatsApp Chat
+                      </Button>
+                    </Box>
+                  </Box>
+                </Paper>
+              </motion.div>
+
+              {/* Visual Divider */}
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  my: 3.5,
+                  "&::before, &::after": {
+                    content: '""',
+                    flex: 1,
+                    borderBottom: `1px solid ${alpha(theme.palette.divider, 0.8)}`,
+                  },
+                }}
+              >
+                <Typography
+                  variant="caption"
+                  sx={{
+                    px: 2,
+                    fontWeight: 700,
+                    color: theme.palette.text.secondary,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.08em",
+                  }}
+                >
+                  Or fill in detailed specifications below
+                </Typography>
+              </Box>
+
+              {/* Main Form */}
+              <Paper
+                elevation={2}
+                sx={{
+                  p: { xs: 3, md: 5 },
+                  borderRadius: 4,
+                  bgcolor: "#FFF",
+                  boxShadow: "0 10px 40px rgba(0,0,0,0.06)",
+                }}
+              >
+                <form onSubmit={handleSubmit}>
+                  {error && (
+                    <Alert severity="error" sx={{ mb: 4 }}>
+                      Unable to submit customization request. Please check your inputs or try again.
+                    </Alert>
+                  )}
 
                 {/* Section 1: Customer Contact Details */}
                 <Typography variant="h6" sx={{ fontWeight: 800, color: "#2B1810", mb: 2, display: "flex", alignItems: "center", gap: 1 }}>
@@ -424,7 +559,7 @@ export default function CustomizeCakePage() {
                     <TextField
                       type="date"
                       fullWidth
-                      InputLabelProps={{ shrink: true }}
+                      slotProps={{ inputLabel: { shrink: true } }}
                       value={formData.preferredDeliveryDate}
                       onChange={(e) => setFormData({ ...formData, preferredDeliveryDate: e.target.value })}
                     />
@@ -588,8 +723,9 @@ export default function CustomizeCakePage() {
                 </Box>
               </form>
             </Paper>
-          )}
-        </Container>
+          </>
+        )}
+      </Container>
       </main>
   );
 }

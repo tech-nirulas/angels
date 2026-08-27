@@ -1,5 +1,18 @@
 # Angels Consumer Web App — Development Log
 
+## [2026-08-25] WhatsApp-First Custom Cake Flow on /customize & Luxury OrderSection Redesign
+
+- **Direct WhatsApp Consultation on `/customize` (`app/customize/page.tsx`)**:
+  - Added a high-converting "Instant Baker Consultation / Skip the Form" hero card at the top of the `/customize` container.
+  - Allows customers to bypass filling in the full form and immediately connect with master bakers via WhatsApp (`https://wa.me/919478370346`) with pre-filled greeting text.
+  - Added a stylish section divider leading to the full detailed customization form below for users who prefer submitting structured specifications, flavor selections, and inspiration image attachments.
+  - Fixed MUI v6 / React 19 `slotProps={{ inputLabel: { shrink: true } }}` date input compatibility.
+
+- **OrderSection Redesign (`components/sections/OrderSection.tsx`)**:
+  - Revamped the "Let's Create Something Unforgettable" section into a luxury showcase with radial ambient lighting, frosted glassmorphism feature cards, hover animations, and subtle top accent bars.
+  - Updated pickup copy from *"or you can pick up from our Defence Colony outlet."* to *"or you can pick up from your nearby outlet."*
+  - Reorganized CTAs to highlight instant WhatsApp consultation alongside the direct link to the custom order page.
+
 ## [2026-08-22] Homepage Order Section Simplified; Footer Rebuilt with Real Business Info
 
 **Homepage "Order" section was a second, non-functional custom-cake form**
