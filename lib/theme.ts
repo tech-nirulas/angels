@@ -325,7 +325,7 @@ let theme = createTheme({
     MuiAppBar: {
       styleOverrides: {
         root: {
-          backgroundColor: `${PALETTE.background.accent}DD`,
+          backgroundColor: PALETTE.background.accent,
           backdropFilter: "blur(10px)",
           boxShadow: SHADOWS_CUSTOM.soft,
         },

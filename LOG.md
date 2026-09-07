@@ -1,5 +1,21 @@
 # Angels Consumer Web App — Development Log
 
+## [2026-09-07] Sub-Navigation Bar Redesign & Hero Stacking Fix
+
+- **CakesCategoryNav.tsx — Full Redesign**:
+  - **Opaque background**: Changed from `rgba(255,255,255,0.92)` with `backdrop-filter: blur(16px)` to fully opaque `background.paper` (`#FFFFFF`). Eliminates the hero banner bleeding through the nav bar.
+  - **No-wrap horizontal scroll**: Desktop tabs now use `whiteSpace: nowrap` inside a scrollable flex container with `overflowX: auto` and hidden scrollbar. Labels like "Viral Trending Desserts" and "Dessert Tubs (150 gms)" no longer wrap onto multiple lines.
+  - **Scroll fade masks**: Left/right gradient fade indicators appear dynamically when the scroll container is overflowing, hinting at off-screen categories.
+  - **Bottom accent underline**: Hover/active tabs show a 2px primary-color bottom border for clear visual hierarchy, replacing the previous background-color-only hover.
+  - **Semantic buttons**: Desktop tabs now use `<button>` elements instead of `<div>` for keyboard accessibility and screen-reader support. Added `focus-visible` outline.
+  - **Fixed popup positioning**: Dropdown popup for parent categories now anchors flush to `barRect.bottom` instead of subtracting 30px, preventing gap/overlap issues.
+  - **Mobile chip improvements**: Increased touch target to `minHeight: 36px`, added pill-shaped `borderRadius: 18px`, added container padding (`px: 1.5`) so edge chips aren't flush, subtler border color.
+  - **Removed unused imports**: Cleaned up `usePathname` import and variable.
+
+- **theme.ts — AppBar Opacity Fix**:
+  - Changed `MuiAppBar.backgroundColor` from `${background.accent}DD` (87% opacity) to fully opaque `background.accent`. Prevents main header from showing the hero behind it when scrolling.
+
+
 ## [2026-08-25] WhatsApp-First Custom Cake Flow on /customize & Luxury OrderSection Redesign
 
 - **Direct WhatsApp Consultation on `/customize` (`app/customize/page.tsx`)**:
