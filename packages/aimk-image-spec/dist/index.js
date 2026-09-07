@@ -49,9 +49,11 @@ exports.IMAGE_SLOTS = {
         maxFileSize: "800 KB",
         sizes: "100vw",
         quality: exports.IMAGE_QUALITY.hero,
-        safeArea: "Single asset is cropped hard on phones — only the central ~34% of the width survives. " +
-            "Keep all headline text, logos and price callouts inside the central 34% (≈ 865px of a 2560px asset). " +
-            "Also avoid the bottom 25%, which the copy overlay and gradient cover.",
+        safeArea: "Upload at 2560×1080. Phones crop hard — only the central ~34% of width survives " +
+            "(≈ 865px of a 2560px asset); keep logos and designed type there. " +
+            "Leave ~8–10% clear at the top (under the sticky category bar) and avoid the bottom ~25% " +
+            "(CTA / optional overlay). Headline and subtext fields are optional storefront overlays — " +
+            "leave them blank when the creative already includes marketing text.",
     },
     /**
      * Product card — angels components/ui/ProductCard.tsx (MenuSection and /cakes)

@@ -71,7 +71,7 @@ automatically, so a 6000 px original just slows down the upload.
 | **Max file size** | 800 KB |
 | **Rendered quality** | 90 |
 
-**Safe area.** Single asset is cropped hard on phones — only the central ~34% of the width survives. Keep all headline text, logos and price callouts inside the central 34% (≈ 865px of a 2560px asset). Also avoid the bottom 25%, which the copy overlay and gradient cover.
+**Safe area.** Upload at 2560×1080. Phones crop hard — only the central ~34% of width survives (≈ 865px of a 2560px asset); keep logos and designed type there. Leave ~8–10% clear at the top (under the sticky category bar) and avoid the bottom ~25% (CTA / optional overlay). Headline and subtext fields are optional storefront overlays — leave them blank when the creative already includes marketing text.
 
 ### Product Card
 

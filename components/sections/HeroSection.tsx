@@ -24,6 +24,22 @@ const HERO_ASPECT_RATIO = { xs: "4 / 5", sm: "4 / 3", md: "2.37 / 1" } as const;
 /** Guard so ultrawide displays (e.g. 3440x1440) don't produce an absurdly tall hero. */
 const HERO_MAX_HEIGHT = "80vh";
 
+type HeroSlide = {
+  image: string;
+  alt: string;
+  /** Promo code chip — only set when the offer has a real code. */
+  code: string | null;
+  /** Explicit banner overlay headline — never falls back to offer.title. */
+  title: string | null;
+  /** Explicit banner overlay subtext — never falls back to offer.description. */
+  description: string | null;
+  hasTextOverlay: boolean;
+  linkType?: string;
+  linkCategoryId?: string | number | null;
+  linkProductId?: string | number | null;
+  linkUrl?: string | null;
+};
+
 export default function HeroSection() {
   const theme = useTheme();
   const router = useRouter();
@@ -43,30 +59,44 @@ export default function HeroSection() {
     slidesToShow: 1,
     slidesToScroll: 1,
     dots: true,
+    arrows: false,
   };
 
   // Extract all active banners from active offers.
   // A banner only qualifies if it carries real uploaded media — offers without
   // usable banner media contribute nothing rather than a synthetic slide.
-  const slides: any[] = [];
+  const slides: HeroSlide[] = [];
   if (Array.isArray(activeOffers) && activeOffers.length > 0) {
     activeOffers.forEach((offer: any) => {
       if (!Array.isArray(offer.banners)) return;
       offer.banners.forEach((banner: any) => {
-        if (banner.media?.url) {
-          slides.push({
-            image: banner.media.url,
-            alt: banner.altText || banner.headline || offer.title || "Promotional banner",
-            badge: offer.code ? `🎟️ Code: ${offer.code}` : "🔥 Special Campaign",
-            title: banner.headline || offer.title,
-            description: banner.subtext || offer.description || "Special promotional offer on our gourmet selection.",
-            code: offer.code,
-            linkType: banner.linkType,
-            linkCategoryId: banner.linkCategoryId,
-            linkProductId: banner.linkProductId,
-            linkUrl: banner.linkUrl,
-          });
-        }
+        if (!banner.media?.url) return;
+
+        const title =
+          typeof banner.headline === "string" && banner.headline.trim()
+            ? banner.headline.trim()
+            : null;
+        const description =
+          typeof banner.subtext === "string" && banner.subtext.trim()
+            ? banner.subtext.trim()
+            : null;
+        const code =
+          typeof offer.code === "string" && offer.code.trim()
+            ? offer.code.trim()
+            : null;
+
+        slides.push({
+          image: banner.media.url,
+          alt: banner.altText || title || offer.title || "Promotional banner",
+          code,
+          title,
+          description,
+          hasTextOverlay: Boolean(title || description),
+          linkType: banner.linkType,
+          linkCategoryId: banner.linkCategoryId,
+          linkProductId: banner.linkProductId,
+          linkUrl: banner.linkUrl,
+        });
       });
     });
   }
@@ -99,7 +129,7 @@ export default function HeroSection() {
   // so the content below moves up naturally.
   if (slides.length === 0) return null;
 
-  const handleSlideClick = (slide: any) => {
+  const handleSlideClick = (slide: HeroSlide) => {
     if (slide.linkUrl) {
       window.open(slide.linkUrl, "_blank");
       return;
@@ -112,7 +142,7 @@ export default function HeroSection() {
       router.push(`/menu?product=${slide.linkProductId}`);
       return;
     }
-    router.push(slide.actionUrl || "/menu");
+    router.push("/menu");
   };
 
   return (
@@ -122,13 +152,37 @@ export default function HeroSection() {
         aspectRatio: HERO_ASPECT_RATIO,
         maxHeight: HERO_MAX_HEIGHT,
         position: "relative",
+        // Soften default slick dots so they don't fight designed banner art.
+        "& .slick-dots": {
+          bottom: { xs: 10, md: 14 },
+          zIndex: 2,
+        },
+        "& .slick-dots li button:before": {
+          fontSize: 9,
+          color: "#fff",
+          opacity: 0.45,
+          textShadow: "0 1px 3px rgba(0,0,0,0.45)",
+        },
+        "& .slick-dots li.slick-active button:before": {
+          opacity: 0.95,
+          color: "#fff",
+        },
       }}
       id="home"
     >
       <Slider {...settings}>
-        {slides.map((item: any, index: number) => (
+        {slides.map((item, index) => (
           <Box
             key={index}
+            role="link"
+            tabIndex={0}
+            onClick={() => handleSlideClick(item)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                handleSlideClick(item);
+              }
+            }}
             sx={{
               width: "100%",
               aspectRatio: HERO_ASPECT_RATIO,
@@ -138,13 +192,9 @@ export default function HeroSection() {
               display: "flex !important",
               alignItems: "center",
               justifyContent: "center",
+              cursor: "pointer",
             }}
           >
-            {/*
-              Optimized banner. Previously a CSS `background-image`, which
-              bypassed next/image entirely — no srcset, no DPR selection, no
-              WebP/AVIF conversion, and full-size originals shipped to phones.
-            */}
             <Image
               src={item.image}
               alt={item.alt}
@@ -156,41 +206,43 @@ export default function HeroSection() {
             />
 
             {/*
-              Gradient moved out of the CSS background stack into its own layer
-              so the image itself can be optimized. Values unchanged from the
-              original to preserve the existing look.
+              Image-first: light bottom fade only so CTA + dots stay legible.
+              Text-overlay: stronger bottom scrim (~35%) — never a full-bleed wash.
             */}
             <Box
               sx={{
                 position: "absolute",
                 inset: 0,
-                background:
-                  "linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.2) 60%, rgba(0,0,0,0.4) 100%)",
                 pointerEvents: "none",
+                background: item.hasTextOverlay
+                  ? "linear-gradient(to top, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.35) 28%, rgba(0,0,0,0.08) 45%, transparent 62%)"
+                  : "linear-gradient(to top, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.08) 22%, transparent 40%)",
               }}
             />
 
             <Box
               sx={{
                 position: "absolute",
-                bottom: { xs: "12%", md: "18%" },
+                bottom: { xs: "10%", md: "14%" },
                 left: "50%",
                 transform: "translateX(-50%)",
-                width: { xs: "90%", md: "65%" },
+                width: { xs: "90%", md: "60%" },
+                maxWidth: 720,
                 textAlign: "center",
                 color: "white",
+                zIndex: 1,
               }}
             >
-              {item.badge && (
+              {item.code && (
                 <Chip
                   icon={<LocalOfferIcon sx={{ color: "#FFF !important", fontSize: "0.9rem" }} />}
-                  label={item.badge}
+                  label={`Code: ${item.code}`}
                   sx={{
                     bgcolor: theme.palette.primary.main,
                     color: "white",
                     fontWeight: 800,
                     fontSize: "0.85rem",
-                    mb: 1.5,
+                    mb: item.hasTextOverlay ? 1.5 : 2,
                     px: 1,
                     py: 0.5,
                     boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
@@ -198,77 +250,60 @@ export default function HeroSection() {
                 />
               )}
 
-              <Typography
-                variant="h2"
-                sx={{
-                  fontFamily: "var(--font-display)",
-                  fontWeight: 800,
-                  fontSize: { xs: "1.8rem", sm: "2.4rem", md: "3.2rem" },
-                  lineHeight: 1.15,
-                  mb: 1.5,
-                  textShadow: "0 2px 10px rgba(0,0,0,0.6)",
-                }}
-              >
-                {item.title}
-              </Typography>
-
-              <Typography
-                variant="body1"
-                sx={{
-                  fontSize: { xs: "0.9rem", md: "1.1rem" },
-                  opacity: 0.95,
-                  maxWidth: 700,
-                  mx: "auto",
-                  mb: 3,
-                  display: { xs: "none", sm: "block" },
-                  textShadow: "0 1px 4px rgba(0,0,0,0.6)",
-                }}
-              >
-                {item.description}
-              </Typography>
-
-              <Box sx={{ display: "flex", gap: 2, justifyContent: "center", flexWrap: "wrap" }}>
-                <Button
-                  variant="contained"
-                  size="large"
-                  onClick={() => handleSlideClick(item)}
+              {item.title && (
+                <Typography
+                  variant="h2"
                   sx={{
-                    borderRadius: 3,
-                    px: 4,
-                    py: 1.4,
-                    fontSize: "1rem",
-                    fontWeight: 700,
-                    background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark ?? theme.palette.primary.main})`,
-                    boxShadow: "0 4px 20px rgba(0,0,0,0.3)",
-                    "&:hover": { transform: "translateY(-2px)" },
-                    transition: "all 0.2s ease",
+                    fontFamily: "var(--font-display)",
+                    fontWeight: 800,
+                    fontSize: { xs: "1.6rem", sm: "2.1rem", md: "2.75rem" },
+                    lineHeight: 1.15,
+                    mb: item.description ? 1 : 2,
+                    textShadow: "0 2px 12px rgba(0,0,0,0.55)",
                   }}
                 >
-                  Explore Offer
-                </Button>
-                <Button
-                  variant="outlined"
-                  size="large"
-                  onClick={() => router.push("/customize")}
+                  {item.title}
+                </Typography>
+              )}
+
+              {item.description && (
+                <Typography
+                  variant="body1"
                   sx={{
-                    borderRadius: 3,
-                    px: 3,
-                    py: 1.4,
-                    fontSize: "1rem",
-                    fontWeight: 700,
-                    color: "white",
-                    borderColor: "white",
-                    backdropFilter: "blur(4px)",
-                    backgroundColor: "rgba(255,255,255,0.15)",
-                    "&:hover": {
-                      backgroundColor: "rgba(255,255,255,0.3)",
-                      borderColor: "white",
-                    },
+                    fontSize: { xs: "0.9rem", md: "1.05rem" },
+                    opacity: 0.96,
+                    maxWidth: 640,
+                    mx: "auto",
+                    mb: 2.5,
+                    display: { xs: "none", sm: "block" },
+                    textShadow: "0 1px 6px rgba(0,0,0,0.55)",
                   }}
                 >
-                  Customize Cake
-                </Button>
-              </Box>
+                  {item.description}
+                </Typography>
+              )}
+
+              <Button
+                variant="contained"
+                size="large"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleSlideClick(item);
+                }}
+                sx={{
+                  borderRadius: 3,
+                  px: 4,
+                  py: 1.25,
+                  fontSize: "0.95rem",
+                  fontWeight: 700,
+                  background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark ?? theme.palette.primary.main})`,
+                  boxShadow: "0 4px 18px rgba(0,0,0,0.28)",
+                  "&:hover": { transform: "translateY(-2px)" },
+                  transition: "all 0.2s ease",
+                }}
+              >
+                Explore Offer
+              </Button>
             </Box>
           </Box>
         ))}
