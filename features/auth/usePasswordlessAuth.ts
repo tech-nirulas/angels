@@ -90,7 +90,17 @@ export function usePasswordlessAuth() {
           persistLogin(data.accessToken, data.refreshToken, data.user);
           return { status: 'AUTHENTICATED' };
         }
-        return { status: 'NEW_USER', token, provider: 'phone' };
+        // `registrationToken` is OUR short-lived credential, issued by the
+        // backend after it consumed the MSG91 access-token. The MSG91 token is
+        // single-use, so it must not travel on to /auth/register-passwordless.
+        if (!data.registrationToken) {
+          throw new Error('Registration token missing from the server response.');
+        }
+        return {
+          status: 'NEW_USER',
+          token: data.registrationToken,
+          provider: 'phone',
+        };
       }
 
       // Phone is a secondary verification. Google already carries the user's
