@@ -1,5 +1,13 @@
 # Angels Consumer Web App — Development Log
 
+## [2026-09-18] Display Typography Migration: Cravelo Demo to Fraunces Google Variable Font
+
+- **Replaced Cravelo with Fraunces (`app/layout.tsx`, `lib/theme.ts`)**:
+  - Removed unlicensed personal-use `Cravelo-DEMO-Regular.otf` and associated license notice file.
+  - Configured **Fraunces** via `next/font/google` with Latin subset, variable weights, and CSS variable `--font-fraunces`.
+  - Updated `TYPOGRAPHY.displayFont` in `lib/theme.ts` to reference `var(--font-fraunces), Georgia, serif`.
+  - Fixes missing character set limitations (numbers 0-9, currency ₹, punctuation, apostrophes in product names/specials) and eliminates font-swap layout shifts.
+
 ## [2026-09-07] Sub-Navigation Bar Redesign & Hero Stacking Fix
 
 - **CakesCategoryNav.tsx — Full Redesign**:

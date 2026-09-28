@@ -18,6 +18,8 @@ export interface CartItem {
     discountedPrice?: number;
     discountPct?: number | null;
     inStock: boolean;
+    /** cart.service includes a trimmed {id,name,slug} category on each item's product. */
+    category?: { id: string; name: string; slug: string } | null;
     mainImage?: { url?: string; key?: string } | null;
   };
   currentPrice: number;

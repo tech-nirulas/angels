@@ -5,11 +5,13 @@ import {
   ChangePasswordResponse,
   ForgotPasswordResponse,
   ResetPasswordResponse,
-  RequestOtpResponse,
-  ResendOtpResponse,
+  UpdateProfileDto,
+  ChangePasswordDto,
+  ForgotPasswordDto,
+  ResetPasswordDto,
 } from "@/interfaces/user.interface";
 import { Parameters } from "@/interfaces/parameters.interface";
-import { EndpointBuilder } from "@reduxjs/toolkit/query";
+import { EndpointBuilder } from "@reduxjs/toolkit/query/react";
 
 type EndpointDefinitions = EndpointBuilder<any, any, any>;
 

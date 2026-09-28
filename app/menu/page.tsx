@@ -288,9 +288,7 @@ export default function MenuPage() {
           <Grid container spacing={4}>
             {/* ── Sidebar ── */}
             <Grid
-              item
-              xs={12}
-              md={3}
+              size={{ xs: 12, md: 3 }}
               sx={{ display: { xs: "none", md: "block" } }}
             >
               <Fade in timeout={500}>
@@ -346,7 +344,7 @@ export default function MenuPage() {
             </Grid>
 
             {/* ── Main content ── */}
-            <Grid size={{ xs: 12, md: 9 }}>
+            <Grid size={{ xs: 12, md: 8 }}>
               {/* Search + Sort */}
               <Box
                 sx={{
@@ -520,6 +518,8 @@ function parseSortBy(
       return { sortBy: "rating", sortOrder: "desc" };
     case "name_asc":
       return { sortBy: "name", sortOrder: "asc" };
+    default:
+      return { sortBy: "createdAt", sortOrder: "desc" };
   }
 }
 

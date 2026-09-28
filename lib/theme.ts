@@ -60,24 +60,16 @@ const PALETTE = {
 };
 
 /**
- * Two typographic roles, nothing more.
+ * Two typographic roles:
  *
- * The variables come from next/font in app/layout.tsx and already include Next's
- * metric-adjusted fallback family (e.g. "Poppins", "Poppins Fallback"), so the
- * generic families below are only a last resort if the webfont fails entirely.
+ * The variables come from next/font in app/layout.tsx and include Next's
+ * metric-adjusted fallback family, so generic families below are only a last resort.
  *
- * ⚠️ `displayFont` is currently the Cravelo DEMO cut — PERSONAL USE ONLY, not
- *    licensed for production. See app/fonts/LICENCE-NOTICE.md.
- *
- * The demo maps only A-Z/a-z/space (56 codepoints): no digits, no punctuation,
- * no ₹. Anything the font lacks falls back per character to Georgia, so the
- * display role is reserved for headings, and prices / product names / dense
- * product data are explicitly on `bodyFont` instead.
+ * `displayFont`: Fraunces (Google Fonts variable serif) for headings, banners, and decorative titles.
+ * `bodyFont`: Poppins (Google Fonts) for body copy, UI components, buttons, and numeric data.
  */
 const TYPOGRAPHY = {
-  // No extra fallbacks appended here — next/font/local already builds
-  // `cravelo, cravelo Fallback, Georgia, Times New Roman, serif` into the variable.
-  displayFont: "var(--font-cravelo)",
+  displayFont: 'var(--font-fraunces), Georgia, serif',
   bodyFont: 'var(--font-poppins), "Helvetica Neue", Arial, sans-serif',
 };
 
@@ -253,20 +245,24 @@ let theme = createTheme({
           padding: "10px 28px",
           transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
         },
-        containedPrimary: {
-          background: `linear-gradient(135deg, ${PALETTE.primary.main} 0%, ${PALETTE.primary.dark} 100%)`,
-          boxShadow: SHADOWS_CUSTOM.soft,
-          "&:hover": {
-            boxShadow: SHADOWS_CUSTOM.glow,
-            transform: "translateY(-2px)",
+        // MUI v9 dropped the combined `containedPrimary`/`containedSecondary`
+        // slots; variant+color now nest under the variant slot.
+        contained: {
+          colorPrimary: {
+            background: `linear-gradient(135deg, ${PALETTE.primary.main} 0%, ${PALETTE.primary.dark} 100%)`,
+            boxShadow: SHADOWS_CUSTOM.soft,
+            "&:hover": {
+              boxShadow: SHADOWS_CUSTOM.glow,
+              transform: "translateY(-2px)",
+            },
           },
-        },
-        containedSecondary: {
-          background: `linear-gradient(135deg, ${PALETTE.secondary.main} 0%, ${PALETTE.secondary.dark} 100%)`,
-          boxShadow: SHADOWS_CUSTOM.warm,
-          "&:hover": {
-            boxShadow: SHADOWS_CUSTOM.medium,
-            transform: "translateY(-2px)",
+          colorSecondary: {
+            background: `linear-gradient(135deg, ${PALETTE.secondary.main} 0%, ${PALETTE.secondary.dark} 100%)`,
+            boxShadow: SHADOWS_CUSTOM.warm,
+            "&:hover": {
+              boxShadow: SHADOWS_CUSTOM.medium,
+              transform: "translateY(-2px)",
+            },
           },
         },
         outlined: {
@@ -305,9 +301,12 @@ let theme = createTheme({
           fontSize: "0.7rem",
           fontWeight: 600,
         },
-        filledPrimary: {
-          background: PALETTE.primary.main,
-          color: "#FFFFFF",
+        // MUI v9: `filledPrimary` -> filled + colorPrimary.
+        filled: {
+          colorPrimary: {
+            background: PALETTE.primary.main,
+            color: "#FFFFFF",
+          },
         },
         outlined: {
           borderColor: PALETTE.primary.main,

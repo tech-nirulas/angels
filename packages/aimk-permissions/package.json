@@ -5,6 +5,10 @@
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "src"
+  ],
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -39,7 +43,9 @@
   },
   "scripts": {
     "build": "tsc && node ./scripts/sync.js",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "tsc && node ./dist/test.js",
+    "check:drift": "node ./scripts/check-drift.js"
   },
   "peerDependencies": {
     "@nestjs/common": "^10.0.0 || ^11.0.0",

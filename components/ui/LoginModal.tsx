@@ -57,7 +57,7 @@ export default function LoginModal({ open, onClose, onSuccess }: LoginModalProps
   const [secondaryProvider, setSecondaryProvider] = useState<'email' | 'phone' | null>(null);
 
   const dispatch = useAppDispatch();
-  const guestCart = useAppSelector((state) => state.cart.items);
+  const guestCart = useAppSelector((state) => state.cart.guestItems);
 
   // reqId returned by MSG91's sendOtp; passed explicitly to verifyOtp per MSG91's
   // documented custom-UI signature: window.verifyOtp(otp, success, failure, reqId)
@@ -158,9 +158,17 @@ export default function LoginModal({ open, onClose, onSuccess }: LoginModalProps
 
       const initGoogleSignIn = () => {
         const google = (window as any).google;
+        // No fallback client id — see the note in app/(auth)/login/page.tsx.
+        const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+        if (!clientId) {
+          console.error(
+            '[Google] NEXT_PUBLIC_GOOGLE_CLIENT_ID is not set; the sign-in button will not be rendered.',
+          );
+          return;
+        }
         if (google && google.accounts && google.accounts.id) {
           google.accounts.id.initialize({
-            client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '785311894982-f3f6oou8pq73e72fl2bfe1bcr01t7mep.apps.googleusercontent.com',
+            client_id: clientId,
             callback: handleGoogleCallback,
           });
           google.accounts.id.renderButton(

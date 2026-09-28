@@ -1,5 +1,6 @@
 // features/auth/authSlice.ts
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { clearTokens } from "@/helpers/encryptToken.helper";
 
 interface User {
   id: string;
@@ -50,7 +51,10 @@ const authSlice = createSlice({
       state.token = null;
       state.user = null;
       state.isAuthenticated = false;
-      localStorage.clear();
+      // Remove only auth material. localStorage.clear() also destroyed the
+      // guest cart, the persisted Redux cart and every cached query — logging
+      // out silently emptied the user's basket.
+      clearTokens();
       state.isLoading = false;
     },
   },

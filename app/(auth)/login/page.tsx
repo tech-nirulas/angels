@@ -11,6 +11,7 @@ import { setCredentials } from '@/features/auth/authSlice';
 import { usePasswordlessAuth } from '@/features/auth/usePasswordlessAuth';
 import { ensureMsg91Widget } from '@/features/auth/msg91Widget';
 import { saveEncryptedToken, saveRefreshToken } from '@/helpers/encryptToken.helper';
+import { safeReturnTo } from '@/helpers/safeRedirect.helper';
 import { useAppDispatch, useAppSelector } from '@/lib/store';
 import {
   Alert,
@@ -24,7 +25,7 @@ import {
   Divider,
 } from '@mui/material';
 import { motion } from "framer-motion";
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
 type AuthStep =
@@ -38,7 +39,10 @@ type AuthStep =
 export default function LoginPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
-  const guestCart = useAppSelector((state) => state.cart.items);
+  // Set by AuthProvider when it bounces an anonymous user off a protected page.
+  const returnTo = safeReturnTo(useSearchParams().get('returnTo'));
+  const afterLogin = returnTo ?? '/';
+  const guestCart = useAppSelector((state) => state.cart.guestItems);
 
   const [step, setStep] = useState<AuthStep>('select');
   const [email, setEmail] = useState('');
@@ -73,7 +77,7 @@ export default function LoginPage() {
     dispatch(setCredentials({ token: accessToken, user }));
     saveEncryptedToken(accessToken);
     saveRefreshToken(refreshToken);
-    router.push('/');
+    router.replace(afterLogin);
   };
 
   // Google OAuth Success Callback
@@ -132,9 +136,19 @@ export default function LoginPage() {
 
     const initGoogleSignIn = () => {
       const google = (window as any).google;
+      // No fallback client id: a missing env var previously fell back to a test
+      // OAuth client, which renders a button that fails at tokeninfo with an
+      // origin_mismatch that is hard to trace back to a config problem.
+      const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+      if (!clientId) {
+        console.error(
+          '[Google] NEXT_PUBLIC_GOOGLE_CLIENT_ID is not set; the sign-in button will not be rendered.',
+        );
+        return;
+      }
       if (google && google.accounts && google.accounts.id) {
         google.accounts.id.initialize({
-          client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '785311894982-f3f6oou8pq73e72fl2bfe1bcr01t7mep.apps.googleusercontent.com',
+          client_id: clientId,
           callback: handleGoogleCallback,
         });
         google.accounts.id.renderButton(
@@ -229,7 +243,7 @@ export default function LoginPage() {
       });
 
       if (result.status === 'AUTHENTICATED') {
-        router.push('/');
+        router.replace(afterLogin);
       } else if (result.status === 'NEW_USER') {
         setPrimaryToken(result.token);
         setPrimaryProvider('phone');

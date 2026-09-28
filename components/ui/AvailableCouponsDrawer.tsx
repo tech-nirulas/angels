@@ -95,11 +95,13 @@ export default function AvailableCouponsDrawer({
       anchor="right"
       open={open}
       onClose={onClose}
-      PaperProps={{
-        sx: {
-          width: { xs: "100%", sm: 420 },
-          p: 0,
-          backgroundColor: "#FBF9F7",
+      slotProps={{
+        paper: {
+          sx: {
+            width: { xs: "100%", sm: 420 },
+            p: 0,
+            backgroundColor: "#FBF9F7",
+          },
         },
       }}
     >
@@ -125,7 +127,8 @@ export default function AvailableCouponsDrawer({
             </Typography>
           </Box>
         </Box>
-        <IconButton onClick={onClose} sx={{ color: "#FFFFFF", p: 0.5 }}>
+        <IconButton
+      aria-label="Close coupons" onClick={onClose} sx={{ color: "#FFFFFF", p: 0.5 }}>
           <CloseIcon />
         </IconButton>
       </Box>
@@ -183,7 +186,7 @@ export default function AvailableCouponsDrawer({
                           px: 0.5,
                         }}
                       />
-                      <IconButton size="small" onClick={() => handleCopy(offer.code)} sx={{ p: 0.5 }}>
+                      <IconButton aria-label="Copy coupon code" size="small" onClick={() => handleCopy(offer.code)} sx={{ p: 0.5 }}>
                         {copiedCode === offer.code ? (
                           <CheckIcon sx={{ fontSize: 16, color: "success.main" }} />
                         ) : (

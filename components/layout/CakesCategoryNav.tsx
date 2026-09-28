@@ -318,6 +318,8 @@ export default function CakesCategoryNav() {
 
                   return (
                     <Box
+                      component="button"
+                      type="button"
                       key={sub.id}
                       onClick={() => handleSubCategoryClick(sub.slug)}
                       sx={{
@@ -460,13 +462,15 @@ export default function CakesCategoryNav() {
         anchor="bottom"
         open={Boolean(mobileDrawerCategory)}
         onClose={() => setMobileDrawerCategory(null)}
-        PaperProps={{
-          sx: {
-            borderTopLeftRadius: 20,
-            borderTopRightRadius: 20,
-            p: 3,
-            maxHeight: "75vh",
-            backgroundColor: "#FFFFFF",
+        slotProps={{
+          paper: {
+            sx: {
+              borderTopLeftRadius: 20,
+              borderTopRightRadius: 20,
+              p: 3,
+              maxHeight: "75vh",
+              backgroundColor: "#FFFFFF",
+            },
           },
         }}
       >
@@ -485,7 +489,8 @@ export default function CakesCategoryNav() {
               <Typography variant="h6" sx={{ fontWeight: 700 }}>
                 {mobileDrawerCategory.name}
               </Typography>
-              <IconButton onClick={() => setMobileDrawerCategory(null)}>
+              <IconButton
+      aria-label="Close category menu" onClick={() => setMobileDrawerCategory(null)}>
                 <CloseIcon />
               </IconButton>
             </Box>
@@ -496,6 +501,8 @@ export default function CakesCategoryNav() {
 
                 return (
                   <Box
+                    component="button"
+                    type="button"
                     key={sub.id}
                     onClick={() => handleSubCategoryClick(sub.slug)}
                     sx={{

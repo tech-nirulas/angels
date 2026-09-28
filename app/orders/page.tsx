@@ -32,13 +32,14 @@ function StatusChip({ status }: { status: string }) {
   );
 }
 
-import { Order, OrderItem } from "@/interfaces/order.interface";
+import { Order } from "@/interfaces/order.interface";
 
 function OrderCard({ order }: { order: Order }) {
   const theme = useTheme();
   const router = useRouter();
-  const firstItem = order.items?.[0];
-  const totalItems = order.items?.reduce((s: number, i: OrderItem) => s + i.quantity, 0) ?? 0;
+  const items = order.items ?? [];
+  const firstItem = items[0];
+  const totalItems = items.reduce((s, i) => s + i.quantity, 0);
 
   return (
     <motion.div
@@ -83,7 +84,7 @@ function OrderCard({ order }: { order: Order }) {
         <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
           {/* Stacked thumbnails */}
           <Box sx={{ display: "flex", position: "relative", width: 80 }}>
-            {order.items?.slice(0, 3).map((item: OrderItem, idx: number) => (
+            {items.slice(0, 3).map((item, idx) => (
               <Box
                 key={item.id}
                 sx={{
@@ -106,9 +107,9 @@ function OrderCard({ order }: { order: Order }) {
           <Box sx={{ minWidth: 0 }}>
             <Typography variant="body2" sx={{ fontWeight: 600, lineHeight: 1.3 }}>
               {firstItem?.productSnapshot?.name}
-              {order.items?.length > 1 && (
+              {items.length > 1 && (
                 <Typography component="span" variant="caption" sx={{ color: theme.palette.text.disabled, ml: 0.5 }}>
-                  +{order.items.length - 1} more
+                  +{items.length - 1} more
                 </Typography>
               )}
             </Typography>

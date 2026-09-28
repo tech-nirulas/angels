@@ -4,9 +4,6 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   transpilePackages: ["@aimk/permissions", "@aimk/image-spec"],
   /* config options here */
-  typescript: {
-    ignoreBuildErrors: true,
-  },
   images: {
     // Next.js 16 changed the default to `[75]` and silently coerces any `quality`
     // prop outside this allowlist to the nearest permitted value. These three tiers

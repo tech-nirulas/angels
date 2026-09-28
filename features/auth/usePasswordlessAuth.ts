@@ -40,7 +40,7 @@ interface VerifyArgs {
 
 export function usePasswordlessAuth() {
   const dispatch = useAppDispatch();
-  const guestCart = useAppSelector((state) => state.cart.items);
+  const guestCart = useAppSelector((state) => state.cart.guestItems);
   const [loginPasswordless] = useLoginPasswordlessMutation();
   const [registerPasswordless] = useRegisterPasswordlessMutation();
 

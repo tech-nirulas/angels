@@ -4,6 +4,7 @@
 import AvailableCouponsDrawer from "@/components/ui/AvailableCouponsDrawer";
 import LoginModal from "@/components/ui/LoginModal";
 import { useGetAddressesQuery } from "@/features/address/addressApiService";
+import { addressesPathFor } from "@/helpers/safeRedirect.helper";
 import {
   useClearCartMutation,
   useGetCartQuery,
@@ -22,7 +23,7 @@ import {
   updateGuestQuantity,
 } from "@/features/cart/cartSlice";
 import { useValidateOfferCodeMutation } from "@/features/offer/offerApiService";
-import { useCreateOrderMutation, useVerifyPaymentMutation } from "@/features/order/orderApiService";
+import { useCreateOrderMutation, usePreviewOrderMutation, useVerifyPaymentMutation } from "@/features/order/orderApiService";
 import { Address } from "@/interfaces/address.interface";
 import { useAppDispatch, useAppSelector } from "@/lib/store";
 import { MEDIA_BASE_URL } from "@/utils/constants";
@@ -52,6 +53,7 @@ import Divider from "@mui/material/Divider";
 import Grid from "@mui/material/Grid";
 import IconButton from "@mui/material/IconButton";
 import Paper from "@mui/material/Paper";
+import Radio from "@mui/material/Radio";
 import Snackbar from "@mui/material/Snackbar";
 import TextField from "@mui/material/TextField";
 import Tooltip from "@mui/material/Tooltip";
@@ -60,7 +62,11 @@ import { alpha, useTheme } from "@mui/material/styles";
 import { AnimatePresence, motion } from "framer-motion";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+
+// sessionStorage key for the current pay attempt's idempotency key. Scoped to
+// the tab so it survives a refresh but not a new browsing session.
+const IDEMPOTENCY_KEY = "aimk_checkout_idempotency_key";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function effectivePrice(price: number, discount?: number | null, discountedPrice?: number) {
@@ -101,6 +107,7 @@ function QuantityStepper({
       }}
     >
       <IconButton
+      aria-label="Decrease quantity"
         size="small"
         onClick={onDecrement}
         disabled={disabled}
@@ -118,7 +125,7 @@ function QuantityStepper({
       >
         {value}
       </Typography>
-      <IconButton
+      <IconButton aria-label="Increase quantity"
         size="small"
         onClick={onIncrement}
         disabled={disabled}
@@ -148,6 +155,7 @@ function AddressCard({
   const theme = useTheme();
   return (
     <Paper
+      component="label"
       onClick={onSelect}
       elevation={0}
       sx={{
@@ -158,8 +166,17 @@ function AddressCard({
         background: selected ? alpha(theme.palette.primary.main, 0.04) : "white",
         transition: "all 0.2s ease",
         "&:hover": { borderColor: theme.palette.primary.main },
+        "&:focus-within": { outline: `2px solid ${theme.palette.primary.main}`, outlineOffset: 2 },
       }}
     >
+      {/* Visually hidden native radio — gives the address row real radio
+          semantics (arrow-key selection, announcement) with no ARIA needed. */}
+      <Radio
+        checked={selected}
+        onChange={onSelect}
+        sx={{ position: "absolute", opacity: 0, pointerEvents: "none" }}
+        slotProps={{ input: { "aria-label": `Deliver to ${address.label || address.addressType}` } }}
+      />
       <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.5 }}>
         <Box
           sx={{
@@ -240,7 +257,7 @@ function DeliveryConfirmModal({
       onClose={onClose}
       maxWidth="sm"
       fullWidth
-      PaperProps={{ sx: { borderRadius: 3 } }}
+      slotProps={{ paper: { sx: { borderRadius: 3 } } }}
     >
       <DialogTitle
         sx={{
@@ -268,7 +285,7 @@ function DeliveryConfirmModal({
             <Button
               variant="contained"
               startIcon={<EditOutlinedIcon />}
-              onClick={() => router.push("/addresses")}
+              onClick={() => router.push(addressesPathFor("/cart"))}
               sx={{ borderRadius: 2, textTransform: "none" }}
             >
               Add Address
@@ -294,7 +311,7 @@ function DeliveryConfirmModal({
             <Button
               size="small"
               startIcon={<EditOutlinedIcon fontSize="small" />}
-              onClick={() => router.push("/addresses")}
+              onClick={() => router.push(addressesPathFor("/cart"))}
               sx={{ textTransform: "none", color: theme.palette.primary.main, mb: 1 }}
             >
               Manage addresses
@@ -309,6 +326,7 @@ function DeliveryConfirmModal({
             <Grid container spacing={1.5} sx={{ mb: 2.5 }}>
               <Grid size={{ xs: 6 }}>
                 <Paper
+                  component="label"
                   onClick={() => onSelectPaymentMethod("RAZORPAY")}
                   sx={{
                     p: 1.5,
@@ -318,8 +336,19 @@ function DeliveryConfirmModal({
                     bgcolor: paymentMethod === "RAZORPAY" ? alpha(theme.palette.primary.main, 0.04) : "#FFF",
                     textAlign: "center",
                     transition: "all 0.2s ease",
+                    // Visible ring for keyboard users, matching the border cue
+                    // sighted users already get.
+                    "&:focus-within": { borderColor: theme.palette.primary.main, outline: `2px solid ${theme.palette.primary.main}`, outlineOffset: 2 },
                   }}
                 >
+                  {/* Visually hidden native radio: keyboard/AT support for free. */}
+                  <Radio
+                    value="RAZORPAY"
+                    checked={paymentMethod === "RAZORPAY"}
+                    onChange={() => onSelectPaymentMethod("RAZORPAY")}
+                    sx={{ position: "absolute", opacity: 0, pointerEvents: "none" }}
+                    slotProps={{ input: { "aria-label": "Online Payment" } }}
+                  />
                   <Typography variant="body2" sx={{ fontWeight: 800, color: paymentMethod === "RAZORPAY" ? theme.palette.primary.main : "#334155" }}>
                     💳 Online Payment
                   </Typography>
@@ -330,6 +359,7 @@ function DeliveryConfirmModal({
               </Grid>
               <Grid size={{ xs: 6 }}>
                 <Paper
+                  component="label"
                   onClick={() => onSelectPaymentMethod("COD")}
                   sx={{
                     p: 1.5,
@@ -339,8 +369,16 @@ function DeliveryConfirmModal({
                     bgcolor: paymentMethod === "COD" ? alpha(theme.palette.primary.main, 0.04) : "#FFF",
                     textAlign: "center",
                     transition: "all 0.2s ease",
+                    "&:focus-within": { borderColor: theme.palette.primary.main, outline: `2px solid ${theme.palette.primary.main}`, outlineOffset: 2 },
                   }}
                 >
+                  <Radio
+                    value="COD"
+                    checked={paymentMethod === "COD"}
+                    onChange={() => onSelectPaymentMethod("COD")}
+                    sx={{ position: "absolute", opacity: 0, pointerEvents: "none" }}
+                    slotProps={{ input: { "aria-label": "Cash on Delivery" } }}
+                  />
                   <Typography variant="body2" sx={{ fontWeight: 800, color: paymentMethod === "COD" ? theme.palette.primary.main : "#334155" }}>
                     💵 Cash on Delivery
                   </Typography>
@@ -460,33 +498,109 @@ export default function CartPage() {
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [updatingProductId, setUpdatingProductId] = useState<string | null>(null);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+  // sessionStorage is the single source of truth for the attempt's key: it
+  // survives a rerender, a modal reopen, a payment retry and a full page
+  // refresh, so a reload after paying but before the redirect cannot mint a
+  // second key and create a second order. Cleared only on confirmation.
+  const takeIdempotencyKey = useCallback(() => {
+    const existing = sessionStorage.getItem(IDEMPOTENCY_KEY);
+    if (existing) return existing;
+    const fresh = crypto.randomUUID();
+    sessionStorage.setItem(IDEMPOTENCY_KEY, fresh);
+    return fresh;
+  }, []);
+
+  // Guards a double click that lands before React re-renders the disabled
+  // button — the ref is read synchronously, the state is not.
+  const placingRef = useRef(false);
+
+  const finishPlacingOrder = useCallback((confirmed: boolean) => {
+    placingRef.current = false;
+    setIsPlacingOrder(false);
+    if (confirmed) sessionStorage.removeItem(IDEMPOTENCY_KEY);
+  }, []);
 
   const appliedPromo = useAppSelector(selectAppliedPromo);
 
   const [createOrder] = useCreateOrderMutation();
+  const [previewOrder] = usePreviewOrderMutation();
   const [verifyPayment] = useVerifyPaymentMutation();
   const [validateOfferCode, { isLoading: isValidatingPromo }] = useValidateOfferCodeMutation();
 
-  const SHIPPING_THRESHOLD = 500;
+
+const SHIPPING_THRESHOLD = 500;
   const SHIPPING_COST = 49;
 
   useEffect(() => { setMounted(true); }, []);
 
+  // Seed the selection once, and never override a choice the user has already
+  // made. `defaultAddress` is a fresh object on every refetch, so depending on
+  // its identity alone silently reset the selection back to the default
+  // whenever the Address list refetched mid-checkout.
+  const [userPickedAddress, setUserPickedAddress] = useState(false);
   useEffect(() => {
-    if (defaultAddress) setSelectedAddressId(defaultAddress.id);
-  }, [defaultAddress]);
+    if (defaultAddress && !userPickedAddress) {
+      setSelectedAddressId(defaultAddress.id);
+    }
+  }, [defaultAddress, userPickedAddress]);
 
   useEffect(() => {
     if (isAuthenticated && guestItems.length > 0) {
       mergeCartMutation({
         items: guestItems.map((i) => ({ productId: i.productId, quantity: i.quantity })),
-      }).then(() => dispatch(clearGuestCart()));
+      })
+        .unwrap()
+        // Only clear the guest cart once the server has actually taken the
+        // items. RTK Query resolves with { error } rather than rejecting, so an
+        // unguarded .then() wiped the cart on every failed merge.
+        .then(() => dispatch(clearGuestCart()))
+        .catch(() => {
+          // Keep guestItems: the server cart does not have them, so dropping
+          // them here would lose the user's basket.
+        });
     }
   }, [isAuthenticated]);
 
+  // The amount charged is decided by the backend from the persisted cart, its
+  // own delivery-fee rules and GST. This local arithmetic was a second,
+  // disagreeing source of truth (it used a flat SHIPPING_COST and no GST), so
+  // the total shown in the dialog could differ from the total captured. Ask the
+  // server; until it answers, keep the local estimate so the button has a value.
+  const [serverTotals, setServerTotals] = useState<{ grandTotal: number; deliveryFee: number } | null>(null);
+
+  useEffect(() => {
+    if (!isAuthenticated || !selectedAddressId) {
+      setServerTotals(null);
+      return;
+    }
+    let cancelled = false;
+    previewOrder({
+      deliveryAddressId: selectedAddressId,
+      promoCode: appliedPromo?.code,
+      orderType: "delivery",
+    })
+      .unwrap()
+      .then((res) => {
+        if (cancelled) return;
+        const d = res?.data ?? res;
+        if (typeof d?.grandTotal === "number") {
+          setServerTotals({ grandTotal: d.grandTotal, deliveryFee: Number(d.deliveryFee ?? 0) });
+        }
+      })
+      // A preview failure must never block checkout: createOrder recomputes
+      // authoritatively, so fall back to the local estimate.
+      .catch(() => {
+        if (!cancelled) setServerTotals(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, selectedAddressId, appliedPromo?.code, previewOrder]);
+
   const shipping = cartTotal >= SHIPPING_THRESHOLD ? 0 : SHIPPING_COST;
   const promoSaving = appliedPromo ? appliedPromo.discountAmount : 0;
-  const orderTotal = Math.max(0, cartTotal - promoSaving + shipping);
+  const estimatedTotal = Math.max(0, cartTotal - promoSaving + shipping);
+  const orderTotal = serverTotals?.grandTotal ?? estimatedTotal;
   const shippingProgress = Math.min((cartTotal / SHIPPING_THRESHOLD) * 100, 100);
   const remaining = Math.max(SHIPPING_THRESHOLD - cartTotal, 0);
 
@@ -509,7 +623,17 @@ export default function CartPage() {
   // ── Razorpay / COD payment flow ──────────────────────────────────────────
   const handleConfirmAndPay = async () => {
     if (!selectedAddressId) return;
+    // Synchronous re-entrancy guard. The disabled prop covers the common case,
+    // but two clicks in the same tick both read the old `isPlacingOrder`.
+    if (placingRef.current) return;
+    placingRef.current = true;
     setIsPlacingOrder(true);
+
+    // One key per "pay" attempt, reused across a double click, a retry after a
+    // timeout, a modal reopen and a full page refresh, so the backend returns
+    // the original order instead of creating a second one. Cleared only once
+    // the order is actually confirmed.
+    const key = takeIdempotencyKey();
 
     try {
       // 1. Create order on backend
@@ -518,12 +642,14 @@ export default function CartPage() {
         deliveryAddressId: selectedAddressId,
         promoCode: appliedPromo ? appliedPromo.code : undefined,
         paymentMethod,
+        idempotencyKey: key,
       }).unwrap();
 
       const resultData = res.data || res;
 
       // Handle Cash on Delivery
       if (paymentMethod === "COD" || resultData.isCod) {
+        finishPlacingOrder(true);
         setDeliveryModalOpen(false);
         showSnack("Order placed successfully with Cash on Delivery! Redirecting...", "success");
         const orderId = resultData.order?.id || resultData.id;
@@ -553,21 +679,41 @@ export default function CartPage() {
           razorpay_payment_id: string;
           razorpay_signature: string;
         }) => {
-          // 3. Verify on backend
-          const verifyRes = await verifyPayment({
-            razorpayOrderId: response.razorpay_order_id,
-            razorpayPaymentId: response.razorpay_payment_id,
-            razorpaySignature: response.razorpay_signature,
-          })
+          // 3. Verify on backend. The money is already captured at this point,
+          // so a verification failure must NOT be reported as success — tell
+          // the user it failed and leave the order page reachable so they can
+          // retry rather than silently losing the confirmation.
+          try {
+            await verifyPayment({
+              razorpayOrderId: response.razorpay_order_id,
+              razorpayPaymentId: response.razorpay_payment_id,
+              razorpaySignature: response.razorpay_signature,
+            }).unwrap();
+          } catch {
+            // The key is deliberately KEPT: the order may already exist, so a
+            // retry must replay it rather than create a second one. Only the
+            // button is released.
+            finishPlacingOrder(false);
+            showSnack(
+              "Payment received but we couldn't confirm it. If money was deducted it will be refunded automatically.",
+              "error"
+            );
+            return;
+          }
 
+          // Verification confirmed — safe to discard the key so a genuinely
+          // new order later starts fresh.
+          finishPlacingOrder(true);
           setDeliveryModalOpen(false);
           showSnack("Payment successful! Redirecting to your order...", "success");
           setTimeout(() => router.push(`/orders/${order.id}`), 1500);
         },
         modal: {
-          ondismiss: () => {
-            setIsPlacingOrder(false);
-          },
+          // Dismissal is not a failure of the order — the backend already has a
+          // pending order for this key, and the cart is still intact because it
+          // is consumed on capture, not on creation. Releasing the button lets
+          // the user reopen checkout against the SAME order.
+          ondismiss: () => finishPlacingOrder(false),
         },
       };
 
@@ -575,13 +721,27 @@ export default function CartPage() {
       const rzp = new window.Razorpay(options);
       rzp.on("payment.failed", () => {
         showSnack("Payment failed. Please try again.", "error");
-        setIsPlacingOrder(false);
+        finishPlacingOrder(false);
       });
       rzp.open();
       setDeliveryModalOpen(false);
-    } catch {
+    } catch (err) {
+      // A 409 means this key already produced an order with a different address
+      // or payment method — the user changed their mind after a failed payment.
+      // That attempt is finished, so the key is stale: drop it, otherwise every
+      // retry replays the same conflict and the customer is stuck for good.
+      const status = (err as { status?: number })?.status;
+      if (status === 409) {
+        sessionStorage.removeItem(IDEMPOTENCY_KEY);
+        showSnack(
+          "Your previous attempt used a different address or payment method. Please confirm the details and pay again.",
+          "error"
+        );
+        finishPlacingOrder(false);
+        return;
+      }
       showSnack("Something went wrong. Please try again.", "error");
-      setIsPlacingOrder(false);
+      finishPlacingOrder(false);
     }
   };
 
@@ -800,7 +960,7 @@ export default function CartPage() {
                                   </Box>
                                 </Box>
                                 <Tooltip title="Remove item">
-                                  <IconButton size="small" onClick={() => handleRemove(item.productId, item.product.name)} disabled={isItemUpdating} sx={{ flexShrink: 0, color: theme.palette.text.disabled, "&:hover": { color: theme.palette.error.main, background: alpha(theme.palette.error.main, 0.08) } }}>
+                                  <IconButton aria-label="Remove item from cart" size="small" onClick={() => handleRemove(item.productId, item.product.name)} disabled={isItemUpdating} sx={{ flexShrink: 0, color: theme.palette.text.disabled, "&:hover": { color: theme.palette.error.main, background: alpha(theme.palette.error.main, 0.08) } }}>
                                     <DeleteOutlineIcon fontSize="small" />
                                   </IconButton>
                                 </Tooltip>
@@ -960,7 +1120,9 @@ export default function CartPage() {
                               onChange={(e) => { setPromoCode(e.target.value); setPromoError(false); }}
                               error={promoError}
                               helperText={promoError ? "Invalid or ineligible promo code" : ""}
-                              slotProps={{ helperText: { sx: { color: theme.palette.error.main, mt: 0.5 } } }}
+                              // v9 renamed this slot: `helperText` no longer exists, so the
+                              // error colour was never applied. Real key is formHelperText.
+                              slotProps={{ formHelperText: { sx: { color: theme.palette.error.main, mt: 0.5 } } }}
                               sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2, fontSize: "0.85rem" } }}
                               onKeyDown={(e) => e.key === "Enter" && handleApplyPromo()}
                             />
@@ -1054,7 +1216,10 @@ export default function CartPage() {
         onConfirm={handleConfirmAndPay}
         addresses={addresses}
         selectedAddressId={selectedAddressId}
-        onSelectAddress={setSelectedAddressId}
+        onSelectAddress={(id) => {
+          setUserPickedAddress(true);
+          setSelectedAddressId(id);
+        }}
         paymentMethod={paymentMethod}
         onSelectPaymentMethod={setPaymentMethod}
         orderTotal={orderTotal}

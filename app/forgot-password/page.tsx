@@ -202,7 +202,7 @@ export default function ForgotPasswordPage() {
               </>
             )}
 
-            <Box mt={2}>
+            <Box sx={{ mt: 2 }}>
               <Link
                 href="/login"
                 style={{

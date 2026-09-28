@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Local env loader — contains live provider credentials, never commit.
+local.sh
+local.ps1

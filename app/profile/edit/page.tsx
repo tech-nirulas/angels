@@ -206,11 +206,14 @@ export default function ProfileEditPage() {
               </Button>
 
               <Box sx={{ display: "flex", alignItems: "center", gap: 2.5 }}>
+{/* No `src`: the API has no avatar field — UpdateProfileDto accepts one but
+                  the backend has no column and never persists it, so
+                  `profile.avatar` was always undefined. Avatar falls back to the
+                  initials. Revisit when avatar persistence ships. */}
                 {isLoading ? (
                   <Skeleton variant="circular" width={64} height={64} />
                 ) : (
                   <Avatar
-                    src={profile?.avatar}
                     sx={{
                       width: 64,
                       height: 64,
@@ -455,6 +458,7 @@ export default function ProfileEditPage() {
                             endAdornment={
                               <InputAdornment position="end">
                                 <IconButton
+      aria-label="Show current password"
                                   onClick={() => setShowCurrent((v) => !v)}
                                   edge="end"
                                   size="small"
@@ -477,7 +481,7 @@ export default function ProfileEditPage() {
                               }
                               endAdornment={
                                 <InputAdornment position="end">
-                                  <IconButton
+                                  <IconButton aria-label="Show new password"
                                     onClick={() => setShowNew((v) => !v)}
                                     edge="end"
                                     size="small"
@@ -529,7 +533,7 @@ export default function ProfileEditPage() {
                             }
                             endAdornment={
                               <InputAdornment position="end">
-                                <IconButton
+                                <IconButton aria-label="Show confirm password"
                                   onClick={() => setShowConfirm((v) => !v)}
                                   edge="end"
                                   size="small"

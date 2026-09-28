@@ -576,6 +576,7 @@ export default function CustomizeCakePage() {
                         return (
                           <Grid size={{ xs: 6, sm: 3 }} key={sz.value}>
                             <Card
+                              component="label"
                               onClick={() => setFormData({ ...formData, size: sz.value as any })}
                               sx={{
                                 cursor: "pointer",

@@ -4,6 +4,8 @@
 import { useLazyFetchUserQuery } from '@/features/auth/authApiService';
 import { logout, setLoading, setUser } from '@/features/auth/authSlice';
 import getDecryptedToken from '@/helpers/decryptToken.helper';
+import { loginPathFor } from '@/helpers/safeRedirect.helper';
+import { isPublicPath } from '@/constants/routes';
 import { CircularProgress } from '@mui/material';
 import { usePathname, useRouter } from 'next/navigation';
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
@@ -40,8 +42,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const [fetchUser, { isLoading: isFetchingUser }] = useLazyFetchUserQuery();
 
-  const publicRoutes = ['/login', '/register', '/', '/menu', '/cart'];
-  const isPublicRoute = publicRoutes.includes(pathname);
+  // Prefix-matched, and shared with the login redirect (constants/routes.ts).
+  const isPublicRoute = isPublicPath(pathname);
+  // Read in the effects below, not here: useSearchParams() in a root provider
+  // forces a Suspense boundary on every route and deopts static prerender.
+  const currentSearch = () =>
+    typeof window === 'undefined' ? '' : window.location.search;
 
   const checkAuth = async () => {
     try {
@@ -51,7 +57,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!token) {
         dispatch(logout());
         if (!isPublicRoute) {
-          router.push('/login');
+          // Carry the destination so login can return the user to it.
+          router.push(loginPathFor(pathname, currentSearch()));
         }
         return;
       }
@@ -63,7 +70,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('Auth check failed:', error);
       dispatch(logout());
       if (!isPublicRoute) {
-        router.push('/login');
+        router.push(loginPathFor(pathname, currentSearch()));
       }
     } finally {
       dispatch(setLoading(false));
@@ -90,10 +97,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     if (!authState && !isAuthenticated && !isPublicRoute) {
-      console.log("Came here??")
-      router.push('/login');
+      router.push(loginPathFor(pathname, currentSearch()));
     }
-  }, [isAuthenticated, isLoading, isPublicRoute, router]);
+  }, [isAuthenticated, isLoading, isPublicRoute, pathname, router]);
 
   const value = useMemo(
     () => ({

@@ -16,6 +16,7 @@ import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCart';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
+import CardActionArea from '@mui/material/CardActionArea';
 import CardActions from '@mui/material/CardActions';
 import CardContent from '@mui/material/CardContent';
 import Chip from '@mui/material/Chip';
@@ -97,8 +98,25 @@ const FeaturedProductCard = ({
             boxShadow: theme.shadows[8],
           },
         }}
-        onClick={() => onProductClick(product)}
       >
+        {/* Same treatment as ProductCard: CardActionArea is a real <button>, so
+            the card is keyboard-reachable with no ARIA. CardActions (the Add to
+            cart button) stays outside it. */}
+        <CardActionArea
+          onClick={() => onProductClick(product)}
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "stretch",
+            justifyContent: "flex-start",
+            height: "100%",
+            // Visible keyboard focus indicator (WCAG 2.4.7).
+            "&.Mui-focused": {
+              outline: `3px solid ${theme.palette.primary.main}`,
+              outlineOffset: "2px",
+            },
+          }}
+        >
         {/* Featured Badge */}
         <Chip
           label="Featured"
@@ -241,6 +259,7 @@ const FeaturedProductCard = ({
             ₹{price.toFixed(2)}
           </Typography>
         </CardContent>
+        </CardActionArea>
 
         {/* Add to Cart Button */}
         <CardActions sx={{ p: 2, pt: 0 }}>

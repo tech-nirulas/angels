@@ -32,10 +32,33 @@
 
 const MSG91_SCRIPT_SRC = 'https://verify.msg91.com/otp-provider.js';
 
-const WIDGET_ID =
-  process.env.NEXT_PUBLIC_MSG91_WIDGET_ID || '366644664c4a323237353039';
-const TOKEN_AUTH =
-  process.env.NEXT_PUBLIC_MSG91_TOKEN_AUTH || '512331Tv4ORqfJ6a436578P1';
+// Read at call time rather than module scope: Next.js inlines NEXT_PUBLIC_* at
+// build time, and a module-level read captured undefined in any environment
+// where the variable was absent.
+//
+// There are deliberately NO hardcoded fallback values here. Previously each key
+// fell back to a shared test credential, so a production deploy with a missing
+// env var silently kept using the test widget — OTPs then failed at the backend's
+// verifyAccessToken step with an opaque auth error, long after the real cause.
+// Failing loudly at the point of use is far easier to diagnose.
+function readConfig(): { widgetId: string; tokenAuth: string } {
+  const widgetId = process.env.NEXT_PUBLIC_MSG91_WIDGET_ID;
+  const tokenAuth = process.env.NEXT_PUBLIC_MSG91_TOKEN_AUTH;
+
+  const missing = [
+    !widgetId && 'NEXT_PUBLIC_MSG91_WIDGET_ID',
+    !tokenAuth && 'NEXT_PUBLIC_MSG91_TOKEN_AUTH',
+  ].filter(Boolean);
+
+  if (missing.length > 0) {
+    throw new Error(
+      `MSG91 is not configured. Missing: ${missing.join(', ')}. ` +
+        'Set these in .env.local and restart the dev server / rebuild.',
+    );
+  }
+
+  return { widgetId: widgetId!, tokenAuth: tokenAuth! };
+}
 
 let widgetReady: Promise<void> | null = null;
 
@@ -104,6 +127,8 @@ export function ensureMsg91Widget(): Promise<void> {
 
   if (widgetReady) return widgetReady;
 
+  const { widgetId, tokenAuth } = readConfig();
+
   widgetReady = loadScript()
     .then(() => {
       const initSendOTP = (window as any).initSendOTP;
@@ -112,8 +137,8 @@ export function ensureMsg91Widget(): Promise<void> {
       }
 
       initSendOTP({
-        widgetId: WIDGET_ID,
-        tokenAuth: TOKEN_AUTH,
+        widgetId,
+        tokenAuth,
         exposeMethods: true,
         // The SDK throws if `success` is missing, but real handling lives in the
         // per-call callbacks passed to sendOtp/verifyOtp below. MSG91's docs say

@@ -1,5 +1,5 @@
 // features/address/addressEndpoints.ts
-import { EndpointBuilder } from "@reduxjs/toolkit/query";
+import { EndpointBuilder } from "@reduxjs/toolkit/query/react";
 import {
   Address,
   CreateAddressPayload,

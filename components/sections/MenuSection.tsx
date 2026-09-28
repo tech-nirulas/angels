@@ -18,6 +18,7 @@ import { MEDIA_BASE_URL } from "@/utils/constants";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
+import { alpha } from "@mui/material/styles";
 import Card from "@mui/material/Card";
 import CardActions from "@mui/material/CardActions";
 import CardContent from "@mui/material/CardContent";
@@ -288,11 +289,14 @@ export default function MenuSection() {
                       px: 3.5,
                       py: 1,
                       fontSize: "0.8rem",
-                      borderColor: cat.color,
-                      color: cat.color,
+                      // Category has no `color` column (verified against the API),
+                      // so the previous cat.color values were always undefined.
+                      // Use the theme brand color the rest of this file uses.
+                      borderColor: theme.palette.primary.main,
+                      color: theme.palette.primary.main,
                       "&:hover": {
-                        borderColor: cat.color,
-                        background: `${cat.color}10`,
+                        borderColor: theme.palette.primary.main,
+                        background: alpha(theme.palette.primary.main, 0.06),
                         transform: "translateY(-2px)",
                       },
                     }}

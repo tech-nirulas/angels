@@ -20,6 +20,7 @@ import PaymentOutlinedIcon from "@mui/icons-material/PaymentOutlined";
 import ReportProblemOutlinedIcon from "@mui/icons-material/ReportProblemOutlined";
 import StarIcon from "@mui/icons-material/Star";
 import StarBorderIcon from "@mui/icons-material/StarBorder";
+import Rating from "@mui/material/Rating";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
@@ -67,22 +68,19 @@ const COMPLAINT_TYPES = [
 ];
 
 // ── Star rating input ─────────────────────────────────────────────────────────
+// MUI's Rating is a native radio group: arrow keys move between stars, space
+// selects, and it is announced correctly. The previous hand-rolled Box/div
+// stars were mouse-only — a keyboard user could not rate an order at all.
 function StarRating({ value, onChange }: { value: number; onChange: (v: number) => void }) {
-  const [hover, setHover] = useState(0);
   return (
-    <Box sx={{ display: "flex", gap: 0.5 }}>
-      {[1, 2, 3, 4, 5].map((star) => (
-        <Box
-          key={star}
-          onClick={() => onChange(star)}
-          onMouseEnter={() => setHover(star)}
-          onMouseLeave={() => setHover(0)}
-          sx={{ cursor: "pointer", fontSize: "2rem", color: star <= (hover || value) ? "#F59E0B" : "#D1D5DB", transition: "color 0.1s" }}
-        >
-          {star <= (hover || value) ? <StarIcon fontSize="inherit" /> : <StarBorderIcon fontSize="inherit" />}
-        </Box>
-      ))}
-    </Box>
+    <Rating
+      value={value}
+      onChange={(_, newValue) => {
+        if (newValue !== null) onChange(newValue);
+      }}
+      size="large"
+      sx={{ fontSize: "2rem" }}
+    />
   );
 }
 
@@ -143,7 +141,7 @@ function ReviewDialog({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth slotProps={{ paper: { sx: { borderRadius: 3 } } }}>
       <DialogTitle sx={{ fontFamily: "var(--font-display)", fontWeight: 700, borderBottom: `1px solid ${theme.palette.divider}` }}>
         Review Product
       </DialogTitle>
@@ -224,7 +222,7 @@ function ComplaintDialog({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth slotProps={{ paper: { sx: { borderRadius: 3 } } }}>
       <DialogTitle sx={{ fontFamily: "var(--font-display)", fontWeight: 700, borderBottom: `1px solid ${theme.palette.divider}` }}>
         Report an Issue
       </DialogTitle>
@@ -302,7 +300,7 @@ function CancelDialog({
 }) {
   const theme = useTheme();
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth slotProps={{ paper: { sx: { borderRadius: 3 } } }}>
       <DialogTitle sx={{ fontFamily: "var(--font-display)", fontWeight: 700 }}>Cancel Order?</DialogTitle>
       <DialogContent>
         <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
@@ -414,7 +412,15 @@ export default function OrderDetailPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  // NOTE: the backend exposes no order-cancel endpoint yet, so the mutation call
+  // is still commented out below and this handler cannot actually cancel. It is
+  // kept wired to the dialog (rather than removed) so the contract is explicit;
+  // do not ship the success toast until the endpoint exists.
+  const [isCancelling, setIsCancelling] = useState(false);
+
   const handleCancel = async () => {
+    if (isCancelling) return;
+    setIsCancelling(true);
     try {
       // await cancelOrder(orderId).unwrap();
       setCancelOpen(false);
@@ -422,6 +428,8 @@ export default function OrderDetailPage() {
       refetch();
     } catch {
       showSnack("Failed to cancel order.", "error");
+    } finally {
+      setIsCancelling(false);
     }
   };
 
@@ -813,7 +821,7 @@ export default function OrderDetailPage() {
         open={cancelOpen}
         onClose={() => setCancelOpen(false)}
         onConfirm={handleCancel}
-        // isLoading={isCancelling}
+        isLoading={isCancelling}
       />
 
       <Snackbar open={snack.open} autoHideDuration={4000} onClose={() => setSnack((s) => ({ ...s, open: false }))} anchorOrigin={{ vertical: "bottom", horizontal: "center" }}>

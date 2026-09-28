@@ -201,6 +201,7 @@ export default function TestimonialsSection() {
         {/* Navigation */}
         <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 2, mt: 4 }}>
           <IconButton
+      aria-label="Previous testimonial"
             onClick={() => navigate(-1)}
             sx={{
               border: `1px solid ${theme.palette.primary.light}60`,
@@ -214,6 +215,10 @@ export default function TestimonialsSection() {
           <Box sx={{ display: "flex", gap: 1 }}>
             {TESTIMONIALS.map((_, i) => (
               <Box
+                component="button"
+                type="button"
+                aria-label={`Go to testimonial ${i + 1}`}
+                aria-current={i === idx}
                 key={i}
                 onClick={() => { setDirection(i > idx ? 1 : -1); setIdx(i); }}
                 sx={{
@@ -228,7 +233,7 @@ export default function TestimonialsSection() {
             ))}
           </Box>
 
-          <IconButton
+          <IconButton aria-label="Next testimonial"
             onClick={() => navigate(1)}
             sx={{
               border: `1px solid ${theme.palette.primary.light}60`,

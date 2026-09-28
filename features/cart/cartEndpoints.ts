@@ -1,5 +1,5 @@
 // features/cart/cartEndpoints.ts
-import { EndpointBuilder } from "@reduxjs/toolkit/query";
+import { EndpointBuilder } from "@reduxjs/toolkit/query/react";
 import { CartItem } from "./cartSlice";
 import { Root } from "@/interfaces/root.interface";
 

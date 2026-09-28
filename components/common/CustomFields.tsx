@@ -284,8 +284,12 @@ export const MaterialMultiSelectField = ({
             </Box>
           );
         }}
+        // `value` is the stored form value (a raw primitive for this multiple
+        // select), not an option object — MUI's signature allows either.
         isOptionEqualToValue={(option, value) =>
-          option.value === value.value
+          typeof value === "object" && value !== null
+            ? option.value === value.value
+            : option.value === value
         }
       />
       {errorText && <FormHelperText>{errorText}</FormHelperText>}
@@ -334,7 +338,7 @@ export const MaterialFreeInputMultiSelect = ({
         onKeyDown={handleKeyDown}
         label={label}
         startAdornment={
-          <Box display="flex" gap={0.5} py={1}>
+          <Box sx={{ display: "flex", gap: 0.5, py: 1 }}>
             {selectedValues.map((value) => (
               <Chip
                 key={value}

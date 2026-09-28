@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/useToast";
 import { Address, AddressType, CreateAddressPayload } from "@/interfaces/address.interface";
 import { useAppSelector } from "@/lib/store";
 import AddIcon from "@mui/icons-material/Add";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import BusinessOutlinedIcon from "@mui/icons-material/BusinessOutlined";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutlineOutlined";
@@ -47,12 +48,24 @@ import {
 import { alpha, useTheme } from "@mui/material/styles";
 import { GoogleMap, Marker, useLoadScript } from "@react-google-maps/api";
 import { AnimatePresence, motion } from "framer-motion";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { addressReturnPath } from "@/helpers/safeRedirect.helper";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
-const GOOGLE_MAPS_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY ?? "";
+// No fallback value: a missing key and a rejected key fail very differently
+// (see MapPicker's messaging), so they must not be conflated by a placeholder.
+const GOOGLE_MAPS_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY;
 const DEFAULT_CENTER = { lat: 20.5937, lng: 78.9629 }; // India center
+// Required by CreateAddressDto (@IsNotEmpty). Everything else is optional —
+// note line1 and recipientName are @IsOptional() in the DTO, so requiring them
+// here would block saves the API would accept.
+const REQUIRED_FIELDS: Array<['city' | 'state' | 'postcode', string]> = [
+  ["city", "City"],
+  ["state", "State"],
+  ["postcode", "PIN code"],
+];
+
 const MAP_LIBRARIES: ("places" | "geocoding")[] = ["places", "geocoding"];
 
 const ADDRESS_TYPE_OPTIONS: { value: AddressType; label: string; icon: React.ReactNode }[] = [
@@ -247,6 +260,7 @@ function AddressCard({
           <Tooltip title={address.isDefault ? "Already default" : "Set as default"}>
             <span>
               <IconButton
+      aria-label={`Set ${address.label} as default address`}
                 size="small"
                 onClick={onSetDefault}
                 disabled={address.isDefault || isSettingDefault}
@@ -265,12 +279,12 @@ function AddressCard({
 
           <Box sx={{ display: "flex", gap: 0.5 }}>
             <Tooltip title="Edit">
-              <IconButton size="small" onClick={onEdit} sx={{ color: theme.palette.primary.main }}>
+              <IconButton aria-label="Edit this address" size="small" onClick={onEdit} sx={{ color: theme.palette.primary.main }}>
                 <EditOutlinedIcon fontSize="small" />
               </IconButton>
             </Tooltip>
             <Tooltip title="Delete">
-              <IconButton
+              <IconButton aria-label="Delete this address"
                 size="small"
                 onClick={onDelete}
                 disabled={isDeleting}
@@ -297,9 +311,13 @@ function AddressCard({
 function MapPicker({
   value,
   onChange,
+  isLoaded,
+  loadError,
 }: {
   value: { lat: number; lng: number } | null;
   onChange: (coords: { lat: number; lng: number }, address: Partial<CreateAddressPayload>) => void;
+  isLoaded: boolean;
+  loadError: Error | undefined;
 }) {
   const theme = useTheme();
   const [marker, setMarker] = useState<{ lat: number; lng: number } | null>(value);
@@ -367,6 +385,18 @@ function MapPicker({
     );
   }, [reverseGeocode]);
 
+  // Maps is a nice-to-have, never a hard dependency: the DTO marks
+  // latitude/longitude @IsOptional(), so the address saves fine without them.
+  if (!isLoaded || loadError) {
+    return (
+      <Alert severity="info" icon={false} sx={{ mb: 2 }}>
+        {loadError
+          ? "Map unavailable — enter your address below and save. You can pin it on the map later."
+          : "Loading map… you can enter your address below in the meantime."}
+      </Alert>
+    );
+  }
+
   return (
     <Box sx={{ position: "relative", borderRadius: 2, overflow: "hidden", border: `1.5px solid ${theme.palette.divider}` }}>
       <GoogleMap
@@ -428,11 +458,15 @@ function AddressFormDialog({
   onClose,
   editAddress,
   onSuccess,
+  isLoaded,
+  loadError,
 }: {
   open: boolean;
   onClose: () => void;
   editAddress: Address | null;
   onSuccess: (msg: string) => void;
+  isLoaded: boolean;
+  loadError: Error | undefined;
 }) {
   const theme = useTheme();
   const [form, setForm] = useState<CreateAddressPayload>(emptyForm());
@@ -505,7 +539,15 @@ function AddressFormDialog({
     []
   );
 
+  // Mirrors the backend DTO's @IsNotEmpty fields, so an incomplete form fails
+  // here with a visible message instead of POSTing and surfacing a raw 400.
+  const missing = REQUIRED_FIELDS.filter(([key]) => !form[key]?.trim());
+
   const handleSubmit = async () => {
+    if (missing.length > 0) {
+      showToast(`Please fill in: ${missing.map(([, label]) => label).join(", ")}`, "error");
+      return;
+    }
     try {
       if (editAddress) {
         await updateAddress({ id: editAddress.id, body: form }).unwrap();
@@ -542,7 +584,7 @@ function AddressFormDialog({
       onClose={onClose}
       maxWidth="md"
       fullWidth
-      PaperProps={{ sx: { borderRadius: 3 } }}
+      slotProps={{ paper: { sx: { borderRadius: 3 } } }}
     >
       <DialogTitle
         sx={{
@@ -565,7 +607,7 @@ function AddressFormDialog({
             >
               📍 Pin your location on the map
             </Typography>
-            <MapPicker value={mapCoords} onChange={handleMapChange} />
+            <MapPicker value={mapCoords} onChange={handleMapChange} isLoaded={isLoaded} loadError={loadError} />
           </Grid>
 
           {/* ── Address type + label ── */}
@@ -657,6 +699,7 @@ function AddressFormDialog({
           {/* ── Set as default ── */}
           <Grid size={{ xs: 12 }}>
             <Box
+              component="label"
               onClick={() => setForm((f) => ({ ...f, isDefault: !f.isDefault }))}
               sx={{
                 display: "flex",
@@ -702,7 +745,7 @@ function AddressFormDialog({
         <Button
           onClick={handleSubmit}
           variant="contained"
-          disabled={isLoading || !form.line1 || !form.city || !form.postcode || !form.recipientName}
+          disabled={isLoading || !form.city || !form.state || !form.postcode}
           sx={{ borderRadius: 2, textTransform: "none", minWidth: 120 }}
         >
           {isLoading ? (
@@ -732,7 +775,7 @@ function DeleteConfirmDialog({
 }) {
   const theme = useTheme();
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth slotProps={{ paper: { sx: { borderRadius: 3 } } }}>
       <DialogTitle sx={{ fontFamily: "var(--font-display)", fontWeight: 700 }}>
         Delete Address?
       </DialogTitle>
@@ -763,6 +806,9 @@ function DeleteConfirmDialog({
 export default function AddressesPage() {
   const theme = useTheme();
   const router = useRouter();
+  // Reuses 1D.1's guard — same trust boundary, no second redirect system.
+  const returnTo = useSearchParams().get("returnTo");
+  const goBack = () => router.push(addressReturnPath(returnTo));
   const isAuthenticated = useAppSelector((s) => s.auth.isAuthenticated);
 
   const { data, isLoading } = useGetAddressesQuery(undefined, {
@@ -780,12 +826,29 @@ export default function AddressesPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [snack, setSnack] = useState<{ open: boolean; msg: string }>({ open: false, msg: "" });
 
-  const { isLoaded } = useLoadScript({
-    googleMapsApiKey: GOOGLE_MAPS_KEY,
+  const { isLoaded, loadError } = useLoadScript({
+    googleMapsApiKey: GOOGLE_MAPS_KEY ?? "",
     libraries: MAP_LIBRARIES,
   });
 
+  // Distinguish "never configured" from "configured but Google rejected it" —
+  // they need completely different fixes, and the default message covers both.
+  const mapsError = !GOOGLE_MAPS_KEY
+    ? new Error("NEXT_PUBLIC_GOOGLE_MAPS_KEY is not set.")
+    : loadError;
+
   const showSnack = (msg: string) => setSnack({ open: true, msg });
+
+  /**
+   * Success on /addresses means the user came here to do something — pick an
+   * address for checkout, or manage their list. Either way they now have to go
+   * back where they came from; leaving them on a bare list strands them.
+   * Delete/set-default are inline and stay put (no navigation to undo).
+   */
+  const handleMutationSuccess = (msg: string) => {
+    showSnack(msg);
+    goBack();
+  };
 
   const handleEdit = (address: Address) => {
     setEditAddress(address);
@@ -818,18 +881,13 @@ export default function AddressesPage() {
     try {
       await setDefaultAddress(address.id).unwrap();
       showSnack(`"${address.label}" set as default`);
+      // Picking an address for checkout: the cart reads isDefault, so this
+      // mutation IS the selection. Return to the flow that asked for it.
+      if (returnTo) goBack();
     } finally {
       setSettingDefaultId(null);
     }
   };
-
-  if (!isLoaded) {
-    return (
-      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "60vh" }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
 
   return (
     <>
@@ -874,6 +932,14 @@ export default function AddressesPage() {
                     </Typography>
                   </Box>
                 </Box>
+
+                {/* Only shown when the user arrived from a flow (cart/checkout).
+                    Without it, completing an action leaves them stranded here. */}
+                {returnTo && (
+                  <Button onClick={goBack} startIcon={<ArrowBackIcon />} sx={{ mb: 2 }}>
+                    Back
+                  </Button>
+                )}
 
                 <Button
                   variant="contained"
@@ -966,6 +1032,8 @@ export default function AddressesPage() {
                   transition={{ delay: addresses.length * 0.05 }}
                 >
                   <Paper
+                    component="button"
+                    type="button"
                     elevation={0}
                     onClick={handleAdd}
                     sx={{
@@ -1019,7 +1087,9 @@ export default function AddressesPage() {
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}
         editAddress={editAddress}
-        onSuccess={showSnack}
+        onSuccess={handleMutationSuccess}
+        isLoaded={isLoaded}
+        loadError={mapsError}
       />
 
       {/* ── Delete dialog ── */}

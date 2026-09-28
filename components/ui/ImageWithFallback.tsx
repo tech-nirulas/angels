@@ -139,7 +139,10 @@ export const ImageWithFallback = memo<ImageWithFallbackProps>(({
         : { width: width || 400, height: height || 400 };
 
     // Calculate border radius based on circle prop
-    const borderRadius = circle ? '50%' : theme.shape.borderRadius * 2;
+    // theme.shape.borderRadius is typed string | number in MUI v9, but this
+    // theme sets it to the number 4 (lib/theme.ts SHAPE), so the math is sound.
+    const shapeRadius = Number(theme.shape.borderRadius);
+    const borderRadius = circle ? '50%' : shapeRadius * 2;
 
     // Fallback UI when image fails to load
     if (hasError) {

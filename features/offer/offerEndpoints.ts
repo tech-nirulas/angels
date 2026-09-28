@@ -1,4 +1,4 @@
-import { EndpointBuilder } from "@reduxjs/toolkit/query";
+import { EndpointBuilder } from "@reduxjs/toolkit/query/react";
 
 type EndpointDefinitions = EndpointBuilder<any, any, any>;
 

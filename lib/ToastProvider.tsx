@@ -37,7 +37,11 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
         autoHideDuration={3500}
         onClose={handleClose}
         anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-        TransitionComponent={(props: SlideProps) => <Slide {...props} direction="down" />}
+        // MUI v9 moved TransitionComponent under slotProps.transition. Keep the
+        // `direction="down"` the old inline wrapper applied.
+        slotProps={{
+          transition: (props: SlideProps) => <Slide {...props} direction="down" />,
+        }}
       >
         <Alert
           onClose={handleClose}

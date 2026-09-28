@@ -220,6 +220,7 @@ export default function ResetPasswordPage() {
                             endAdornment={
                               <InputAdornment position="end">
                                 <IconButton
+      aria-label="Show password"
                                   onClick={() => setShowPassword((v) => !v)}
                                   edge="end"
                                 >
@@ -275,7 +276,7 @@ export default function ResetPasswordPage() {
                             }
                             endAdornment={
                               <InputAdornment position="end">
-                                <IconButton
+                                <IconButton aria-label="Show confirm password"
                                   onClick={() => setShowConfirm((v) => !v)}
                                   edge="end"
                                 >
@@ -315,7 +316,7 @@ export default function ResetPasswordPage() {
                   }}
                 </Formik>
 
-                <Box mt={3}>
+                <Box sx={{ mt: 3 }}>
                   <Link
                     href="/login"
                     style={{

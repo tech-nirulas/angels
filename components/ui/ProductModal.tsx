@@ -333,6 +333,10 @@ const ProductModal = memo(({ product, onAddToCart, onClose }: ProductModalProps)
           >
             {allImages.map((img, i) => (
               <Box
+                component="button"
+                type="button"
+                aria-label={`View image ${i + 1} of ${allImages.length}`}
+                aria-current={i === galleryIndex}
                 key={img.id || i}
                 onClick={() => {
                   setGalleryIndex(i);
@@ -734,6 +738,7 @@ const ProductModal = memo(({ product, onAddToCart, onClose }: ProductModalProps)
                 }}
               >
                 <IconButton
+      aria-label="Decrease quantity"
                   size="small"
                   onClick={(e) => handleUpdateQty(e, -1)}
                   disabled={isUpdating}
@@ -762,7 +767,7 @@ const ProductModal = memo(({ product, onAddToCart, onClose }: ProductModalProps)
                   </Typography>
                 </Box>
 
-                <IconButton
+                <IconButton aria-label="Increase quantity"
                   size="small"
                   onClick={(e) => handleUpdateQty(e, 1)}
                   disabled={isUpdating}

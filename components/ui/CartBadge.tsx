@@ -31,15 +31,18 @@ export default function CartBadge() {
   }, []);
 
   if (!mounted) {
+    // Hydration placeholder: the cart count is not known yet, so this is not
+    // an action — labelling it "Open cart" would announce a dead control.
     return (
-      <IconButton>
+      <IconButton disabled aria-hidden="true" tabIndex={-1}>
         <ShoppingCartIcon />
       </IconButton>
     );
   }
 
   return (
-    <IconButton onClick={() => router.push("/cart")}>
+    <IconButton
+      aria-label="Open cart" onClick={() => router.push("/cart")}>
       <Badge
         badgeContent={cartCount}
         color="primary"

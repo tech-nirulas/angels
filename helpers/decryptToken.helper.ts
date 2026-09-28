@@ -1,7 +1,10 @@
 async function decryptToken(
+  // BufferSource, not Uint8Array: TS 5.7+ made Uint8Array generic over its
+  // backing buffer (ArrayBufferLike), which no longer satisfies BufferSource.
+  // The caller's Uint8Array is still accepted, so nothing changes at runtime.
   encryptedToken: BufferSource,
   key: CryptoKey,
-  iv: Uint8Array,
+  iv: BufferSource,
 ) {
   const dec = new TextDecoder();
 

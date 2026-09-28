@@ -156,11 +156,14 @@ export default function ProfilePage() {
             >
               <Box sx={{ display: "flex", alignItems: "center", gap: 3, flexWrap: "wrap" }}>
                 {/* Avatar */}
+{/* No `src`: the API has no avatar field — UpdateProfileDto accepts one but
+    the backend has no column and never persists it, so `profile.avatar` was
+    always undefined. Avatar falls back to the initials. Revisit when avatar
+    persistence ships. */}
                 {isLoading ? (
                   <Skeleton variant="circular" width={88} height={88} />
                 ) : (
                   <Avatar
-                    src={profile?.avatar}
                     sx={{
                       width: 88,
                       height: 88,
@@ -354,14 +357,10 @@ export default function ProfilePage() {
                     delay={0.15}
                   />
                 </Grid>
-                <Grid size={{ xs: 6, sm: 4 }}>
-                  <StatCard
-                    icon={<LocalShippingOutlined />}
-                    label="Delivered"
-                    value={profile?.customer?.deliveredOrders ?? 0}
-                    delay={0.2}
-                  />
-                </Grid>
+                {/* "Delivered" was removed: the profile API returns no
+                    deliveredOrders (it exists only on the admin analytics
+                    endpoint), so this card always rendered 0. Recompute it from
+                    the customer's orders when that query is available here. */}
                 <Grid size={{ xs: 12, sm: 4 }}>
                   <StatCard
                     icon={<span style={{ fontSize: "1.25rem" }}>₹</span>}

@@ -1,7 +1,7 @@
 "use client";
 
 import { logout } from "@/features/auth/authSlice";
-import { RootState } from "@/store";
+import { RootState } from "@/lib/store";
 import CloseIcon from "@mui/icons-material/Close";
 import MenuIcon from "@mui/icons-material/Menu";
 import { Container } from "@mui/material";
@@ -188,12 +188,20 @@ export default function Navbar() {
                 </>
               ) : (
                 <>
-                  <Avatar
+                  {/* IconButton renders a real <button>, so the account menu is
+                      reachable by keyboard and announced as a button. A bare
+                      Avatar with onClick was neither focusable nor labelled. */}
+                  <IconButton
                     onClick={handleAvatarClick}
-                    sx={{ cursor: "pointer", ml: 1 }}
+                    aria-label="Account menu"
+                    aria-haspopup="menu"
+                    aria-expanded={Boolean(anchorEl)}
+                    sx={{ ml: 1 }}
                   >
-                    {user?.firstName?.[0]}
-                  </Avatar>
+                    <Avatar sx={{ cursor: "pointer" }}>
+                      {user?.firstName?.[0]}
+                    </Avatar>
+                  </IconButton>
 
                   <Menu
                     anchorEl={anchorEl}
@@ -225,6 +233,7 @@ export default function Navbar() {
 
             {/* Mobile menu */}
             <IconButton
+      aria-label="Open navigation menu"
               sx={{ display: { md: "none" }, color: theme.palette.primary.main }}
               onClick={() => setDrawerOpen(true)}
             >
@@ -239,17 +248,19 @@ export default function Navbar() {
         anchor="right"
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        PaperProps={{
-          sx: {
-            width: 280,
-            background: theme.palette.background.default,
-            px: 2,
-            pt: 2,
+        slotProps={{
+          paper: {
+            sx: {
+              width: 280,
+              background: theme.palette.background.default,
+              px: 2,
+              pt: 2,
+            },
           },
         }}
       >
         <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 3 }}>
-          <IconButton onClick={() => setDrawerOpen(false)}>
+          <IconButton aria-label="Close navigation menu" onClick={() => setDrawerOpen(false)}>
             <CloseIcon />
           </IconButton>
         </Box>

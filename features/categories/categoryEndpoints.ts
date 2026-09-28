@@ -6,7 +6,7 @@ import {
   GetCategoryTreeResponse,
 } from "@/interfaces/category.interface";
 import { Parameters } from "@/interfaces/parameters.interface";
-import { EndpointBuilder } from "@reduxjs/toolkit/query";
+import { EndpointBuilder } from "@reduxjs/toolkit/query/react";
 
 type EndpointDefinitions = EndpointBuilder<any, any, any>;
 

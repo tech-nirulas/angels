@@ -6,6 +6,7 @@ import { getImageUrl } from "@/utils/imageUtils";
 import { IMAGE_SLOTS } from "@/utils/imageSpec";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
+import CardActionArea from "@mui/material/CardActionArea";
 import CardActions from "@mui/material/CardActions";
 import CardContent from "@mui/material/CardContent";
 import Chip from "@mui/material/Chip";
@@ -54,8 +55,30 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
           boxShadow: "0 12px 32px rgba(0,0,0,0.12)",
         },
       }}
-      onClick={onClick}
     >
+      {/*
+        CardActionArea renders a real <button>, so the whole card is reachable
+        by keyboard and announced as a button — no role/tabIndex/aria needed.
+        It wraps only the media + content: AddToCartButton lives in CardActions
+        below and must stay a separate, independently focusable control.
+      */}
+      <CardActionArea
+        onClick={onClick}
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "stretch",
+          justifyContent: "flex-start",
+          height: "100%",
+          // Keyboard focus needs a visible indicator: the card is a real
+          // <button> now, so it must look focused (WCAG 2.4.7). Keyboard only,
+          // so it does not fire on mouse click.
+          "&.Mui-focused": {
+            outline: `3px solid ${theme.palette.primary.main}`,
+            outlineOffset: "2px",
+          },
+        }}
+      >
       {/*
         Media Box — fixed 4:3 ratio rather than a fixed pixel height. A fixed
         height with a fluid grid width made the rendered ratio swing from
@@ -265,6 +288,7 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
           )}
         </Box>
       </CardContent>
+      </CardActionArea>
 
       <CardActions sx={{ p: 2, pt: 0 }}>
         <AddToCartButton item={product} />

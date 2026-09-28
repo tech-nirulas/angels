@@ -1,0 +1,27 @@
+# Copy to local.sh (git-ignored) and fill in real values. Never commit real keys.
+#
+# MSG91 — Dashboard → OTP Widgets → create one widget. WIDGET_ID and TOKEN_AUTH
+# must come from the SAME widget, or every login fails at the backend's
+# verifyAccessToken step. The backend MSG91_AUTH_KEY is the widget's Token Auth.
+export NEXT_PUBLIC_MSG91_WIDGET_ID=""
+export NEXT_PUBLIC_MSG91_TOKEN_AUTH=""
+
+# Google Sign-In — console.cloud.google.com → Credentials → OAuth client ID
+# (Web application). Add http://localhost:8080 and your production domain under
+# "Authorized JavaScript origins". No client secret is needed: the GSI SDK runs
+# in the browser and the backend validates the ID token via tokeninfo.
+export NEXT_PUBLIC_GOOGLE_CLIENT_ID=""
+
+# Google Maps — console.cloud.google.com → Credentials → API key.
+# Requires a linked billing account, and these three APIs enabled:
+#   Maps JavaScript API, Places API, Geocoding API
+# Restrict the key to HTTP referrers and to exactly those three APIs.
+export NEXT_PUBLIC_GOOGLE_MAPS_KEY=""
+
+export NEXT_PUBLIC_ENV=development
+export NEXT_PUBLIC_BASE_URL=http://localhost:9090
+export NEXT_PUBLIC_MEDIA_BASE_URL=http://localhost:8333/aimk/
+export NEXT_PUBLIC_RAZORPAY_KEY=""
+export NEXT_PUBLIC_RAZORPAY_SECRET=""
+
+npm run dev -- -p 8080

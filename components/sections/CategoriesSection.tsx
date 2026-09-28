@@ -3,7 +3,7 @@
 
 import { useEffect, useMemo, useCallback, memo } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, type Variants } from 'framer-motion';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import Box from '@mui/material/Box';
@@ -29,7 +29,7 @@ import { IMAGE_SLOTS } from '@/utils/imageSpec';
 const CATEGORY_SPEC = IMAGE_SLOTS.categoryAvatar;
 
 // Stagger children horizontally for scroll-in feel
-const containerVariants = {
+const containerVariants: Variants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
@@ -38,7 +38,7 @@ const containerVariants = {
 };
 
 // Subtle scale+fade — avoids large Y shifts in a horizontal layout
-const itemVariants = {
+const itemVariants: Variants = {
   hidden: { opacity: 0, scale: 0.85 },
   visible: {
     opacity: 1,

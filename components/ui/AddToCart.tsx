@@ -128,6 +128,7 @@ export default function AddToCartButton({ item }: AddToCartButtonProps) {
         }}
       >
         <IconButton
+      aria-label="Decrease quantity"
           size="small"
           onClick={(e) => handleUpdateQuantity(e, -1)}
           disabled={isUpdating}
@@ -153,7 +154,7 @@ export default function AddToCartButton({ item }: AddToCartButtonProps) {
           {isUpdating ? <CircularProgress size={14} /> : quantity}
         </Typography>
 
-        <IconButton
+        <IconButton aria-label="Increase quantity"
           size="small"
           onClick={(e) => handleUpdateQuantity(e, 1)}
           disabled={isUpdating}

@@ -66,7 +66,7 @@ export default function StorySection() {
       />
 
       <Container maxWidth="lg" sx={{ position: "relative" }}>
-        <Grid container spacing={{ xs: 6, md: 10 }} alignItems="center">
+        <Grid container spacing={{ xs: 6, md: 10 }} sx={{ alignItems: "center" }}>
           {/* Story text */}
           <Grid size={{ xs: 12, md: 6 }}>
             <SectionLabel

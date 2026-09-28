@@ -1,3 +1,4 @@
+import type { Permission } from './types';
 export declare const PERMISSIONS: {
     readonly DASHBOARD: {
         readonly READ: "dashboard:read";
@@ -104,4 +105,39 @@ export declare const PERMISSIONS: {
         readonly UPDATE: "serviceable-area:update";
         readonly DELETE: "serviceable-area:delete";
     };
+    readonly MODIFIER: {
+        readonly READ: "modifier:read";
+        readonly CREATE: "modifier:create";
+        readonly UPDATE: "modifier:update";
+        readonly DELETE: "modifier:delete";
+    };
 };
+/**
+ * Subjects that gate API behaviour but have no dedicated admin page, so they intentionally have
+ * no MODULE_REGISTRY entry. They are still grantable in the permission editor and enforced by the
+ * backend guard. Keep this list in sync if an admin page is ever added for them.
+ */
+export declare const API_ONLY_SUBJECTS: readonly ["delivery-zone", "serviceable-area"];
+export interface PermissionActionDefinition {
+    key: string;
+    label: string;
+    permission: Permission;
+}
+export interface PermissionSubjectDefinition {
+    key: string;
+    label: string;
+    /** False when the subject gates the API but has no admin page of its own. */
+    hasAdminPage: boolean;
+    actions: PermissionActionDefinition[];
+}
+export declare const PERMISSION_MATRIX: PermissionSubjectDefinition[];
+export declare const WILDCARD_PERMISSION = "*";
+export declare const ALL_WILDCARDS: readonly ["*", "*:*"];
+export declare const ALL_PERMISSIONS: readonly Permission[];
+export declare function isValidPermission(value: unknown): value is Permission;
+export declare function isWildcardPermission(value: unknown): boolean;
+/**
+ * Validates a client-supplied permission list, dropping wildcards and unknown strings.
+ * Call this at every write boundary so a typo fails closed instead of granting nothing.
+ */
+export declare function sanitizePermissions(input: unknown): string[];

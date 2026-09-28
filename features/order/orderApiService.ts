@@ -11,6 +11,7 @@ export const orderApiService = createApi({
 
 export const {
   useCreateOrderMutation,
+  usePreviewOrderMutation,
   useVerifyPaymentMutation,
   useGetOrdersQuery,
   useGetOrderQuery,
