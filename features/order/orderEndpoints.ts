@@ -17,6 +17,8 @@ export const orderEndpoints = (builder: EndpointDefinitions) => ({
        * after an ambiguous response cannot create a second order.
        */
       idempotencyKey?: string;
+      // No deliveryWindow here: the backend derives it strictly from the IST
+      // clock; a client-sent value is neither needed nor trusted.
     }
   >({
     query: (body) => ({
@@ -35,7 +37,11 @@ export const orderEndpoints = (builder: EndpointDefinitions) => ({
   // number that matches what the user is actually charged.
   previewOrder: builder.mutation<
     any,
-    { deliveryAddressId: string; promoCode?: string; orderType?: string }
+    {
+      deliveryAddressId: string;
+      promoCode?: string;
+      orderType?: string;
+    }
   >({
     query: (body) => ({
       url: "order/preview",

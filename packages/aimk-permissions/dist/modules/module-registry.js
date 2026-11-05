@@ -24,6 +24,7 @@ exports.MODULE_REGISTRY = [
     { key: 'payments', name: 'Payments', path: '/admin/payments', icon: 'Payments', order: 16, requiredPermission: permissions_1.PERMISSIONS.PAYMENT.READ },
     { key: 'discounts', name: 'Discounts', path: '/admin/discounts', icon: 'LocalOffer', order: 17, requiredPermission: permissions_1.PERMISSIONS.DISCOUNT.READ },
     { key: 'offers', name: 'Offers', path: '/admin/offers', icon: 'Discount', order: 18, requiredPermission: permissions_1.PERMISSIONS.OFFER.READ },
+    { key: 'delivery-fees', name: 'Delivery Fee Rules', path: '/admin/delivery-fee-rules', icon: 'LocalShipping', order: 19, requiredPermission: permissions_1.PERMISSIONS.OFFER.READ },
 ];
 /**
  * Longest-prefix wins: '/admin' matches every admin route as a prefix, so matching in array

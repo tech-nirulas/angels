@@ -63,6 +63,7 @@ export default function AddToCartButton({ item }: AddToCartButtonProps) {
               slug: item.slug,
               description: "",
               basePrice: Number(item.basePrice),
+              gstRate: (item as { gstRate?: string | number }).gstRate,
               discountedPrice: item.discountedPrice ? Number(item.discountedPrice) : undefined,
               discountPct: item.discountPct ?? null,
               inStock: item.inStock ?? true,

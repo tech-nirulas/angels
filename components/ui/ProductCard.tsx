@@ -3,6 +3,7 @@
 import AddToCartButton from "@/components/ui/AddToCart";
 import { Product } from "@/interfaces/product.interface";
 import { getImageUrl } from "@/utils/imageUtils";
+import { taxInclusive } from "@/utils/pricing";
 import { IMAGE_SLOTS } from "@/utils/imageSpec";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
@@ -26,9 +27,10 @@ interface ProductCardProps {
 export default function ProductCard({ product, onClick }: ProductCardProps) {
   const theme = useTheme();
 
-  const basePrice = Number(product.basePrice);
+  // Display prices are tax-inclusive (see utils/pricing.ts); pre-tax stays in the DB/API.
+  const basePrice = taxInclusive(Number(product.basePrice), product.gstRate);
   const discountedPrice = (product as any).discountedPrice
-    ? Number((product as any).discountedPrice)
+    ? taxInclusive(Number((product as any).discountedPrice), product.gstRate)
     : basePrice;
   const hasDiscount = discountedPrice < basePrice;
   const discountPct =

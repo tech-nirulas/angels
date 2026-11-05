@@ -19,7 +19,6 @@ import {
   removePromo,
   selectAppliedPromo,
   selectGuestCartItems,
-  selectGuestCartTotal,
   updateGuestQuantity,
 } from "@/features/cart/cartSlice";
 import { useValidateOfferCodeMutation } from "@/features/offer/offerApiService";
@@ -27,6 +26,7 @@ import { useCreateOrderMutation, usePreviewOrderMutation, useVerifyPaymentMutati
 import { Address } from "@/interfaces/address.interface";
 import { useAppDispatch, useAppSelector } from "@/lib/store";
 import { MEDIA_BASE_URL } from "@/utils/constants";
+import { taxInclusive, gstFromInclusive, detectDeliveryWindow } from "@/utils/pricing";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import BusinessOutlinedIcon from "@mui/icons-material/BusinessOutlined";
 import LocalOfferIcon from "@mui/icons-material/LocalOffer";
@@ -461,7 +461,6 @@ export default function CartPage() {
 
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
   const guestItems = useAppSelector(selectGuestCartItems);
-  const guestTotal = useAppSelector(selectGuestCartTotal);
 
   const {
     data: serverItems,
@@ -481,9 +480,9 @@ export default function CartPage() {
   const defaultAddress = addresses.find((a) => a.isDefault) ?? addresses[0] ?? null;
 
   const normalizedItems = isAuthenticated ? serverItems?.data || [] : guestItems;
-  const cartTotal = isAuthenticated
-    ? normalizedItems.reduce((s, i) => s + Number(i.lineTotal), 0)
-    : guestTotal;
+  // `cartTotalIncl` (below) is the single source of truth for cart value —
+  // tax-inclusive. Do not reintroduce a parallel pre-tax total here; the
+  // backend re-prices authoritatively at preview/create time anyway.
 
   const [mounted, setMounted] = useState(false);
   const [promoCode, setPromoCode] = useState("");
@@ -528,8 +527,16 @@ export default function CartPage() {
   const [validateOfferCode, { isLoading: isValidatingPromo }] = useValidateOfferCodeMutation();
 
 
-const SHIPPING_THRESHOLD = 500;
-  const SHIPPING_COST = 49;
+  // Free-delivery threshold and per-window fees mirror the backend
+  // delivery-fee rules (admin-editable). The server's preview is authoritative;
+  // these constants only power the local fallback estimate and progress bar.
+  const SHIPPING_THRESHOLD = 250;
+  const STANDARD_SHIPPING_COST = 49;
+  const WINDOW_SHIPPING_COST = 99; // early_morning / midnight, all-inclusive of 18% service charge
+  // The window is NOT user-selectable: derived from the current IST clock
+  // (same rule as the backend, which is authoritative). `serverTotals.window`
+  // overrides the local guess once the preview responds.
+  const localWindow = detectDeliveryWindow();
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -566,7 +573,13 @@ const SHIPPING_THRESHOLD = 500;
   // disagreeing source of truth (it used a flat SHIPPING_COST and no GST), so
   // the total shown in the dialog could differ from the total captured. Ask the
   // server; until it answers, keep the local estimate so the button has a value.
-  const [serverTotals, setServerTotals] = useState<{ grandTotal: number; deliveryFee: number } | null>(null);
+  const [serverTotals, setServerTotals] = useState<{
+    grandTotal: number;
+    deliveryFee: number;
+    gstAmount: number | null;
+    subtotal: number | null;
+    window: string | null;
+  } | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated || !selectedAddressId) {
@@ -578,13 +591,20 @@ const SHIPPING_THRESHOLD = 500;
       deliveryAddressId: selectedAddressId,
       promoCode: appliedPromo?.code,
       orderType: "delivery",
+      // The backend derives the window from the IST clock — nothing sent here.
     })
       .unwrap()
       .then((res) => {
         if (cancelled) return;
         const d = res?.data ?? res;
         if (typeof d?.grandTotal === "number") {
-          setServerTotals({ grandTotal: d.grandTotal, deliveryFee: Number(d.deliveryFee ?? 0) });
+          setServerTotals({
+            grandTotal: d.grandTotal,
+            deliveryFee: Number(d.deliveryFee ?? 0),
+            gstAmount: typeof d?.gstAmount === "number" ? d.gstAmount : null,
+            subtotal: typeof d?.subtotal === "number" ? d.subtotal : null,
+            window: typeof d?.deliveryWindow === "string" ? d.deliveryWindow : null,
+          });
         }
       })
       // A preview failure must never block checkout: createOrder recomputes
@@ -597,12 +617,35 @@ const SHIPPING_THRESHOLD = 500;
     };
   }, [isAuthenticated, selectedAddressId, appliedPromo?.code, previewOrder]);
 
-  const shipping = cartTotal >= SHIPPING_THRESHOLD ? 0 : SHIPPING_COST;
+  // Local estimates work on tax-inclusive amounts (what the customer pays).
+  // The checkout payload itself keeps sending pre-tax `currentPrice` — the
+  // backend converts, so converting here would double-charge the tax.
+  const inclusiveItems = normalizedItems.map((i) => {
+    const preTaxUnit = effectivePrice(
+      Number(i.currentPrice),
+      i.currentDiscount ? Number(i.currentDiscount) : null,
+      i.product?.discountedPrice,
+    );
+    const gstRate = (i.product as { gstRate?: string | number } | undefined)?.gstRate;
+    const incUnit = taxInclusive(preTaxUnit, gstRate);
+    const line = Math.round(incUnit * i.quantity * 100) / 100;
+    return { line, gst: gstFromInclusive(line, gstRate) };
+  });
+  const cartTotalIncl = inclusiveItems.reduce((s, x) => s + x.line, 0);
+  const gstEstimate = Math.round(inclusiveItems.reduce((s, x) => s + x.gst, 0) * 100) / 100;
+
+  const activeWindow = serverTotals?.window ?? localWindow;
+  const shipping =
+    activeWindow === "standard"
+      ? cartTotalIncl >= SHIPPING_THRESHOLD
+        ? 0
+        : STANDARD_SHIPPING_COST
+      : WINDOW_SHIPPING_COST;
   const promoSaving = appliedPromo ? appliedPromo.discountAmount : 0;
-  const estimatedTotal = Math.max(0, cartTotal - promoSaving + shipping);
+  const estimatedTotal = Math.max(0, cartTotalIncl - promoSaving + shipping);
   const orderTotal = serverTotals?.grandTotal ?? estimatedTotal;
-  const shippingProgress = Math.min((cartTotal / SHIPPING_THRESHOLD) * 100, 100);
-  const remaining = Math.max(SHIPPING_THRESHOLD - cartTotal, 0);
+  const shippingProgress = Math.min((cartTotalIncl / SHIPPING_THRESHOLD) * 100, 100);
+  const remaining = Math.max(SHIPPING_THRESHOLD - cartTotalIncl, 0);
 
   const showSnack = (msg: string, severity: "info" | "success" | "error" = "info") => {
     setSnackMsg(msg);
@@ -643,6 +686,7 @@ const SHIPPING_THRESHOLD = 500;
         promoCode: appliedPromo ? appliedPromo.code : undefined,
         paymentMethod,
         idempotencyKey: key,
+        // No deliveryWindow — the backend derives it from the IST clock.
       }).unwrap();
 
       const resultData = res.data || res;
@@ -900,11 +944,18 @@ const SHIPPING_THRESHOLD = 500;
                 <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                   <AnimatePresence mode="popLayout">
                     {normalizedItems.map((item, idx) => {
-                      const unitPrice = effectivePrice(
-                        Number(item.currentPrice),
-                        item.currentDiscount ? Number(item.currentDiscount) : null,
-                        item.product?.discountedPrice
+                      const gstRate = (item.product as { gstRate?: string | number } | undefined)?.gstRate;
+                      // Display prices are tax-inclusive (utils/pricing.ts); the
+                      // checkout payload below keeps sending pre-tax currentPrice.
+                      const unitPrice = taxInclusive(
+                        effectivePrice(
+                          Number(item.currentPrice),
+                          item.currentDiscount ? Number(item.currentDiscount) : null,
+                          item.product?.discountedPrice
+                        ),
+                        gstRate
                       );
+                      const preTaxStrike = Number(item.currentPrice);
                       const lineTotal = unitPrice * item.quantity;
                       const isItemUpdating = updatingProductId === item.productId;
                       const discountPct = item.currentDiscount ?? (item.product?.discountedPrice ? Math.round(((Number(item.currentPrice) - item.product.discountedPrice) / Number(item.currentPrice)) * 100) : null);
@@ -952,7 +1003,7 @@ const SHIPPING_THRESHOLD = 500;
                                     {hasDiscount && (
                                       <>
                                         <Typography variant="caption" sx={{ textDecoration: "line-through", color: theme.palette.text.disabled }}>
-                                          ₹{Number(item.currentPrice).toFixed(2)}
+                                          ₹{taxInclusive(preTaxStrike, gstRate).toFixed(2)}
                                         </Typography>
                                         <Chip label={`-${discountPct}%`} size="small" sx={{ height: 18, fontSize: "0.6rem", fontWeight: 700, background: alpha(theme.palette.error.main, 0.1), color: theme.palette.error.main }} />
                                       </>
@@ -1035,12 +1086,25 @@ const SHIPPING_THRESHOLD = 500;
                       Order Summary
                     </Typography>
 
+                    {/* Delivery window is derived from the current IST clock —
+                        read-only notice; the backend decides the fee. */}
+                    {activeWindow !== "standard" && (
+                      <Box sx={{ mb: 2.5, display: "flex", alignItems: "center", gap: 1 }}>
+                        <LocalShippingOutlinedIcon sx={{ fontSize: "1rem", color: theme.palette.primary.main }} />
+                        <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                          {activeWindow === "early_morning"
+                            ? "Early-morning delivery applies now (4–8am) — ₹99 incl. 18% service charge"
+                            : "Midnight delivery applies now (12–4am) — ₹99 incl. 18% service charge"}
+                        </Typography>
+                      </Box>
+                    )}
+
                     <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5, mb: 2.5 }}>
                       <Box sx={{ display: "flex", justifyContent: "space-between" }}>
                         <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
                           Subtotal ({normalizedItems.reduce((s, i) => s + i.quantity, 0)} items)
                         </Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>₹{cartTotal.toFixed(2)}</Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>₹{cartTotalIncl.toFixed(2)}</Typography>
                       </Box>
 
                       {appliedPromo && (
@@ -1057,7 +1121,7 @@ const SHIPPING_THRESHOLD = 500;
                       <Box sx={{ display: "flex", justifyContent: "space-between" }}>
                         <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>Delivery</Typography>
                         <Typography variant="body2" sx={{ fontWeight: 600, color: shipping === 0 ? theme.palette.success.main : "inherit" }}>
-                          {shipping === 0 ? "Free" : `₹${SHIPPING_COST.toFixed(2)}`}
+                          {shipping === 0 ? "Free" : `₹${shipping.toFixed(2)}`}
                         </Typography>
                       </Box>
                     </Box>
@@ -1066,9 +1130,14 @@ const SHIPPING_THRESHOLD = 500;
 
                     <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}>
                       <Typography variant="h6" sx={{ fontFamily: "var(--font-display)", fontWeight: 700 }}>Total</Typography>
-                      <Typography variant="h6" sx={{ fontFamily: "var(--font-body)", fontWeight: 800, color: theme.palette.primary.main }}>
-                        ₹{orderTotal.toFixed(2)}
-                      </Typography>
+                      <Box sx={{ textAlign: "right" }}>
+                        <Typography variant="h6" sx={{ fontFamily: "var(--font-body)", fontWeight: 800, color: theme.palette.primary.main }}>
+                          ₹{orderTotal.toFixed(2)}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                          incl. GST ₹{(serverTotals?.gstAmount ?? gstEstimate).toFixed(2)}
+                        </Typography>
+                      </Box>
                     </Box>
 
                     {/* Promo Code & Available Coupons */}

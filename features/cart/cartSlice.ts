@@ -15,6 +15,8 @@ export interface CartItem {
     slug: string;
     description: string;
     basePrice: number;
+    /** GST rate (%), kept pre-tax in currentPrice — used only for tax-inclusive display. */
+    gstRate?: number | string;
     discountedPrice?: number;
     discountPct?: number | null;
     inStock: boolean;

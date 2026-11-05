@@ -30,6 +30,7 @@ export const MODULE_REGISTRY: SidebarModuleDefinition[] = [
   { key: 'payments',            name: 'Payments',             path: '/admin/payments',             icon: 'Payments',         order: 16, requiredPermission: PERMISSIONS.PAYMENT.READ },
   { key: 'discounts',           name: 'Discounts',            path: '/admin/discounts',            icon: 'LocalOffer',       order: 17, requiredPermission: PERMISSIONS.DISCOUNT.READ },
   { key: 'offers',              name: 'Offers',               path: '/admin/offers',               icon: 'Discount',         order: 18, requiredPermission: PERMISSIONS.OFFER.READ },
+  { key: 'delivery-fees',       name: 'Delivery Fee Rules',   path: '/admin/delivery-fee-rules',   icon: 'LocalShipping',    order: 19, requiredPermission: PERMISSIONS.OFFER.READ },
 ];
 
 /**

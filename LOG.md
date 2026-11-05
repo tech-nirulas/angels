@@ -1,5 +1,23 @@
 # Angels Consumer Web App — Development Log
 
+## [2026-11-05] Delivery Window Auto-Detection (no user selection)
+
+- **The customer never picks a delivery window.** It is derived strictly from the current IST wall clock — backend is the authority (`aimk_backend/src/modules/delivery-fee/delivery-window.ts`): 00:00–03:59 → midnight, 04:00–07:59 → early_morning (₹99), else standard. `CreateOrderDto` no longer accepts a `deliveryWindow` field, so a crafted payload cannot select the ₹99 fee.
+- **Cart page**: removed the delivery-window selector; a read-only notice shows when a premium window is currently active ("Early-morning delivery applies now (4–8am) — ₹99…"). `previewOrder`/`createOrder` send no window; the server's `deliveryWindow` from the preview response overrides the local guess.
+- **`utils/pricing.ts`** gained `detectDeliveryWindow()` — the exact same offset math as the backend, pinned against 7 boundary cases (03:59/04:00/07:59/08:00 IST etc.).
+
+## [2026-11-05] Tax-Inclusive Pricing & Delivery Windows (Cart/Checkout)
+
+- **`utils/pricing.ts` (new)** — `taxInclusive(price, gstRate)` and `gstFromInclusive(total, gstRate)`; mirrors `aimk_backend/src/modules/order/pricing.helper.ts`. Display-only: checkout payloads keep sending pre-tax `currentPrice`/`basePrice` — the backend converts, converting client-side would double-charge GST.
+- **Cart page (`app/cart/page.tsx`)**:
+  - All money math now runs on tax-inclusive values (`cartTotalIncl`); the old pre-tax `cartTotal` parallel total was deleted.
+  - Item rows, strike-through prices, line totals, subtotal: tax-inclusive.
+  - Total shows `incl. GST ₹x` (server `gstAmount` when preview responds, local extraction estimate otherwise).
+  - Free-delivery threshold 500 → **250** (progress bar, remaining text, info chip).
+  - Delivery-window selector (Standard ₹49 / free ≥ ₹250 · Early Morning 4–8am ₹99 · Midnight 12–4am ₹99, all-inclusive of 18% service charge); `deliveryWindow` sent to `order/preview` and `createOrder`; the ₹99 window fee applies regardless of order value.
+- **Guest carts carry `gstRate`** (cartSlice type + `AddToCart`, `ProductModal`, `FeaturedSection` payloads) so guest pricing matches logged-in pricing.
+- Backend delivery-fee rules are admin-editable (`/admin/delivery-fee-rules`); these constants are local fallback estimates only — server preview is authoritative.
+
 ## [2026-09-18] Display Typography Migration: Cravelo Demo to Fraunces Google Variable Font
 
 - **Replaced Cravelo with Fraunces (`app/layout.tsx`, `lib/theme.ts`)**:

@@ -6,6 +6,7 @@ import SectionLabel from '@/components/ui/SectionLabel';
 import { useAddToCartMutation } from '@/features/cart/cartApiService';
 import { addToGuestCart, openCart } from '@/features/cart/cartSlice';
 import { useGetFeaturedProductsQuery } from '@/features/products/productApiService';
+import { taxInclusive } from '@/utils/pricing';
 import getDecryptedToken from '@/helpers/decryptToken.helper';
 import { Product } from '@/interfaces/product.interface';
 import { useModal } from '@/lib/ModalProvider';
@@ -54,6 +55,7 @@ function toCartItem(product: Product) {
     documentId: product.id,
     name: product.name,
     price: Number(product.basePrice),
+    gstRate: product.gstRate,
     description: product.description ?? "",
     slug: product.slug,
     image: product.mainImage ?? product.thumbnail ?? null,
@@ -73,7 +75,8 @@ const FeaturedProductCard = ({
   onProductClick: (product: Product) => void;
 }) => {
   const theme = useTheme();
-  const price = Number(product.basePrice);
+  // Display-only: tax-inclusive; toCartItem above stays pre-tax (backend converts).
+  const price = taxInclusive(Number(product.basePrice), product.gstRate);
   const imageUrl = getImageUrl(product);
 
   return (
@@ -317,6 +320,7 @@ export default function FeaturedSection() {
           slug: product.slug,
           description: product.shortDescription || '',
           basePrice: Number(product.basePrice),
+          gstRate: product.gstRate,
           inStock: product.inStock,
           mainImage: product.mainImage ?? product.thumbnail,
         },

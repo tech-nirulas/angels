@@ -11,6 +11,7 @@ import { addToGuestCart, openCart, updateGuestQuantity } from "@/features/cart/c
 import { Product } from "@/interfaces/product.interface";
 import { useAppDispatch, useAppSelector } from "@/lib/store";
 import { MEDIA_BASE_URL } from "@/utils/constants";
+import { taxInclusive } from "@/utils/pricing";
 import { IMAGE_SLOTS } from "@/utils/imageSpec";
 import AddIcon from "@mui/icons-material/Add";
 import LocalOfferIcon from "@mui/icons-material/LocalOffer";
@@ -85,6 +86,10 @@ const ProductModal = memo(({ product, onAddToCart, onClose }: ProductModalProps)
   const discountedPrice = (product as any).discountedPrice
     ? Number((product as any).discountedPrice)
     : basePrice;
+  // Display prices are tax-inclusive (see utils/pricing.ts); the cart payload below
+  // must keep sending PRE-TAX values — the backend converts.
+  const displayBasePrice = taxInclusive(basePrice, product.gstRate);
+  const displayDiscountedPrice = taxInclusive(discountedPrice, product.gstRate);
   const hasDiscount = discountedPrice < basePrice;
   const discountPct =
     (product as any).discountPct ||
@@ -133,6 +138,7 @@ const ProductModal = memo(({ product, onAddToCart, onClose }: ProductModalProps)
             slug: product.slug,
             description: product.shortDescription || "",
             basePrice: Number(product.basePrice),
+            gstRate: product.gstRate,
             discountedPrice: hasDiscount ? discountedPrice : undefined,
             discountPct: discountPct ?? null,
             inStock: product.inStock ?? true,
@@ -258,7 +264,7 @@ const ProductModal = memo(({ product, onAddToCart, onClose }: ProductModalProps)
                 label={
                   discountPct
                     ? `${discountPct}% OFF`
-                    : `SAVE ₹${(basePrice - discountedPrice).toFixed(0)}`
+                    : `SAVE ₹${(displayBasePrice - displayDiscountedPrice).toFixed(0)}`
                 }
                 size="small"
                 color="error"
@@ -675,7 +681,7 @@ const ProductModal = memo(({ product, onAddToCart, onClose }: ProductModalProps)
                   lineHeight: 1,
                 }}
               >
-                ₹{discountedPrice.toFixed(2)}
+                ₹{displayDiscountedPrice.toFixed(2)}
               </Typography>
               {hasDiscount && (
                 <Typography
@@ -686,7 +692,7 @@ const ProductModal = memo(({ product, onAddToCart, onClose }: ProductModalProps)
                     fontWeight: 600,
                   }}
                 >
-                  ₹{basePrice.toFixed(2)}
+                  ₹{displayBasePrice.toFixed(2)}
                 </Typography>
               )}
             </Box>
