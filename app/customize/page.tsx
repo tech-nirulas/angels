@@ -2,6 +2,7 @@
 
 import { useCreateCakeRequestMutation } from "@/features/cake-customization/cakeApiService";
 import { MEDIA_BASE_URL } from "@/utils/constants";
+import { CONTACT_INFO } from "@/constants/contact";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import CakeOutlinedIcon from "@mui/icons-material/CakeOutlined";
 import CheckCircleOutlinedIcon from "@mui/icons-material/CheckCircleOutlined";
@@ -182,8 +183,7 @@ export default function CustomizeCakePage() {
             `Hello Angels in My Kitchen team, I would like to discuss my custom cake request!`
         );
 
-        const whatsappNumber = "919478370346"; // Official WhatsApp contact number
-        window.open(`https://wa.me/${whatsappNumber}?text=${waText}`, "_blank");
+        window.open(CONTACT_INFO.getWhatsappUrl(waText), "_blank");
       }
     } catch (err) {
       console.error("Error submitting custom cake request:", err);
@@ -290,10 +290,8 @@ export default function CustomizeCakePage() {
                       px: 3,
                     }}
                     onClick={() => {
-                      const waText = encodeURIComponent(
-                        `Hi Angels in My Kitchen, checking status for Custom Cake Ref: ${submittedResult.refNumber}`
-                      );
-                      window.open(`https://wa.me/919478370346?text=${waText}`, "_blank");
+                      const waText = `Hi Angels in My Kitchen, checking status for Custom Cake Ref: ${submittedResult.refNumber}`;
+                      window.open(CONTACT_INFO.getWhatsappUrl(waText), "_blank");
                     }}
                   >
                     Chat on WhatsApp Now
@@ -390,10 +388,8 @@ export default function CustomizeCakePage() {
                         fullWidth
                         startIcon={<WhatsAppIcon sx={{ fontSize: 26 }} />}
                         onClick={() => {
-                          const waText = encodeURIComponent(
-                            "Hello Angels in My Kitchen team, I would like to discuss a custom cake order!"
-                          );
-                          window.open(`https://wa.me/919478370346?text=${waText}`, "_blank");
+                          const waText = "Hello Angels in My Kitchen team, I would like to discuss a custom cake order!";
+                          window.open(CONTACT_INFO.getWhatsappUrl(waText), "_blank");
                         }}
                         sx={{
                           py: 1.6,

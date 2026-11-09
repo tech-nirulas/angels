@@ -14,19 +14,11 @@ import WhatsAppIcon from "@mui/icons-material/WhatsApp";
 import LocationOnOutlinedIcon from "@mui/icons-material/LocationOnOutlined";
 import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
 import CallOutlinedIcon from "@mui/icons-material/CallOutlined";
+import SupportAgentOutlinedIcon from "@mui/icons-material/SupportAgentOutlined";
+import PhoneAndroidOutlinedIcon from "@mui/icons-material/PhoneAndroidOutlined";
 import Image from "next/image";
 import Link from "next/link";
-
-// Angels in My Kitchen Foods Pvt Ltd — verified against the legal entity record
-// (GET /legal-entity) rather than invented. Keep in sync if the registered
-// office ever changes.
-const CONTACT = {
-  address: "E-42, Defence Colony, Main Market, New Delhi 110024",
-  email: "contact@angelsinmykitchen.com",
-  phone: "+91 11 4165 5000",
-  phoneHref: "tel:+911141655000",
-  whatsappNumber: "919478370346", // same number used on the /customize form
-};
+import { CONTACT_INFO } from "@/constants/contact";
 
 // Every link here is a real route on this site — no placeholder pages.
 const FOOTER_LINKS = {
@@ -46,9 +38,7 @@ const FOOTER_LINKS = {
 
 export default function Footer() {
   const theme = useTheme();
-  const whatsappHref = `https://wa.me/${CONTACT.whatsappNumber}?text=${encodeURIComponent(
-    "Hello Angels in My Kitchen team, I have a question!"
-  )}`;
+  const whatsappHref = CONTACT_INFO.getWhatsappUrl();
 
   return (
     <Box
@@ -245,7 +235,7 @@ export default function Footer() {
                     variant="body2"
                     sx={{ color: `${theme.palette.primary.contrastText}70`, lineHeight: 1.7 }}
                   >
-                    {CONTACT.address}
+                    {CONTACT_INFO.address}
                   </Typography>
                 </Box>
 
@@ -256,7 +246,7 @@ export default function Footer() {
                   />
                   <Typography
                     component="a"
-                    href={`mailto:${CONTACT.email}`}
+                    href={CONTACT_INFO.emailHref}
                     variant="body2"
                     sx={{
                       color: `${theme.palette.primary.contrastText}70`,
@@ -264,18 +254,18 @@ export default function Footer() {
                       "&:hover": { color: theme.palette.primary.light },
                     }}
                   >
-                    {CONTACT.email}
+                    {CONTACT_INFO.email}
                   </Typography>
                 </Box>
 
                 <Box sx={{ display: "flex", gap: 1.25, alignItems: "center" }}>
-                  <CallOutlinedIcon
+                  <SupportAgentOutlinedIcon
                     fontSize="small"
                     sx={{ color: `${theme.palette.primary.contrastText}50` }}
                   />
                   <Typography
                     component="a"
-                    href={CONTACT.phoneHref}
+                    href={CONTACT_INFO.tollFreeHref}
                     variant="body2"
                     sx={{
                       color: `${theme.palette.primary.contrastText}70`,
@@ -283,7 +273,26 @@ export default function Footer() {
                       "&:hover": { color: theme.palette.primary.light },
                     }}
                   >
-                    {CONTACT.phone}
+                    Toll Free: {CONTACT_INFO.tollFree}
+                  </Typography>
+                </Box>
+
+                <Box sx={{ display: "flex", gap: 1.25, alignItems: "center" }}>
+                  <PhoneAndroidOutlinedIcon
+                    fontSize="small"
+                    sx={{ color: `${theme.palette.primary.contrastText}50` }}
+                  />
+                  <Typography
+                    component="a"
+                    href={CONTACT_INFO.mobileHref}
+                    variant="body2"
+                    sx={{
+                      color: `${theme.palette.primary.contrastText}70`,
+                      textDecoration: "none",
+                      "&:hover": { color: theme.palette.primary.light },
+                    }}
+                  >
+                    Mobile: {CONTACT_INFO.mobile}
                   </Typography>
                 </Box>
 
@@ -301,7 +310,7 @@ export default function Footer() {
                       "&:hover": { color: "#25D366" },
                     }}
                   >
-                    Chat with us on WhatsApp
+                    WhatsApp: {CONTACT_INFO.whatsappDisplay}
                   </Typography>
                 </Box>
               </Box>

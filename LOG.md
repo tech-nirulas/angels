@@ -1,5 +1,27 @@
 # Angels Consumer Web App — Development Log
 
+## [2026-11-09] Contact Details, Call Center, Toll-Free & Address Migration
+- **Created Centralized Contact Source (`constants/contact.ts`)**:
+  - Centralized all official contact channels, numbers, links, and addresses into `CONTACT_INFO` with `getWhatsappUrl` helper.
+  - **Email**: `callcenter@nirulas.com` (`mailto:callcenter@nirulas.com`)
+  - **Toll-Free Phone**: `1800 102 5247` (`tel:18001025247`)
+  - **Mobile Phone**: `+91 84448 49940` (`tel:+918444849940`)
+  - **WhatsApp Support**: `+91 92500 10686` (`https://wa.me/919250010686`)
+  - **Address**: `A-65, Sector 64, Noida, Uttar Pradesh 201301`
+- **Global Footer (`components/layout/Footer.tsx`)**:
+  - Replaced internal `CONTACT` object with imports from `constants/contact`.
+  - Added dedicated Toll-Free line with `SupportAgentOutlinedIcon` and Mobile line with `PhoneAndroidOutlinedIcon`.
+  - Updated WhatsApp icon button and chat link to use the unified `9250010686` support channel.
+- **Homepage Custom Cake Section (`components/sections/OrderSection.tsx`)**:
+  - Replaced hardcoded `WHATSAPP_NUMBER` with `CONTACT_INFO.getWhatsappUrl(...)` targeting `9250010686`.
+- **Custom Cake Builder (`app/customize/page.tsx`)**:
+  - Updated order submission WhatsApp redirect, reference check button, and direct discussion CTA to use `CONTACT_INFO.getWhatsappUrl(...)` targeting `9250010686`.
+- **Documentation & Architecture (`.agents/architecture.md`)**:
+  - Updated architecture docs to reflect `constants/contact.ts` as the single source of truth for branding/contact metadata.
+- **Verification**:
+  - Verified 0 remaining occurrences of legacy contact numbers/emails in source code via grep.
+  - Production build (`npm run build` with Turbopack) completed successfully with 0 errors.
+
 ## [2026-11-05] Delivery Window Auto-Detection (no user selection)
 
 - **The customer never picks a delivery window.** It is derived strictly from the current IST wall clock — backend is the authority (`aimk_backend/src/modules/delivery-fee/delivery-window.ts`): 00:00–03:59 → midnight, 04:00–07:59 → early_morning (₹99), else standard. `CreateOrderDto` no longer accepts a `deliveryWindow` field, so a crafted payload cannot select the ₹99 fee.

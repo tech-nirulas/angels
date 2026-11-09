@@ -18,9 +18,7 @@ import { alpha, useTheme } from "@mui/material/styles";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import SectionLabel from "@/components/ui/SectionLabel";
-
-// Official WhatsApp contact number, same one used on the /customize form.
-const WHATSAPP_NUMBER = "919478370346";
+import { CONTACT_INFO } from "@/constants/contact";
 
 const INFO_ITEMS = [
   {
@@ -56,9 +54,9 @@ export default function OrderSection() {
   const theme = useTheme();
   const router = useRouter();
 
-  const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
+  const whatsappUrl = CONTACT_INFO.getWhatsappUrl(
     "Hello Angels in My Kitchen team, I would like to discuss a custom cake order!"
-  )}`;
+  );
 
   return (
     <Box
