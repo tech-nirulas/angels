@@ -87,6 +87,14 @@ angels/
 - No newsletter signup: the previous one had no backend and no handler at all (the "Join" button did nothing). There is no subscribe endpoint in `aimk_backend`, so it was replaced with the real contact block instead of being wired to nothing.
 - Social icons: Instagram/Facebook are decorative (no verified handles exist to link to — do not fabricate one). WhatsApp is a real, working `wa.me` link (`CONTACT_INFO.getWhatsappUrl()`).
 
+### Dietary Classification & FSSAI Badges (`components/common/DietaryBadge.tsx`)
+- Standard Indian food classification symbol (FSSAI) indicator for bakery catalog:
+  - **Vegetarian**: Green border (`#16A34A`) with solid green circular dot.
+  - **Non-Vegetarian**: Red border (`#DC2626`) with solid red circular dot.
+  - **Contains Egg**: Amber border (`#D97706`) with solid amber circular dot.
+- Built strictly with MUI `Box` and `Tooltip` with standard dimension sizes (`small`: 15px outer / 7px dot, `medium`: 18px outer / 8px dot).
+- Accessible with `role="img"` and dynamic `aria-label`. Only renders on authoritative dietary metadata; returns `null` if unclassified.
+
 ## 3. Cart Sync & Checkout Flow
 
 ```mermaid
