@@ -1,5 +1,19 @@
 # Angels Consumer Web App — Development Log
 
+## [2026-11-13] Feature: Whole-Rupee Rounded Tax-Inclusive Pricing & Clean Formatting
+- **Pricing Logic (`utils/pricing.ts`)**:
+  - Synchronized `taxInclusive(preTax, gstRate)` to round to nearest whole rupee (`Math.round(price * (1 + rate / 100))`) in lockstep with `aimk_backend/src/modules/order/pricing.helper.ts`.
+  - Added reusable `formatCurrency(amount)` helper that displays whole numbers cleanly (e.g. `₹90`) and retains decimals only when fractional paise exist.
+- **Component Formatting**:
+  - Updated `ProductCard.tsx`: product cards now format prices cleanly as `₹90` without unnecessary `.00` decimals.
+  - Updated `ProductModal.tsx`: modal quick view and struck-through prices render whole-rupee amounts cleanly.
+  - Updated `FeaturedSection.tsx`: featured grid items render whole numbers cleanly.
+  - Updated `cart/page.tsx`: line items, subtotals, promo savings, and final pay button format as clean whole rupees.
+  - Updated `orders/page.tsx` & `orders/[id]/page.tsx`: order history cards and order details display whole-rupee totals and line items.
+- **Testing & Verification**:
+  - Added unit test `test/pricing.test.ts` asserting `taxInclusive(86, 5) === 90`, `taxInclusive(86.3, 5) === 91`, and `formatCurrency` behavior.
+  - TDD RED -> GREEN cycle verified with node test runner.
+
 ## [2026-11-13] Fix: Extract `utils/dietary.ts`, Refine Allergen Parsing & Optical Alignments
 - **Extract Pure Utility (`utils/dietary.ts`)**:
   - Extracted `getDietaryClassification`, `DietaryClassification`, and `PRIMARY_DIETARY_TAGS` to standalone pure utility module.

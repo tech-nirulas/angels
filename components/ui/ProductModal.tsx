@@ -15,7 +15,7 @@ import DietaryBadge, {
 import { Product } from "@/interfaces/product.interface";
 import { useAppDispatch, useAppSelector } from "@/lib/store";
 import { MEDIA_BASE_URL } from "@/utils/constants";
-import { taxInclusive } from "@/utils/pricing";
+import { taxInclusive, formatCurrency } from "@/utils/pricing";
 import { IMAGE_SLOTS } from "@/utils/imageSpec";
 import AddIcon from "@mui/icons-material/Add";
 import LocalOfferIcon from "@mui/icons-material/LocalOffer";
@@ -745,7 +745,7 @@ const ProductModal = memo(({ product, onAddToCart, onClose }: ProductModalProps)
                   lineHeight: 1,
                 }}
               >
-                ₹{displayDiscountedPrice.toFixed(2)}
+                {formatCurrency(displayDiscountedPrice)}
               </Typography>
               {hasDiscount && (
                 <Typography
@@ -756,7 +756,7 @@ const ProductModal = memo(({ product, onAddToCart, onClose }: ProductModalProps)
                     fontWeight: 600,
                   }}
                 >
-                  ₹{displayBasePrice.toFixed(2)}
+                  {formatCurrency(displayBasePrice)}
                 </Typography>
               )}
             </Box>

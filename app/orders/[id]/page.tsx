@@ -9,6 +9,7 @@ import {
 } from "@/features/order/orderApiService";
 import { useAppSelector } from "@/lib/store";
 import { MEDIA_BASE_URL } from "@/utils/constants";
+import { formatCurrency } from "@/utils/pricing";
 import getDecryptedToken from "@/helpers/decryptToken.helper";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
@@ -546,7 +547,7 @@ export default function OrderDetailPage() {
                                 {item.productSnapshot?.name}
                               </Typography>
                               <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
-                                ₹{unitPrice.toFixed(2)} × {item.quantity}
+                                {formatCurrency(unitPrice)} × {item.quantity}
                                 {item.productSnapshot?.discount && (
                                   <Typography component="span" sx={{ ml: 0.5, color: theme.palette.success.main, fontSize: "inherit" }}>
                                     ({item.productSnapshot.discount}% off)
@@ -560,7 +561,7 @@ export default function OrderDetailPage() {
                               )}
                             </Box>
                             <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: "var(--font-body)", flexShrink: 0 }}>
-                              ₹{lineTotal.toFixed(2)}
+                              {formatCurrency(lineTotal)}
                             </Typography>
                           </Box>
 
@@ -666,7 +667,7 @@ export default function OrderDetailPage() {
                     <Box key={label} sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
                       <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>{label}</Typography>
                       <Typography variant="body2" sx={{ fontWeight: 600, color: value < 0 ? theme.palette.success.main : "inherit" }}>
-                        {value < 0 ? "−" : ""}₹{Math.abs(value).toFixed(2)}
+                        {value < 0 ? "−" : ""}{formatCurrency(Math.abs(value))}
                       </Typography>
                     </Box>
                   ))}
@@ -676,7 +677,7 @@ export default function OrderDetailPage() {
                   <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.5 }}>
                     <Typography variant="body1" sx={{ fontWeight: 700 }}>Grand Total</Typography>
                     <Typography variant="h6" sx={{ fontFamily: "var(--font-body)", fontWeight: 800, color: theme.palette.primary.main }}>
-                      ₹{Number(order.grandTotal).toFixed(2)}
+                      {formatCurrency(order.grandTotal)}
                     </Typography>
                   </Box>
 

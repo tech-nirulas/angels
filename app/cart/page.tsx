@@ -26,7 +26,7 @@ import { useCreateOrderMutation, usePreviewOrderMutation, useVerifyPaymentMutati
 import { Address } from "@/interfaces/address.interface";
 import { useAppDispatch, useAppSelector } from "@/lib/store";
 import { MEDIA_BASE_URL } from "@/utils/constants";
-import { taxInclusive, gstFromInclusive, detectDeliveryWindow } from "@/utils/pricing";
+import { taxInclusive, gstFromInclusive, detectDeliveryWindow, formatCurrency } from "@/utils/pricing";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import BusinessOutlinedIcon from "@mui/icons-material/BusinessOutlined";
 import LocalOfferIcon from "@mui/icons-material/LocalOffer";
@@ -410,14 +410,14 @@ function DeliveryConfirmModal({
                     color: theme.palette.primary.main,
                   }}
                 >
-                  ₹{orderTotal.toFixed(2)}
+                  {formatCurrency(orderTotal)}
                 </Typography>
               </Box>
               <Typography
                 variant="caption"
                 sx={{ color: theme.palette.text.disabled, display: "block", mt: 0.5 }}
               >
-                {paymentMethod === "COD" ? "Pay ₹" + orderTotal.toFixed(2) + " in cash upon delivery" : "You will be redirected to Razorpay to complete payment"}
+                {paymentMethod === "COD" ? `Pay ${formatCurrency(orderTotal)} in cash upon delivery` : "You will be redirected to Razorpay to complete payment"}
               </Typography>
             </Box>
           </>
@@ -444,7 +444,7 @@ function DeliveryConfirmModal({
             {isPlacingOrder ? (
               <CircularProgress size={18} sx={{ color: "white" }} />
             ) : (
-              "Pay ₹" + orderTotal.toFixed(2)
+              `Pay ${formatCurrency(orderTotal)}`
             )}
           </Button>
         </DialogActions>
@@ -998,12 +998,12 @@ export default function CartPage() {
                                   </Typography>
                                   <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.5 }}>
                                     <Typography sx={{ fontWeight: 700, color: theme.palette.primary.main, fontSize: "0.95rem", fontFamily: "var(--font-body)" }}>
-                                      ₹{unitPrice.toFixed(2)}
+                                      {formatCurrency(unitPrice)}
                                     </Typography>
                                     {hasDiscount && (
                                       <>
                                         <Typography variant="caption" sx={{ textDecoration: "line-through", color: theme.palette.text.disabled }}>
-                                          ₹{taxInclusive(preTaxStrike, gstRate).toFixed(2)}
+                                          {formatCurrency(taxInclusive(preTaxStrike, gstRate))}
                                         </Typography>
                                         <Chip label={`-${discountPct}%`} size="small" sx={{ height: 18, fontSize: "0.6rem", fontWeight: 700, background: alpha(theme.palette.error.main, 0.1), color: theme.palette.error.main }} />
                                       </>
@@ -1025,7 +1025,7 @@ export default function CartPage() {
                                   disabled={isItemUpdating}
                                 />
                                 <Typography sx={{ fontWeight: 700, fontSize: "1rem", fontFamily: "var(--font-body)" }}>
-                                  ₹{lineTotal.toFixed(2)}
+                                  {formatCurrency(lineTotal)}
                                 </Typography>
                               </Box>
                             </Box>
@@ -1104,7 +1104,7 @@ export default function CartPage() {
                         <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
                           Subtotal ({normalizedItems.reduce((s, i) => s + i.quantity, 0)} items)
                         </Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>₹{cartTotalIncl.toFixed(2)}</Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>{formatCurrency(cartTotalIncl)}</Typography>
                       </Box>
 
                       {appliedPromo && (
@@ -1113,7 +1113,7 @@ export default function CartPage() {
                             Coupon ({appliedPromo.code})
                           </Typography>
                           <Typography variant="body2" sx={{ fontWeight: 600, color: theme.palette.success.main }}>
-                            −₹{appliedPromo.discountAmount.toFixed(2)}
+                            −{formatCurrency(appliedPromo.discountAmount)}
                           </Typography>
                         </Box>
                       )}
@@ -1121,7 +1121,7 @@ export default function CartPage() {
                       <Box sx={{ display: "flex", justifyContent: "space-between" }}>
                         <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>Delivery</Typography>
                         <Typography variant="body2" sx={{ fontWeight: 600, color: shipping === 0 ? theme.palette.success.main : "inherit" }}>
-                          {shipping === 0 ? "Free" : `₹${shipping.toFixed(2)}`}
+                          {shipping === 0 ? "Free" : formatCurrency(shipping)}
                         </Typography>
                       </Box>
                     </Box>
@@ -1132,7 +1132,7 @@ export default function CartPage() {
                       <Typography variant="h6" sx={{ fontFamily: "var(--font-display)", fontWeight: 700 }}>Total</Typography>
                       <Box sx={{ textAlign: "right" }}>
                         <Typography variant="h6" sx={{ fontFamily: "var(--font-body)", fontWeight: 800, color: theme.palette.primary.main }}>
-                          ₹{orderTotal.toFixed(2)}
+                          {formatCurrency(orderTotal)}
                         </Typography>
                         <Typography variant="caption" sx={{ color: "text.secondary" }}>
                           incl. GST ₹{(serverTotals?.gstAmount ?? gstEstimate).toFixed(2)}
@@ -1162,7 +1162,7 @@ export default function CartPage() {
                                 {appliedPromo.code}
                               </Typography>
                               <Typography variant="caption" sx={{ color: "text.secondary", fontSize: "0.72rem" }}>
-                                Saved ₹{appliedPromo.discountAmount.toFixed(2)} on this order
+                                Saved {formatCurrency(appliedPromo.discountAmount)} on this order
                               </Typography>
                             </Box>
                           </Box>

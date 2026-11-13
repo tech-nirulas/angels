@@ -4,7 +4,7 @@ import AddToCartButton from "@/components/ui/AddToCart";
 import DietaryBadge from "@/components/common/DietaryBadge";
 import { Product } from "@/interfaces/product.interface";
 import { getImageUrl } from "@/utils/imageUtils";
-import { taxInclusive } from "@/utils/pricing";
+import { taxInclusive, formatCurrency } from "@/utils/pricing";
 import { IMAGE_SLOTS } from "@/utils/imageSpec";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
@@ -278,7 +278,7 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
               color: theme.palette.primary.main,
             }}
           >
-            ₹{discountedPrice.toFixed(2)}
+            {formatCurrency(discountedPrice)}
           </Typography>
           {hasDiscount && (
             <Typography
@@ -289,7 +289,7 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
                 fontWeight: 500,
               }}
             >
-              ₹{basePrice.toFixed(2)}
+              {formatCurrency(basePrice)}
             </Typography>
           )}
           {product.baseUnit && (

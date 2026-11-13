@@ -6,7 +6,7 @@ import SectionLabel from '@/components/ui/SectionLabel';
 import { useAddToCartMutation } from '@/features/cart/cartApiService';
 import { addToGuestCart, openCart } from '@/features/cart/cartSlice';
 import { useGetFeaturedProductsQuery } from '@/features/products/productApiService';
-import { taxInclusive } from '@/utils/pricing';
+import { taxInclusive, formatCurrency } from '@/utils/pricing';
 import getDecryptedToken from '@/helpers/decryptToken.helper';
 import { Product } from '@/interfaces/product.interface';
 import { useModal } from '@/lib/ModalProvider';
@@ -268,7 +268,7 @@ const FeaturedProductCard = ({
               color: theme.palette.primary.main,
             }}
           >
-            ₹{price.toFixed(2)}
+            {formatCurrency(price)}
           </Typography>
         </CardContent>
         </CardActionArea>

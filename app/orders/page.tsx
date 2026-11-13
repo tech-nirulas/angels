@@ -3,6 +3,7 @@
 
 import { useGetOrdersPaginatedQuery } from "@/features/order/orderApiService";
 import { getOrderStatusConfig } from "@/utils/orderStatus";
+import { formatCurrency } from "@/utils/pricing";
 import { useAppSelector } from "@/lib/store";
 import { MEDIA_BASE_URL } from "@/utils/constants";
 import ReceiptLongOutlinedIcon from "@mui/icons-material/ReceiptLongOutlined";
@@ -73,7 +74,7 @@ function OrderCard({ order }: { order: Order }) {
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <StatusChip status={order.status} />
             <Typography variant="body2" sx={{ fontWeight: 700, color: theme.palette.primary.main, fontFamily: "var(--font-body)" }}>
-              ₹{Number(order.grandTotal).toFixed(2)}
+              {formatCurrency(order.grandTotal)}
             </Typography>
           </Box>
         </Box>
