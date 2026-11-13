@@ -1,5 +1,28 @@
 # Angels Consumer Web App — Development Log
 
+## [2026-11-13] Fix: Cart Coupon Auto-Revalidation & Stale Promo Invalidation on Cart Mutation
+- **Root Cause Fixed**:
+  - Previously, `appliedPromo` stored a static discount amount in Redux (`cartSlice.ts`) when applied on high-value carts.
+  - Removing items, clearing the cart, or changing quantities did not re-evaluate or revoke the coupon. This caused lower-value carts (e.g. ₹130.20) or empty carts with newly added cheap items to inherit the old coupon deduction (e.g. -₹349.13), resulting in confusing ₹0.00 displays.
+- **Redux Slice Hardening (`features/cart/cartSlice.ts`)**:
+  - Enhanced `clearGuestCart` to immediately reset `appliedPromo = null`.
+  - Added `updatePromoDiscount` action to update re-evaluated discount amounts dynamically.
+- **Pure Revalidation Logic (`utils/cartPromo.ts`)**:
+  - Implemented `decidePromoRevalidation` to evaluate keep/update/remove decisions deterministically based on cart items count and validation responses.
+  - Implemented `calculateSafePromoSaving` to clamp promo savings to the cart subtotal, preventing negative or ₹0 totals before revalidation finishes.
+- **Reactive Revalidation on Cart Mutation (`app/cart/page.tsx`)**:
+  - Added reactive effect that monitors `cartSignature` (`productId:quantity:currentPrice`) and active promo code.
+  - If the cart is emptied: automatically purges the coupon.
+  - When cart items change: calls `/offer/validate-code` with current cart items. If the cart drops below `minOrderValue` (e.g. ₹599) or is ineligible, automatically removes the coupon and alerts the customer via snackbar toast. If eligible, updates the discount to the newly recalculated amount.
+  - Hardened `handleClearCart` to drop `appliedPromo`.
+  - Added promo error inspection in `previewOrder` response to clear ineligible coupons if flagged by the server.
+- **Testing & Verification**:
+  - Added unit tests in `test/cart-promo-slice.test.ts` verifying `clearGuestCart` and `updatePromoDiscount`.
+  - Added unit tests in `test/cart-revalidation-helper.test.ts` verifying decision engine and safe clamped savings.
+  - Verified `tsc --noEmit` compiles with 0 errors.
+  - All test suites in `angels` pass cleanly.
+
+
 ## [2026-11-13] Feature: Whole-Rupee Rounded Tax-Inclusive Pricing & Clean Formatting
 - **Pricing Logic (`utils/pricing.ts`)**:
   - Synchronized `taxInclusive(preTax, gstRate)` to round to nearest whole rupee (`Math.round(price * (1 + rate / 100))`) in lockstep with `aimk_backend/src/modules/order/pricing.helper.ts`.
