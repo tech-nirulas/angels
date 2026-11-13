@@ -97,6 +97,7 @@ angels/
 - **Integration Points**:
   - `ProductCard.tsx`: Mounted alongside product name in a flex header with `gap: 0.75` and `size="small"`.
   - `FeaturedSection.tsx`: Mounted in `FeaturedProductCard` header alongside product name with `gap: 0.75` and `size="small"`.
+  - `ProductModal.tsx`: Mounted alongside modal product title (`variant="h4"`) with `size="medium"`, and embedded within an explicit dietary classification tag ("100% Vegetarian", "Non-Vegetarian", or "Contains Egg") paired with `DietaryBadge` (`size="small"`) in the dietary section.
 
 ## 3. Cart Sync & Checkout Flow
 
