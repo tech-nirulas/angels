@@ -3,6 +3,16 @@
 import React from "react";
 import Box from "@mui/material/Box";
 import Tooltip from "@mui/material/Tooltip";
+import { SxProps, Theme } from "@mui/material/styles";
+import {
+  getDietaryClassification,
+  DietaryClassification,
+  DietaryType,
+  PRIMARY_DIETARY_TAGS,
+} from "@/utils/dietary";
+
+export { getDietaryClassification, PRIMARY_DIETARY_TAGS };
+export type { DietaryClassification, DietaryType };
 
 export interface DietaryBadgeProps {
   dietaryTags?: string[] | null;
@@ -10,98 +20,7 @@ export interface DietaryBadgeProps {
   size?: "small" | "medium";
   className?: string;
   showTooltip?: boolean;
-}
-
-export interface DietaryClassification {
-  type: "vegetarian" | "non_vegetarian" | "contains_egg";
-  color: string;
-  label: string;
-}
-
-/**
- * Pure helper to classify food dietary status according to standard Indian food labeling (FSSAI).
- *
- * Precedence:
- * 1. Non-Vegetarian (#DC2626)
- * 2. Contains Egg (#D97706)
- * 3. Vegetarian / Vegan / Egg-free (#16A34A)
- *
- * Returns null if no authoritative classification is present.
- */
-export function getDietaryClassification(
-  dietaryTags?: string[] | null,
-  allergenInfo?: any,
-): DietaryClassification | null {
-  const normalizedTags = (dietaryTags || []).map((tag) =>
-    String(tag).toLowerCase().trim(),
-  );
-
-  let hasEggInAllergen = false;
-  if (allergenInfo) {
-    if (typeof allergenInfo === "string") {
-      const str = allergenInfo.toLowerCase();
-      if (/\b(egg|eggs)\b/.test(str) && !/\b(eggless|egg-free|egg_free)\b/.test(str)) {
-        hasEggInAllergen = true;
-      }
-    } else if (typeof allergenInfo === "object") {
-      const allergenString = JSON.stringify(allergenInfo).toLowerCase();
-      if (
-        /\b(egg|eggs)\b/.test(allergenString) &&
-        !/\b(eggless|egg-free|egg_free)\b/.test(allergenString)
-      ) {
-        hasEggInAllergen = true;
-      }
-    }
-  }
-
-  const isNonVeg =
-    normalizedTags.includes("non_vegetarian") ||
-    normalizedTags.includes("non-vegetarian") ||
-    normalizedTags.includes("nonveg") ||
-    normalizedTags.includes("non_veg");
-
-  if (isNonVeg) {
-    return {
-      type: "non_vegetarian",
-      color: "#DC2626",
-      label: "Non-Vegetarian",
-    };
-  }
-
-  const isEgg =
-    normalizedTags.includes("contains_egg") ||
-    normalizedTags.includes("contains-egg") ||
-    normalizedTags.includes("containsegg") ||
-    normalizedTags.includes("egg") ||
-    normalizedTags.includes("with_egg") ||
-    (hasEggInAllergen &&
-      !normalizedTags.includes("egg_free") &&
-      !normalizedTags.includes("eggless"));
-
-  if (isEgg) {
-    return {
-      type: "contains_egg",
-      color: "#D97706",
-      label: "Contains Egg",
-    };
-  }
-
-  const isVeg =
-    normalizedTags.includes("vegetarian") ||
-    normalizedTags.includes("vegan") ||
-    normalizedTags.includes("veg") ||
-    normalizedTags.includes("egg_free") ||
-    normalizedTags.includes("eggless");
-
-  if (isVeg) {
-    return {
-      type: "vegetarian",
-      color: "#16A34A",
-      label: "Vegetarian",
-    };
-  }
-
-  return null;
+  sx?: SxProps<Theme>;
 }
 
 /**
@@ -121,6 +40,7 @@ export function DietaryBadge({
   size = "small",
   className,
   showTooltip = true,
+  sx,
 }: DietaryBadgeProps) {
   const classification = getDietaryClassification(dietaryTags, allergenInfo);
 
@@ -151,6 +71,7 @@ export function DietaryBadge({
         backgroundColor: "#FFFFFF",
         flexShrink: 0,
         boxSizing: "border-box",
+        ...sx,
       }}
     >
       <Box

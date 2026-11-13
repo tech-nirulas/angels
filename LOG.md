@@ -1,5 +1,18 @@
 # Angels Consumer Web App — Development Log
 
+## [2026-11-13] Fix: Extract `utils/dietary.ts`, Refine Allergen Parsing & Optical Alignments
+- **Extract Pure Utility (`utils/dietary.ts`)**:
+  - Extracted `getDietaryClassification`, `DietaryClassification`, and `PRIMARY_DIETARY_TAGS` to standalone pure utility module.
+  - Refined allergen parsing: correctly checks `contains` array and boolean flags while ignoring `mayContain` trace warnings.
+  - Safeguarded explicit vegetarian, vegan, and egg-free tags against ambiguous allergen fallback.
+- **Component & UI Alignments**:
+  - Updated `DietaryBadge.tsx` to re-export and utilize `getDietaryClassification` from `@/utils/dietary`.
+  - Added optical top margin (`mt: "2.5px"`) to `ProductCard.tsx` and `FeaturedSection.tsx` for clean vertical centering with typography glyphs.
+  - Linked `ProductModal.tsx` to the centralized `PRIMARY_DIETARY_TAGS` export.
+- **Unit Testing**:
+  - Expanded `test/dietary-badge.test.ts` to directly import and assert all dietary classification cases: vegetarian, non-vegetarian, contains-egg, cross-contamination trace warnings (`mayContain`), and unclassified states.
+
+
 ## [2026-11-13] Feature: Integrate DietaryBadge in ProductModal Quick View
 - **ProductModal Quick View Integration (`components/ui/ProductModal.tsx`)**:
   - Mounted `DietaryBadge` alongside the modal product title (`<Typography variant="h4">`) in a responsive flex row with `alignItems: "flex-start"` and `gap: 1.25`, passing `size="medium"`, `dietaryTags={product.dietaryTags}`, and `allergenInfo={product.allergenInfo}`.

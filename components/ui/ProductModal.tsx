@@ -8,7 +8,10 @@ import {
   useUpdateCartQuantityMutation,
 } from "@/features/cart/cartApiService";
 import { addToGuestCart, openCart, updateGuestQuantity } from "@/features/cart/cartSlice";
-import DietaryBadge, { getDietaryClassification } from "@/components/common/DietaryBadge";
+import DietaryBadge, {
+  getDietaryClassification,
+  PRIMARY_DIETARY_TAGS,
+} from "@/components/common/DietaryBadge";
 import { Product } from "@/interfaces/product.interface";
 import { useAppDispatch, useAppSelector } from "@/lib/store";
 import { MEDIA_BASE_URL } from "@/utils/constants";
@@ -38,19 +41,9 @@ import { memo, useCallback, useEffect, useMemo, useState } from "react";
 const GALLERY_SPEC = IMAGE_SLOTS.productGallery;
 const THUMB_SPEC = IMAGE_SLOTS.thumbnail;
 
-const PRIMARY_DIETARY_TAGS = new Set([
-  "vegetarian",
-  "veg",
-  "non_vegetarian",
-  "non-vegetarian",
-  "nonveg",
-  "non_veg",
-  "contains_egg",
-  "contains-egg",
-  "containsegg",
-  "egg",
-  "with_egg",
-]);
+const PRIMARY_DIETARY_SET = new Set(
+  PRIMARY_DIETARY_TAGS.map((t) => t.toLowerCase().trim()),
+);
 
 interface ProductModalProps {
   product: Product;
@@ -145,7 +138,7 @@ const ProductModal = memo(({ product, onAddToCart, onClose }: ProductModalProps)
 
   const lifestyleTags = useMemo(() => {
     return (product.dietaryTags || []).filter(
-      (tag) => !PRIMARY_DIETARY_TAGS.has(String(tag).toLowerCase().trim())
+      (tag) => !PRIMARY_DIETARY_SET.has(String(tag).toLowerCase().trim())
     );
   }, [product.dietaryTags]);
 

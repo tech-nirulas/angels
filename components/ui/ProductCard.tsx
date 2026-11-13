@@ -218,7 +218,12 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
         )}
 
         <Box sx={{ display: "flex", alignItems: "flex-start", gap: 0.75, mb: 0.5 }}>
-          <DietaryBadge dietaryTags={product.dietaryTags} allergenInfo={product.allergenInfo} size="small" />
+          <DietaryBadge
+            dietaryTags={product.dietaryTags}
+            allergenInfo={product.allergenInfo}
+            size="small"
+            sx={{ mt: "2.5px" }}
+          />
           <Typography
             variant="h6"
             sx={{
