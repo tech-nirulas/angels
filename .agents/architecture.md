@@ -94,6 +94,9 @@ angels/
   - **Contains Egg**: Amber border (`#D97706`) with solid amber circular dot.
 - Built strictly with MUI `Box` and `Tooltip` with standard dimension sizes (`small`: 15px outer / 7px dot, `medium`: 18px outer / 8px dot).
 - Accessible with `role="img"` and dynamic `aria-label`. Only renders on authoritative dietary metadata; returns `null` if unclassified.
+- **Integration Points**:
+  - `ProductCard.tsx`: Mounted alongside product name in a flex header with `gap: 0.75` and `size="small"`.
+  - `FeaturedSection.tsx`: Mounted in `FeaturedProductCard` header alongside product name with `gap: 0.75` and `size="small"`.
 
 ## 3. Cart Sync & Checkout Flow
 
