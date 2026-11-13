@@ -33,6 +33,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useCallback, useMemo } from 'react';
 import AddToCartButton from '../ui/AddToCart';
+import DietaryBadge from "@/components/common/DietaryBadge";
 
 const FEATURED_SPEC = IMAGE_SLOTS.featuredCard;
 
@@ -194,22 +195,25 @@ const FeaturedProductCard = ({
 
         {/* Product Info */}
         <CardContent sx={{ p: 2, pb: 1, flexGrow: 1 }}>
-          <Typography
-            variant="h6"
-            sx={{
-              fontFamily: "var(--font-body)",
-              fontWeight: 700,
-              mb: 0.75,
-              fontSize: "1rem",
-              lineHeight: 1.3,
-              display: "-webkit-box",
-              WebkitLineClamp: 1,
-              WebkitBoxOrient: "vertical",
-              overflow: "hidden",
-            }}
-          >
-            {product.name}
-          </Typography>
+          <Box sx={{ display: "flex", alignItems: "flex-start", gap: 0.75, mb: 0.75 }}>
+            <DietaryBadge dietaryTags={product.dietaryTags} allergenInfo={product.allergenInfo} size="small" />
+            <Typography
+              variant="h6"
+              sx={{
+                fontFamily: "var(--font-body)",
+                fontWeight: 700,
+                fontSize: "1rem",
+                lineHeight: 1.3,
+                display: "-webkit-box",
+                WebkitLineClamp: 1,
+                WebkitBoxOrient: "vertical",
+                overflow: "hidden",
+                flex: 1,
+              }}
+            >
+              {product.name}
+            </Typography>
+          </Box>
 
           <Typography
             variant="body2"

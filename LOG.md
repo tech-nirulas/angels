@@ -1,5 +1,18 @@
 # Angels Consumer Web App — Development Log
 
+## [2026-11-13] Feature: Integrate DietaryBadge in ProductCard & FeaturedSection
+- **Product Card Integration (`components/ui/ProductCard.tsx`)**:
+  - Mounted `DietaryBadge` alongside product name in a flexible header row with `alignItems: "flex-start"` and `gap: 0.75`.
+  - Configured `size="small"`, passing `dietaryTags={product.dietaryTags}` and `allergenInfo={product.allergenInfo}`.
+  - Maintained single-line clamp truncation (`WebkitLineClamp: 1`, `flex: 1`) preventing any layout or visual shifts.
+- **Featured Section Integration (`components/sections/FeaturedSection.tsx`)**:
+  - Mounted `DietaryBadge` in `FeaturedProductCard` header alongside product name with `alignItems: "flex-start"`, `gap: 0.75`, and `size="small"`.
+  - Preserved existing margins and truncation styles.
+- **Testing & Verification (`test/product-card-dietary.test.ts`)**:
+  - Created test suite asserting import and mounting of `DietaryBadge` in both `ProductCard.tsx` and `FeaturedSection.tsx` with proper props.
+  - Executed TDD verification (RED -> GREEN).
+  - Validated TypeScript type-checking (`tsc --noEmit`) and Next.js 16 production build (`npm run build`) with Turbopack with 0 errors.
+
 ## [2026-11-13] Feature: Add Standard Indian DietaryBadge Component
 - **Component Implementation (`components/common/DietaryBadge.tsx`)**:
   - Implemented reusable `DietaryBadge` rendering standard FSSAI Indian dietary indicators:

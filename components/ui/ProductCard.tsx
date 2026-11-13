@@ -1,6 +1,7 @@
 "use client";
 
 import AddToCartButton from "@/components/ui/AddToCart";
+import DietaryBadge from "@/components/common/DietaryBadge";
 import { Product } from "@/interfaces/product.interface";
 import { getImageUrl } from "@/utils/imageUtils";
 import { taxInclusive } from "@/utils/pricing";
@@ -216,22 +217,25 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
           </Typography>
         )}
 
-        <Typography
-          variant="h6"
-          sx={{
-            fontFamily: "var(--font-body)",
-            fontWeight: 700,
-            mb: 0.5,
-            fontSize: "1rem",
-            lineHeight: 1.3,
-            display: "-webkit-box",
-            WebkitLineClamp: 1,
-            WebkitBoxOrient: "vertical",
-            overflow: "hidden",
-          }}
-        >
-          {product.name}
-        </Typography>
+        <Box sx={{ display: "flex", alignItems: "flex-start", gap: 0.75, mb: 0.5 }}>
+          <DietaryBadge dietaryTags={product.dietaryTags} allergenInfo={product.allergenInfo} size="small" />
+          <Typography
+            variant="h6"
+            sx={{
+              fontFamily: "var(--font-body)",
+              fontWeight: 700,
+              fontSize: "1rem",
+              lineHeight: 1.3,
+              display: "-webkit-box",
+              WebkitLineClamp: 1,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
+              flex: 1,
+            }}
+          >
+            {product.name}
+          </Typography>
+        </Box>
 
         <Typography
           variant="body2"
