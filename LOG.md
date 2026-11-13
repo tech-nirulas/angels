@@ -1,5 +1,21 @@
 # Angels Consumer Web App — Development Log
 
+## [2026-11-13] Feature: Add Standard Indian DietaryBadge Component
+- **Component Implementation (`components/common/DietaryBadge.tsx`)**:
+  - Implemented reusable `DietaryBadge` rendering standard FSSAI Indian dietary indicators:
+    - **Vegetarian** (`#16A34A`): Green border with green circular dot for `vegetarian`, `vegan`, and `egg_free`.
+    - **Non-Vegetarian** (`#DC2626`): Red border with red circular dot for `non_vegetarian`.
+    - **Contains Egg** (`#D97706`): Amber border with amber circular dot for `contains_egg` and products with egg allergen indications.
+  - Implemented pure helper `getDietaryClassification(dietaryTags, allergenInfo)`.
+  - Added MUI Tooltip integration, accessible `role="img"` and `aria-label`, supporting `small` (15px/7px) and `medium` (18px/8px) sizes.
+  - Authoritative classification safeguard: returns `null` if unclassified, preventing false dietary claims.
+- **Testing & Verification (`test/dietary-badge.test.ts`)**:
+  - Added test suite asserting accessibility semantics (`role="img"`, `aria-label`), color standards (`#16A34A`, `#DC2626`, `#D97706`), tag classification triggers, and dimensions.
+  - Executed TDD verification (RED -> GREEN).
+  - Validated Next.js 16 production build (`npm run build`) and TypeScript type-check (`tsc --noEmit`) with 0 errors.
+- **Documentation**:
+  - Updated `.agents/architecture.md` with Dietary Classification & FSSAI Badges specification.
+
 ## [2026-11-09] Contact Details, Call Center, Toll-Free & Address Migration
 - **Created Centralized Contact Source (`constants/contact.ts`)**:
   - Centralized all official contact channels, numbers, links, and addresses into `CONTACT_INFO` with `getWhatsappUrl` helper.
