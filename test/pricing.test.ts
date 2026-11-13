@@ -39,9 +39,10 @@ assert.strictEqual(
   'GST from inclusive ₹91 @ 5% must be ₹4.33',
 );
 
-// 3. formatCurrency clean display
+// 3. formatCurrency clean display with Indian grouping
 assert.strictEqual(formatCurrency(90), '₹90', 'Whole number 90 formats as ₹90');
 assert.strictEqual(formatCurrency(90.00), '₹90', 'Whole number 90.00 formats as ₹90');
+assert.strictEqual(formatCurrency(2500), '₹2,500', 'Whole number 2500 formats as ₹2,500');
 assert.strictEqual(formatCurrency(4.29), '₹4.29', 'Decimal 4.29 formats as ₹4.29');
 
 console.log('PASS: taxInclusive, gstFromInclusive, and formatCurrency unit tests passed cleanly');

@@ -48,10 +48,12 @@ export function gstFromInclusive(
 }
 
 /**
- * Formats a currency amount into clean INR string.
- * Omits trailing decimals for whole numbers (e.g. ₹90), while preserving 2 decimals if paise exist.
+ * Formats a currency amount into clean INR string with standard Indian number grouping.
+ * Omits trailing decimals for whole numbers (e.g. ₹90, ₹2,500), while preserving 2 decimals if paise exist.
  */
 export function formatCurrency(amount: number | string | null | undefined): string {
   const n = Number(amount) || 0;
-  return n % 1 === 0 ? `₹${Math.round(n)}` : `₹${n.toFixed(2)}`;
+  return n % 1 === 0
+    ? `₹${Math.round(n).toLocaleString('en-IN')}`
+    : `₹${n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }

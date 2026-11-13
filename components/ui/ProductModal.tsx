@@ -98,7 +98,7 @@ const ProductModal = memo(({ product, onAddToCart, onClose }: ProductModalProps)
   // must keep sending PRE-TAX values — the backend converts.
   const displayBasePrice = taxInclusive(basePrice, product.gstRate);
   const displayDiscountedPrice = taxInclusive(discountedPrice, product.gstRate);
-  const hasDiscount = discountedPrice < basePrice;
+  const hasDiscount = displayDiscountedPrice < displayBasePrice;
   const discountPct =
     (product as any).discountPct ||
     (hasDiscount

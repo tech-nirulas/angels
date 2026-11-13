@@ -529,6 +529,11 @@ export default function CartPage() {
 
   const appliedPromo = useAppSelector(selectAppliedPromo);
 
+  const [createOrder] = useCreateOrderMutation();
+  const [previewOrder] = usePreviewOrderMutation();
+  const [verifyPayment] = useVerifyPaymentMutation();
+  const [validateOfferCode, { isLoading: isValidatingPromo }] = useValidateOfferCodeMutation();
+
   // Fingerprint of cart line items to trigger revalidation only when items/quantities change
   const cartSignature = normalizedItems
     .map((i) => `${i.productId}:${i.quantity}:${i.currentPrice}`)
@@ -583,12 +588,6 @@ export default function CartPage() {
       cancelled = true;
     };
   }, [cartSignature, appliedPromo?.code, dispatch, validateOfferCode]);
-
-  const [createOrder] = useCreateOrderMutation();
-  const [previewOrder] = usePreviewOrderMutation();
-  const [verifyPayment] = useVerifyPaymentMutation();
-  const [validateOfferCode, { isLoading: isValidatingPromo }] = useValidateOfferCodeMutation();
-
 
   // Free-delivery threshold and per-window fees mirror the backend
   // delivery-fee rules (admin-editable). The server's preview is authoritative;
