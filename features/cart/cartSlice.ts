@@ -121,6 +121,11 @@ const cartSlice = createSlice({
     removePromo(state) {
       state.appliedPromo = null;
     },
+    updatePromoDiscount(state, action: PayloadAction<number>) {
+      if (state.appliedPromo) {
+        state.appliedPromo.discountAmount = action.payload;
+      }
+    },
     // ── Guest cart actions ─────────────────────────────────────────────────
     addToGuestCart(
       state,
@@ -184,6 +189,7 @@ const cartSlice = createSlice({
 
     clearGuestCart(state) {
       state.guestItems = [];
+      state.appliedPromo = null;
       saveGuestCart([]);
     },
 
@@ -225,6 +231,7 @@ export const selectAppliedPromo = (state: RootState): AppliedPromoInfo | null =>
 export const {
   applyPromo,
   removePromo,
+  updatePromoDiscount,
   addToGuestCart,
   updateGuestQuantity,
   removeFromGuestCart,
