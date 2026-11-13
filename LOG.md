@@ -1,5 +1,17 @@
 # Angels Consumer Web App — Development Log
 
+## [2026-11-13] Feature: Integrate DietaryBadge in ProductModal Quick View
+- **ProductModal Quick View Integration (`components/ui/ProductModal.tsx`)**:
+  - Mounted `DietaryBadge` alongside the modal product title (`<Typography variant="h4">`) in a responsive flex row with `alignItems: "flex-start"` and `gap: 1.25`, passing `size="medium"`, `dietaryTags={product.dietaryTags}`, and `allergenInfo={product.allergenInfo}`.
+  - Enhanced the dietary section by replacing generic text tags with an explicit authoritative dietary classification tag ("100% Vegetarian", "Non-Vegetarian", or "Contains Egg") paired directly with `DietaryBadge` (`size="small"`, `showTooltip={false}`).
+  - Leveraged `getDietaryClassification` from `@/components/common/DietaryBadge` to ensure standard FSSAI colors and labels (`#16A34A` / `#DC2626` / `#D97706`).
+  - Filtered primary classification tags from lifestyle tags, neatly presenting independent lifestyle preferences (e.g. `gluten_free`, `sugar_free`, `vegan`) with distinct chips.
+  - Strictly adhered to MUI `sx` styling and avoided Tailwind CSS on MUI components.
+- **Testing & Verification (`test/product-modal-dietary.test.ts`)**:
+  - Authored test suite asserting import of `DietaryBadge` and `getDietaryClassification`, `size="medium"` configuration on the title row, `dietaryTags` and `allergenInfo` prop passing, and presence of explicit "100% Vegetarian" classification tags.
+  - Followed strict TDD (RED failure -> GREEN pass).
+  - Validated TypeScript type-checking (`tsc --noEmit`) and Next.js 16 production build (`npm run build`) with Turbopack with 0 errors.
+
 ## [2026-11-13] Feature: Integrate DietaryBadge in ProductCard & FeaturedSection
 - **Product Card Integration (`components/ui/ProductCard.tsx`)**:
   - Mounted `DietaryBadge` alongside product name in a flexible header row with `alignItems: "flex-start"` and `gap: 0.75`.

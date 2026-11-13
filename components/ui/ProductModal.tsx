@@ -8,6 +8,7 @@ import {
   useUpdateCartQuantityMutation,
 } from "@/features/cart/cartApiService";
 import { addToGuestCart, openCart, updateGuestQuantity } from "@/features/cart/cartSlice";
+import DietaryBadge, { getDietaryClassification } from "@/components/common/DietaryBadge";
 import { Product } from "@/interfaces/product.interface";
 import { useAppDispatch, useAppSelector } from "@/lib/store";
 import { MEDIA_BASE_URL } from "@/utils/constants";
@@ -36,6 +37,20 @@ import { memo, useCallback, useEffect, useMemo, useState } from "react";
 
 const GALLERY_SPEC = IMAGE_SLOTS.productGallery;
 const THUMB_SPEC = IMAGE_SLOTS.thumbnail;
+
+const PRIMARY_DIETARY_TAGS = new Set([
+  "vegetarian",
+  "veg",
+  "non_vegetarian",
+  "non-vegetarian",
+  "nonveg",
+  "non_veg",
+  "contains_egg",
+  "contains-egg",
+  "containsegg",
+  "egg",
+  "with_egg",
+]);
 
 interface ProductModalProps {
   product: Product;
@@ -121,6 +136,18 @@ const ProductModal = memo(({ product, onAddToCart, onClose }: ProductModalProps)
     : [];
 
   const hasNutrition = Boolean(nutritional && Object.keys(nutritional).length > 0);
+
+  // Dietary classification (FSSAI standard) & lifestyle tags
+  const dietaryClassification = getDietaryClassification(
+    product.dietaryTags,
+    product.allergenInfo
+  );
+
+  const lifestyleTags = useMemo(() => {
+    return (product.dietaryTags || []).filter(
+      (tag) => !PRIMARY_DIETARY_TAGS.has(String(tag).toLowerCase().trim())
+    );
+  }, [product.dietaryTags]);
 
   // Direct, rock-solid add to cart handler
   const handleAdd = async (e: React.MouseEvent) => {
@@ -414,19 +441,26 @@ const ProductModal = memo(({ product, onAddToCart, onClose }: ProductModalProps)
             />
           )}
 
-          <Typography
-            variant="h4"
-            sx={{
-              fontFamily: "var(--font-display)",
-              fontWeight: 800,
-              fontSize: { xs: "1.4rem", md: "1.75rem" },
-              lineHeight: 1.25,
-              color: "#1E293B",
-              pr: 4,
-            }}
-          >
-            {product.name}
-          </Typography>
+          <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.25, pr: 4 }}>
+            <DietaryBadge
+              dietaryTags={product.dietaryTags}
+              allergenInfo={product.allergenInfo}
+              size="medium"
+            />
+            <Typography
+              variant="h4"
+              sx={{
+                fontFamily: "var(--font-display)",
+                fontWeight: 800,
+                fontSize: { xs: "1.4rem", md: "1.75rem" },
+                lineHeight: 1.25,
+                color: "#1E293B",
+                flex: 1,
+              }}
+            >
+              {product.name}
+            </Typography>
+          </Box>
 
           <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mt: 1, flexWrap: "wrap" }}>
             <Typography
@@ -461,23 +495,60 @@ const ProductModal = memo(({ product, onAddToCart, onClose }: ProductModalProps)
             )}
           </Box>
 
-          {/* Dietary Tags */}
-          {product.dietaryTags && product.dietaryTags.length > 0 && (
-            <Box sx={{ display: "flex", gap: 0.75, mt: 1.5, flexWrap: "wrap" }}>
-              {product.dietaryTags.map((tag) => (
+          {/* Dietary Section */}
+          {(dietaryClassification || lifestyleTags.length > 0) && (
+            <Box sx={{ display: "flex", gap: 0.75, mt: 1.5, flexWrap: "wrap", alignItems: "center" }}>
+              {dietaryClassification && (
+                <Chip
+                  icon={
+                    <DietaryBadge
+                      dietaryTags={product.dietaryTags}
+                      allergenInfo={product.allergenInfo}
+                      size="small"
+                      showTooltip={false}
+                    />
+                  }
+                  label={
+                    dietaryClassification.type === "vegetarian"
+                      ? "100% Vegetarian"
+                      : dietaryClassification.label
+                  }
+                  size="small"
+                  sx={{
+                    bgcolor: alpha(dietaryClassification.color, 0.08),
+                    color:
+                      dietaryClassification.type === "vegetarian"
+                        ? "#15803D"
+                        : dietaryClassification.type === "non_vegetarian"
+                        ? "#B91C1C"
+                        : "#B45309",
+                    fontWeight: 800,
+                    fontSize: "0.72rem",
+                    height: 26,
+                    border: `1px solid ${alpha(dietaryClassification.color, 0.3)}`,
+                    borderRadius: 1.5,
+                    "& .MuiChip-icon": {
+                      ml: "6px",
+                      mr: "-2px",
+                    },
+                  }}
+                />
+              )}
+              {lifestyleTags.map((tag) => (
                 <Chip
                   key={tag}
                   icon={<LocalOfferIcon sx={{ fontSize: "0.75rem !important" }} />}
                   label={tag.replace(/_/g, " ")}
                   size="small"
                   sx={{
-                    bgcolor: alpha(theme.palette.success.main, 0.08),
+                    bgcolor: alpha(theme.palette.success.main, 0.06),
                     color: theme.palette.success.dark,
                     fontWeight: 700,
                     fontSize: "0.68rem",
-                    height: 24,
+                    height: 26,
                     textTransform: "capitalize",
                     border: `1px solid ${alpha(theme.palette.success.main, 0.2)}`,
+                    borderRadius: 1.5,
                   }}
                 />
               ))}
