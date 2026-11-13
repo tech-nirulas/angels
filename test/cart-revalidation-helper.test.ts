@@ -58,6 +58,21 @@ assert.deepStrictEqual(
   { action: 'KEEP' }
 );
 
+// 5b. Real backend response format without explicit "eligible" boolean field
+const realBackendResponse = {
+  offerId: '6c05ec87-b1f1-459c-90b6-b3d1400800bf',
+  code: 'AIMKWEB25',
+  discountAmount: 158,
+};
+assert.deepStrictEqual(
+  decidePromoRevalidation(promo, 1, realBackendResponse),
+  {
+    action: 'UPDATE',
+    newDiscountAmount: 158,
+  },
+  'Real backend response without explicit eligible flag must be recognized as valid and update discount'
+);
+
 // 6. calculateSafePromoSaving clamps savings to cart total (no negative totals)
 assert.strictEqual(
   calculateSafePromoSaving(promo, 130.20),

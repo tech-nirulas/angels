@@ -13,7 +13,9 @@ export function decidePromoRevalidation(
   appliedPromo: AppliedPromoInfo | null,
   cartItemsCount: number,
   validationResult?: {
-    eligible: boolean;
+    eligible?: boolean;
+    status?: boolean;
+    valid?: boolean;
     discountAmount?: number;
     message?: string;
   } | null
@@ -30,8 +32,13 @@ export function decidePromoRevalidation(
     };
   }
 
-  // 2. If validationResult is present and not eligible, drop promo
-  if (validationResult && !validationResult.eligible) {
+  // 2. If validationResult is explicitly not eligible, drop promo
+  if (
+    validationResult &&
+    (validationResult.eligible === false ||
+      validationResult.status === false ||
+      validationResult.valid === false)
+  ) {
     return {
       action: "REMOVE",
       reason: validationResult.message || `Coupon '${appliedPromo.code}' is no longer eligible`,
@@ -41,7 +48,7 @@ export function decidePromoRevalidation(
   // 3. If validationResult is present and eligible, update discount if changed
   if (
     validationResult &&
-    validationResult.eligible &&
+    validationResult.eligible !== false &&
     typeof validationResult.discountAmount === "number"
   ) {
     if (validationResult.discountAmount !== appliedPromo.discountAmount) {
