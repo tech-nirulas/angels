@@ -17,6 +17,7 @@ import {
   clearGuestCart,
   removeFromGuestCart,
   removePromo,
+  updatePromoDiscount,
   selectAppliedPromo,
   selectGuestCartItems,
   updateGuestQuantity,
@@ -26,6 +27,7 @@ import { useCreateOrderMutation, usePreviewOrderMutation, useVerifyPaymentMutati
 import { Address } from "@/interfaces/address.interface";
 import { useAppDispatch, useAppSelector } from "@/lib/store";
 import { MEDIA_BASE_URL } from "@/utils/constants";
+import { calculateSafePromoSaving, decidePromoRevalidation } from "@/utils/cartPromo";
 import { taxInclusive, gstFromInclusive, detectDeliveryWindow, formatCurrency } from "@/utils/pricing";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import BusinessOutlinedIcon from "@mui/icons-material/BusinessOutlined";
@@ -491,6 +493,12 @@ export default function CartPage() {
   const [snackOpen, setSnackOpen] = useState(false);
   const [snackMsg, setSnackMsg] = useState("");
   const [snackSeverity, setSnackSeverity] = useState<"info" | "success" | "error">("info");
+
+  const showSnack = useCallback((msg: string, severity: "info" | "success" | "error" = "info") => {
+    setSnackMsg(msg);
+    setSnackSeverity(severity);
+    setSnackOpen(true);
+  }, []);
   const [removedName, setRemovedName] = useState("");
   const [loginModalOpen, setLoginModalOpen] = useState(false);
   const [deliveryModalOpen, setDeliveryModalOpen] = useState(false);
@@ -520,6 +528,61 @@ export default function CartPage() {
   }, []);
 
   const appliedPromo = useAppSelector(selectAppliedPromo);
+
+  // Fingerprint of cart line items to trigger revalidation only when items/quantities change
+  const cartSignature = normalizedItems
+    .map((i) => `${i.productId}:${i.quantity}:${i.currentPrice}`)
+    .sort()
+    .join("|");
+
+  // Revalidate applied promo code when cart contents change or cart becomes empty
+  useEffect(() => {
+    if (!appliedPromo) return;
+
+    if (normalizedItems.length === 0) {
+      dispatch(removePromo());
+      return;
+    }
+
+    let cancelled = false;
+
+    validateOfferCode({
+      code: appliedPromo.code,
+      cartItems: normalizedItems.map((item) => ({
+        productId: item.productId,
+        categoryId: (item.product as any)?.categoryId,
+        quantity: item.quantity,
+        unitPrice: item.currentPrice,
+      })),
+    })
+      .unwrap()
+      .then((res) => {
+        if (cancelled) return;
+        const d = res?.data ?? res;
+        const decision = decidePromoRevalidation(appliedPromo, normalizedItems.length, d);
+        if (decision.action === "UPDATE" && typeof decision.newDiscountAmount === "number") {
+          dispatch(updatePromoDiscount(decision.newDiscountAmount));
+        } else if (decision.action === "REMOVE") {
+          dispatch(removePromo());
+          if (decision.reason) {
+            showSnack(decision.reason, "error");
+          }
+        }
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        const msg =
+          err?.data?.message ??
+          err?.message ??
+          `Coupon '${appliedPromo.code}' removed as cart no longer meets offer requirements`;
+        dispatch(removePromo());
+        showSnack(msg, "error");
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [cartSignature, appliedPromo?.code, dispatch, validateOfferCode]);
 
   const [createOrder] = useCreateOrderMutation();
   const [previewOrder] = usePreviewOrderMutation();
@@ -597,6 +660,14 @@ export default function CartPage() {
       .then((res) => {
         if (cancelled) return;
         const d = res?.data ?? res;
+        // If server preview indicates promo is invalid, drop it
+        if (Array.isArray(d?.issues)) {
+          const promoIssue = d.issues.find((issue: any) => issue.type === "PROMOTION_ERROR");
+          if (promoIssue && appliedPromo) {
+            dispatch(removePromo());
+            showSnack(promoIssue.issue || `Coupon '${appliedPromo.code}' is no longer valid`, "error");
+          }
+        }
         if (typeof d?.grandTotal === "number") {
           setServerTotals({
             grandTotal: d.grandTotal,
@@ -609,8 +680,17 @@ export default function CartPage() {
       })
       // A preview failure must never block checkout: createOrder recomputes
       // authoritatively, so fall back to the local estimate.
-      .catch(() => {
-        if (!cancelled) setServerTotals(null);
+      .catch((err: any) => {
+        if (!cancelled) {
+          setServerTotals(null);
+          if (
+            err?.data?.type === "PROMOTION_ERROR" ||
+            (err?.data?.message && typeof err.data.message === "string" && err.data.message.toLowerCase().includes("promo"))
+          ) {
+            dispatch(removePromo());
+            showSnack(err?.data?.message ?? `Coupon '${appliedPromo?.code}' removed`, "error");
+          }
+        }
       });
     return () => {
       cancelled = true;
@@ -641,17 +721,11 @@ export default function CartPage() {
         ? 0
         : STANDARD_SHIPPING_COST
       : WINDOW_SHIPPING_COST;
-  const promoSaving = appliedPromo ? appliedPromo.discountAmount : 0;
+  const promoSaving = calculateSafePromoSaving(appliedPromo, cartTotalIncl);
   const estimatedTotal = Math.max(0, cartTotalIncl - promoSaving + shipping);
   const orderTotal = serverTotals?.grandTotal ?? estimatedTotal;
   const shippingProgress = Math.min((cartTotalIncl / SHIPPING_THRESHOLD) * 100, 100);
   const remaining = Math.max(SHIPPING_THRESHOLD - cartTotalIncl, 0);
-
-  const showSnack = (msg: string, severity: "info" | "success" | "error" = "info") => {
-    setSnackMsg(msg);
-    setSnackSeverity(severity);
-    setSnackOpen(true);
-  };
 
   const handleCheckout = () => {
     if (!isAuthenticated) {
@@ -818,6 +892,7 @@ export default function CartPage() {
   const handleClearCart = useCallback(async () => {
     if (isAuthenticated) await clearCartMutation();
     else dispatch(clearGuestCart());
+    dispatch(removePromo());
   }, [dispatch, isAuthenticated, clearCartMutation]);
 
   const handleApplyPromo = async () => {
