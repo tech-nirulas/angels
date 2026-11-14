@@ -24,10 +24,10 @@ export interface DietaryBadgeProps {
 }
 
 /**
- * DietaryBadge renders the standard Indian food classification symbol:
+ * DietaryBadge renders the standard Indian food classification symbol (FSSAI 2020):
  * - Green border (#16A34A) with green circular dot for Vegetarian / Vegan / Egg-free
- * - Red border (#DC2626) with red circular dot for Non-Vegetarian
- * - Amber border (#D97706) with amber circular dot for Contains Egg
+ * - Red border (#DC2626) with red upward equilateral triangle for Non-Vegetarian
+ * - Amber border (#D97706) with amber upward equilateral triangle for Contains Egg
  *
  * CRITICAL RULE:
  * Only renders when authoritative data explicitly indicates the classification.
@@ -52,7 +52,35 @@ export function DietaryBadge({
   const outerDimension = isSmall ? 15 : 18;
   const innerDimension = isSmall ? 7 : 8;
 
-  const { color, label } = classification;
+  const { color, label, shape } = classification;
+
+  const innerContent =
+    shape === "triangle" ? (
+      <Box
+        component="svg"
+        viewBox="0 0 10 10"
+        aria-hidden="true"
+        sx={{
+          width: innerDimension,
+          height: innerDimension,
+          display: "block",
+          flexShrink: 0,
+        }}
+      >
+        <polygon points="5,1 9.2,8.8 0.8,8.8" fill={color} />
+      </Box>
+    ) : (
+      <Box
+        component="span"
+        sx={{
+          width: innerDimension,
+          height: innerDimension,
+          borderRadius: "50%",
+          backgroundColor: color,
+          flexShrink: 0,
+        }}
+      />
+    );
 
   const badgeElement = (
     <Box
@@ -74,15 +102,7 @@ export function DietaryBadge({
         ...sx,
       }}
     >
-      <Box
-        component="span"
-        sx={{
-          width: innerDimension,
-          height: innerDimension,
-          borderRadius: "50%",
-          backgroundColor: color,
-        }}
-      />
+      {innerContent}
     </Box>
   );
 

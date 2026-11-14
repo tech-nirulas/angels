@@ -22,6 +22,8 @@ assert.ok(content.includes('Tooltip'), 'Must use MUI Tooltip');
 assert.ok(content.includes('15') && content.includes('18'), 'Must support small (15px) and medium (18px) outer box');
 assert.ok(content.includes('7') && content.includes('8'), 'Must support small (7px) and medium (8px) inner dot');
 assert.ok(content.includes('50%'), 'Must use 50% border radius for inner dot');
+assert.ok(content.includes('polygon'), 'DietaryBadge must render polygon for triangle shape');
+assert.ok(content.includes('shape === "triangle"'), 'DietaryBadge must check classification shape');
 
 // Exports
 assert.ok(content.includes('export function DietaryBadge'), 'Must have named export DietaryBadge');
