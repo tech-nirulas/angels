@@ -1,5 +1,24 @@
 # Angels Consumer Web App — Development Log
 
+## [2026-11-14] Feature: Upgrade Dietary Indicator Badges to Full FSSAI 2020 Standard (SVG Upward Triangle)
+- **FSSAI Compliance Upgrade**:
+  - Aligned dietary symbols with Food Safety and Standards Authority of India (FSSAI) Labelling and Display Regulations 2020.
+  - **Vegetarian**: Green square border (`#16A34A`) with solid green circular dot.
+  - **Non-Vegetarian**: Red square border (`#DC2626`) with solid red upward-pointing equilateral triangle (`▲`).
+  - **Contains Egg**: Amber square border (`#D97706`) with solid amber upward-pointing equilateral triangle (`▲`).
+- **Domain Logic Classification (`utils/dietary.ts`)**:
+  - Extended `DietaryClassification` interface with `shape: "circle" | "triangle"`.
+  - Configured `getDietaryClassification` to assign `shape: "circle"` to vegetarian/vegan/eggless products, and `shape: "triangle"` to non-vegetarian and contains-egg products.
+- **UI Component Rendering (`components/common/DietaryBadge.tsx`)**:
+  - Upgraded inner symbol rendering: renders crisp inline SVG polygon `<polygon points="5,1 9.2,8.8 0.8,8.8" fill={color} />` with `aria-hidden="true"` when `shape === "triangle"`.
+  - Preserves 50% border-radius circular dot for `shape === "circle"`.
+  - Retains zero layout shift across `ProductCard`, `FeaturedSection`, and `ProductModal`.
+- **Testing & Verification**:
+  - Updated `test/dietary-badge.test.ts` with shape assertions for all dietary classifications and verified SVG polygon markup in source.
+  - Ran all project test suites: `test/dietary-badge.test.ts`, `test/product-card-dietary.test.ts`, and `test/product-modal-dietary.test.ts` (all PASS).
+  - Verified `npx tsc --noEmit` (0 errors) and Next.js production build `npm run build` (success).
+
+
 ## [2026-11-13] Fix: Cart Coupon Auto-Revalidation & Stale Promo Invalidation on Cart Mutation
 - **Root Cause Fixed**:
   - Previously, `appliedPromo` stored a static discount amount in Redux (`cartSlice.ts`) when applied on high-value carts.
