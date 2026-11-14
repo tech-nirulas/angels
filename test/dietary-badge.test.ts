@@ -30,7 +30,7 @@ assert.ok(content.includes('export { getDietaryClassification'), 'Must re-export
 
 // 2. Direct unit test assertions for getDietaryClassification
 
-// vegetarian tags -> green
+// vegetarian tags -> green and circle
 const vegResult = getDietaryClassification(['vegetarian']);
 assert.ok(vegResult, 'Vegetarian tag must return classification');
 assert.strictEqual(vegResult.color, '#16A34A', 'Vegetarian must be green #16A34A');
@@ -38,14 +38,17 @@ assert.strictEqual(vegResult.label, 'Vegetarian');
 assert.strictEqual(vegResult.isVeg, true);
 assert.strictEqual(vegResult.isNonVeg, false);
 assert.strictEqual(vegResult.isEgg, false);
+assert.strictEqual((vegResult as any).shape, 'circle', 'Vegetarian must have circle shape');
 
 const veganResult = getDietaryClassification(['vegan']);
 assert.ok(veganResult && veganResult.isVeg && veganResult.color === '#16A34A');
+assert.strictEqual((veganResult as any).shape, 'circle');
 
 const eggFreeResult = getDietaryClassification(['egg_free']);
 assert.ok(eggFreeResult && eggFreeResult.isVeg && eggFreeResult.color === '#16A34A');
+assert.strictEqual((eggFreeResult as any).shape, 'circle');
 
-// non_vegetarian tags -> red
+// non_vegetarian tags -> red and triangle
 const nonVegResult = getDietaryClassification(['non_vegetarian']);
 assert.ok(nonVegResult, 'Non-vegetarian tag must return classification');
 assert.strictEqual(nonVegResult.color, '#DC2626', 'Non-vegetarian must be red #DC2626');
@@ -53,18 +56,21 @@ assert.strictEqual(nonVegResult.label, 'Non-Vegetarian');
 assert.strictEqual(nonVegResult.isNonVeg, true);
 assert.strictEqual(nonVegResult.isVeg, false);
 assert.strictEqual(nonVegResult.isEgg, false);
+assert.strictEqual((nonVegResult as any).shape, 'triangle', 'Non-Vegetarian must have triangle shape');
 
 const nonVegAltResult = getDietaryClassification(['nonveg']);
 assert.ok(nonVegAltResult && nonVegAltResult.isNonVeg && nonVegAltResult.color === '#DC2626');
+assert.strictEqual((nonVegAltResult as any).shape, 'triangle');
 
-// contains_egg tags -> amber
+// contains_egg tags -> amber and triangle
 const eggResult = getDietaryClassification(['contains_egg']);
-assert.ok(eggResult, 'Contains-egg tag must return classification');
+assert.ok(eggResult, 'Contains egg tag must return classification');
 assert.strictEqual(eggResult.color, '#D97706', 'Contains egg must be amber #D97706');
 assert.strictEqual(eggResult.label, 'Contains Egg');
 assert.strictEqual(eggResult.isEgg, true);
 assert.strictEqual(eggResult.isVeg, false);
 assert.strictEqual(eggResult.isNonVeg, false);
+assert.strictEqual((eggResult as any).shape, 'triangle', 'Contains Egg must have triangle shape');
 
 const eggAllergenContains = getDietaryClassification([], { contains: ['eggs'] });
 assert.ok(eggAllergenContains && eggAllergenContains.isEgg && eggAllergenContains.color === '#D97706');

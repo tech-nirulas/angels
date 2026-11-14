@@ -2,6 +2,7 @@ export type DietaryType = "vegetarian" | "non_vegetarian" | "contains_egg";
 
 export interface DietaryClassification {
   type: DietaryType;
+  shape: "circle" | "triangle";
   isVeg: boolean;
   isNonVeg: boolean;
   isEgg: boolean;
@@ -108,6 +109,7 @@ export function getDietaryClassification(
   if (isNonVeg) {
     return {
       type: "non_vegetarian",
+      shape: "triangle",
       isVeg: false,
       isNonVeg: true,
       isEgg: false,
@@ -126,6 +128,7 @@ export function getDietaryClassification(
   if (isExplicitEggTag) {
     return {
       type: "contains_egg",
+      shape: "triangle",
       isVeg: false,
       isNonVeg: false,
       isEgg: true,
@@ -147,6 +150,7 @@ export function getDietaryClassification(
   if (hasEggInAllergen && !isExplicitVeg) {
     return {
       type: "contains_egg",
+      shape: "triangle",
       isVeg: false,
       isNonVeg: false,
       isEgg: true,
@@ -158,6 +162,7 @@ export function getDietaryClassification(
   if (isExplicitVeg) {
     return {
       type: "vegetarian",
+      shape: "circle",
       isVeg: true,
       isNonVeg: false,
       isEgg: false,
