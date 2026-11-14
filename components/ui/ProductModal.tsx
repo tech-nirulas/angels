@@ -51,12 +51,7 @@ interface ProductModalProps {
   onClose?: () => void;
 }
 
-function getImageUrl(product: Product): string {
-  const key = product.mainImage?.key ?? product.thumbnail?.key;
-  return key
-    ? MEDIA_BASE_URL + key
-    : "https://placehold.co/600x600.png?text=No+Image";
-}
+import { getImageUrl } from "@/utils/imageUtils";
 
 const ProductModal = memo(({ product, onAddToCart, onClose }: ProductModalProps) => {
   const theme = useTheme();
@@ -117,8 +112,11 @@ const ProductModal = memo(({ product, onAddToCart, onClose }: ProductModalProps)
     ...(product.gallery ?? []).filter((g) => g.id !== product.mainImageId),
   ];
   const activeImage = allImages[galleryIndex];
-  const activeImageUrl = activeImage?.key
-    ? MEDIA_BASE_URL + activeImage.key
+  const activeImageUrl = activeImage?.url
+    ? activeImage.url
+    : activeImage?.key
+    ? (MEDIA_BASE_URL.endsWith("/") ? MEDIA_BASE_URL : `${MEDIA_BASE_URL}/`) +
+      activeImage.key.replace(/^\//, "")
     : getImageUrl(product);
 
   // Nutritional & allergen info

@@ -3,7 +3,7 @@
 import AddToCartButton from "@/components/ui/AddToCart";
 import DietaryBadge from "@/components/common/DietaryBadge";
 import { Product } from "@/interfaces/product.interface";
-import { getImageUrl } from "@/utils/imageUtils";
+import { getImageUrl, FALLBACK_PRODUCT_IMAGE } from "@/utils/imageUtils";
 import { taxInclusive, formatCurrency } from "@/utils/pricing";
 import { IMAGE_SLOTS } from "@/utils/imageSpec";
 import Box from "@mui/material/Box";
@@ -16,7 +16,7 @@ import Rating from "@mui/material/Rating";
 import Typography from "@mui/material/Typography";
 import { useTheme } from "@mui/material/styles";
 import Image from "next/image";
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 
 const CARD_SPEC = IMAGE_SLOTS.productCard;
 
@@ -42,6 +42,14 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
       : null);
 
   const imageUrl = getImageUrl(product);
+  const [imgSrc, setImgSrc] = useState(imageUrl);
+  const [imgError, setImgError] = useState(false);
+
+  useEffect(() => {
+    setImgSrc(getImageUrl(product));
+    setImgError(false);
+  }, [product]);
+
   const isOutOfStock = !product.inStock;
 
   const hasVariants = Boolean(product.variants && product.variants.length > 0);
@@ -111,18 +119,49 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
           "&:hover img": { transform: "scale(1.05)" },
         }}
       >
-        <Image
-          src={imageUrl}
-          alt={product.name}
-          fill
-          sizes={CARD_SPEC.sizes}
-          quality={CARD_SPEC.quality}
-          style={{
-            objectFit: "cover",
-            objectPosition: "center",
-            transition: "transform 0.5s ease",
-          }}
-        />
+        {!imgError ? (
+          <Image
+            src={imgSrc}
+            alt={product.name}
+            fill
+            sizes={CARD_SPEC.sizes}
+            quality={CARD_SPEC.quality}
+            onError={() => {
+              if (imgSrc !== FALLBACK_PRODUCT_IMAGE) {
+                setImgSrc(FALLBACK_PRODUCT_IMAGE);
+              } else {
+                setImgError(true);
+              }
+            }}
+            style={{
+              objectFit: "cover",
+              objectPosition: "center",
+              transition: "transform 0.5s ease",
+            }}
+          />
+        ) : (
+          <Box
+            sx={{
+              width: "100%",
+              height: "100%",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 0.5,
+              p: 2,
+            }}
+          >
+            <Typography variant="h4">🥐</Typography>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ fontWeight: 600, textAlign: "center" }}
+            >
+              Image not available
+            </Typography>
+          </Box>
+        )}
 
         {/* Top-left Badges */}
         <Box

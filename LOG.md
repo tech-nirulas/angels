@@ -420,3 +420,10 @@
 - Created `/cakes` main catalog and `/cakes/[slug]` category catalog pages with SEO breadcrumbs, sorting, search, pagination, and modal product view.
 - Updated `Navbar.tsx` navigation links.
 
+
+## [2026-11-14] Resilient Product Image Resolution & Broken Image Fallback
+- Upgraded `getImageUrl` in `utils/imageUtils.ts` to support full URL schemes (`http://`, `https://`), proper trailing/leading slash normalization with `MEDIA_BASE_URL`, and fallback placeholder.
+- Added graceful image error handling (`onError`) with fallback placeholder and themed placeholder box to `ProductCard.tsx` (`components/ui/ProductCard.tsx`) and `FeaturedProductCard` (`components/sections/FeaturedSection.tsx`).
+- Updated `ProductModal.tsx` to use centralized `getImageUrl` and properly handle full `url` in `activeImageUrl`.
+- Removed redundant local `getImageUrl` definitions across `app/menu/page.tsx`, `components/sections/MenuSection.tsx`, `app/cakes/page.tsx`, and `app/cakes/[slug]/page.tsx`.
+- Verified production build compiles successfully with Turbopack (`npm run build`).

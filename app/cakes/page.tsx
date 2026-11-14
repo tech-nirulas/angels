@@ -46,12 +46,7 @@ const ProductModalDynamic = dynamic(
   { loading: () => null, ssr: false }
 );
 
-function getImageUrl(product: Product): string {
-  const key = product.mainImage?.key ?? product.thumbnail?.key;
-  return key
-    ? MEDIA_BASE_URL + key
-    : "https://placehold.co/1200x900.png?text=Delicious+Bakery";
-}
+
 
 export default function CakesPage() {
   const theme = useTheme();

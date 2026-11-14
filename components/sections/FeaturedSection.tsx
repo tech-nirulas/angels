@@ -31,7 +31,8 @@ import { motion } from 'framer-motion';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { useCallback, useMemo } from 'react';
+import { getImageUrl, FALLBACK_PRODUCT_IMAGE } from '@/utils/imageUtils';
+import { useCallback, useMemo, useState, useEffect } from 'react';
 import AddToCartButton from '../ui/AddToCart';
 import DietaryBadge from "@/components/common/DietaryBadge";
 
@@ -41,14 +42,6 @@ const ProductModalDynamic = dynamic(
   () => import("@/components/ui/ProductModal"),
   { loading: () => null, ssr: false }
 );
-
-// Helper function to get image URL
-function getImageUrl(product: Product): string {
-  const key = product.mainImage?.key ?? product.thumbnail?.key;
-  return key
-    ? MEDIA_BASE_URL + key
-    : "https://placehold.co/1200x900.png?text=Featured+Item";
-}
 
 // Helper to normalize product for cart
 function toCartItem(product: Product) {
@@ -79,6 +72,13 @@ const FeaturedProductCard = ({
   // Display-only: tax-inclusive; toCartItem above stays pre-tax (backend converts).
   const price = taxInclusive(Number(product.basePrice), product.gstRate);
   const imageUrl = getImageUrl(product);
+  const [imgSrc, setImgSrc] = useState(imageUrl);
+  const [imgError, setImgError] = useState(false);
+
+  useEffect(() => {
+    setImgSrc(getImageUrl(product));
+    setImgError(false);
+  }, [product]);
 
   return (
     <motion.div
@@ -154,18 +154,49 @@ const FeaturedProductCard = ({
             "&:hover img": { transform: "scale(1.08)" },
           }}
         >
-          <Image
-            src={imageUrl}
-            alt={product.name}
-            fill
-            sizes={FEATURED_SPEC.sizes}
-            quality={FEATURED_SPEC.quality}
-            style={{
-              objectFit: "cover",
-              objectPosition: "center",
-              transition: "transform 0.5s ease",
-            }}
-          />
+          {!imgError ? (
+            <Image
+              src={imgSrc}
+              alt={product.name}
+              fill
+              sizes={FEATURED_SPEC.sizes}
+              quality={FEATURED_SPEC.quality}
+              onError={() => {
+                if (imgSrc !== FALLBACK_PRODUCT_IMAGE) {
+                  setImgSrc(FALLBACK_PRODUCT_IMAGE);
+                } else {
+                  setImgError(true);
+                }
+              }}
+              style={{
+                objectFit: "cover",
+                objectPosition: "center",
+                transition: "transform 0.5s ease",
+              }}
+            />
+          ) : (
+            <Box
+              sx={{
+                width: "100%",
+                height: "100%",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 0.5,
+                p: 2,
+              }}
+            >
+              <Typography variant="h4">🥐</Typography>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ fontWeight: 600, textAlign: "center" }}
+              >
+                Image not available
+              </Typography>
+            </Box>
+          )}
 
           {/* Out of stock overlay */}
           {product.inStock === false && (
