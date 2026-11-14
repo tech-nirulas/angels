@@ -116,6 +116,13 @@ export default function VerifyOtpPage() {
           items: guestItems.map((i) => ({
             productId: i.productId,
             quantity: i.quantity,
+            variantId: i.variantId,
+            modifierOptionIds: i.selectedModifiers ? i.selectedModifiers.map((m) => m.optionId) : undefined,
+            configurationHash: i.configurationHash,
+            selectedVariant: i.selectedVariant,
+            selectedModifiers: i.selectedModifiers,
+            itemNotes: i.itemNotes,
+            snapshotPrice: i.currentPrice,
           })),
         });
         dispatch(clearGuestCart());

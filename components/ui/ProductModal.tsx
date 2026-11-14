@@ -142,16 +142,171 @@ const ProductModal = memo(({ product, onAddToCart, onClose }: ProductModalProps)
     );
   }, [product.dietaryTags]);
 
+  // ── Variants state ────────────────────────────────────────────────────────
+  const variants = product.variants ?? [];
+  const hasVariants = variants.length > 0;
+  const defaultVariant = useMemo(() => {
+    if (!hasVariants) return null;
+    return (
+      variants.find((v) => v.isDefault && v.inStock) ||
+      variants.find((v) => v.inStock) ||
+      variants[0]
+    );
+  }, [variants, hasVariants]);
+
+  const [selectedVariantId, setSelectedVariantId] = useState<string | null>(
+    defaultVariant?.id ?? null
+  );
+
+  useEffect(() => {
+    setSelectedVariantId(defaultVariant?.id ?? null);
+  }, [defaultVariant?.id]);
+
+  const activeVariant = useMemo(() => {
+    if (!hasVariants) return null;
+    return variants.find((v) => v.id === selectedVariantId) || defaultVariant;
+  }, [hasVariants, variants, selectedVariantId, defaultVariant]);
+
+  // ── Modifiers state ───────────────────────────────────────────────────────
+  const modifierGroups = useMemo(() => {
+    return (product.modifierGroups ?? [])
+      .map((pmg) => pmg.modifierGroup)
+      .filter((g): g is NonNullable<typeof g> => Boolean(g && g.isActive));
+  }, [product.modifierGroups]);
+  const hasModifiers = modifierGroups.length > 0;
+  const hasVariantsOrModifiers = hasVariants || hasModifiers;
+
+  const initialModifierSelections = useMemo(() => {
+    const initial: Record<string, string[]> = {};
+    for (const group of modifierGroups) {
+      const defaultOpts = (group.options ?? [])
+        .filter((o) => o.isDefault && o.inStock)
+        .map((o) => o.id);
+      if (defaultOpts.length > 0) {
+        initial[group.id] = defaultOpts.slice(0, group.maxSelections);
+      } else if (group.minSelections > 0 && (group.options ?? []).length > 0) {
+        const firstInStock = group.options.find((o) => o.inStock);
+        if (firstInStock) {
+          initial[group.id] = [firstInStock.id];
+        }
+      }
+    }
+    return initial;
+  }, [modifierGroups]);
+
+  const [selectedModifierOptionIds, setSelectedModifierOptionIds] =
+    useState<Record<string, string[]>>(initialModifierSelections);
+
+  useEffect(() => {
+    setSelectedModifierOptionIds(initialModifierSelections);
+  }, [initialModifierSelections]);
+
+  const handleToggleModifierOption = (
+    groupId: string,
+    optionId: string,
+    maxSelections: number
+  ) => {
+    setSelectedModifierOptionIds((prev) => {
+      const current = prev[groupId] ?? [];
+      if (maxSelections === 1) {
+        const group = modifierGroups.find((g) => g.id === groupId);
+        if (current.includes(optionId)) {
+          return group?.minSelections === 0 ? { ...prev, [groupId]: [] } : prev;
+        }
+        return { ...prev, [groupId]: [optionId] };
+      } else {
+        if (current.includes(optionId)) {
+          return { ...prev, [groupId]: current.filter((id) => id !== optionId) };
+        }
+        if (current.length < maxSelections) {
+          return { ...prev, [groupId]: [...current, optionId] };
+        }
+        return prev;
+      }
+    });
+  };
+
+  const modifiersSurcharge = useMemo(() => {
+    let sum = 0;
+    for (const group of modifierGroups) {
+      const selectedIds = selectedModifierOptionIds[group.id] ?? [];
+      for (const opt of group.options ?? []) {
+        if (selectedIds.includes(opt.id)) {
+          sum += Number(opt.price || 0);
+        }
+      }
+    }
+    return sum;
+  }, [modifierGroups, selectedModifierOptionIds]);
+
+  const missingRequiredGroup = useMemo(() => {
+    for (const group of modifierGroups) {
+      if (group.minSelections > 0) {
+        const count = (selectedModifierOptionIds[group.id] ?? []).length;
+        if (count < group.minSelections) {
+          return group.displayName || group.name;
+        }
+      }
+    }
+    return null;
+  }, [modifierGroups, selectedModifierOptionIds]);
+
+  // Selected base price and effective unit price (pre-tax)
+  const currentItemBasePrice = activeVariant ? Number(activeVariant.price) : basePrice;
+  const currentEffectiveUnitPrice = currentItemBasePrice + modifiersSurcharge;
+
+  // Tax-inclusive display pricing
+  const displayCurrentBasePrice = taxInclusive(currentItemBasePrice, product.gstRate);
+  const displayCurrentUnitPrice = taxInclusive(currentEffectiveUnitPrice, product.gstRate);
+
   // Direct, rock-solid add to cart handler
   const handleAdd = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (missingRequiredGroup) return;
+
+    const flattenedOptionIds = Object.values(selectedModifierOptionIds).flat();
+
+    const selectedModifiersSnapshot = [];
+    for (const group of modifierGroups) {
+      const selectedIds = selectedModifierOptionIds[group.id] ?? [];
+      for (const opt of group.options ?? []) {
+        if (selectedIds.includes(opt.id)) {
+          selectedModifiersSnapshot.push({
+            groupId: group.id,
+            groupName: group.name,
+            optionId: opt.id,
+            optionName: opt.name,
+            price: Number(opt.price || 0),
+          });
+        }
+      }
+    }
 
     if (isAuthenticated) {
-      await addToCartMutation({ productId: product.id, quantity: 1 });
+      await addToCartMutation({
+        productId: product.id,
+        quantity: 1,
+        variantId: activeVariant?.id || undefined,
+        modifierOptionIds: flattenedOptionIds.length > 0 ? flattenedOptionIds : undefined,
+      });
     } else {
       dispatch(
         addToGuestCart({
           productId: product.id,
+          quantity: 1,
+          variantId: activeVariant?.id || null,
+          modifierOptionIds: flattenedOptionIds,
+          selectedVariant: activeVariant
+            ? {
+                id: activeVariant.id,
+                sku: activeVariant.sku,
+                name: activeVariant.name,
+                price: Number(activeVariant.price),
+              }
+            : null,
+          selectedModifiers:
+            selectedModifiersSnapshot.length > 0 ? selectedModifiersSnapshot : null,
+          unitPrice: currentEffectiveUnitPrice,
           product: {
             id: product.id,
             name: product.name,
@@ -550,6 +705,228 @@ const ProductModal = memo(({ product, onAddToCart, onClose }: ProductModalProps)
 
           <Divider sx={{ my: 2 }} />
 
+          {/* ── Size / Variant Selection ── */}
+          {hasVariants && (
+            <Box sx={{ mb: 2.5 }}>
+              <Typography
+                variant="caption"
+                sx={{
+                  fontWeight: 800,
+                  textTransform: "uppercase",
+                  letterSpacing: 0.8,
+                  color: "text.secondary",
+                  display: "block",
+                  mb: 1,
+                }}
+              >
+                Select Size / Weight
+              </Typography>
+              <Box sx={{ display: "flex", gap: 1.25, flexWrap: "wrap" }}>
+                {variants.map((v) => {
+                  const isSelected = v.id === selectedVariantId;
+                  const vPrice = taxInclusive(Number(v.price), product.gstRate);
+                  return (
+                    <Box
+                      key={v.id}
+                      component="button"
+                      type="button"
+                      onClick={() => v.inStock && setSelectedVariantId(v.id)}
+                      disabled={!v.inStock}
+                      sx={{
+                        px: 2,
+                        py: 1,
+                        borderRadius: 2,
+                        border: `2px solid ${
+                          isSelected ? theme.palette.primary.main : alpha(theme.palette.divider, 0.9)
+                        }`,
+                        bgcolor: isSelected
+                          ? alpha(theme.palette.primary.main, 0.08)
+                          : theme.palette.background.paper,
+                        color: isSelected ? theme.palette.primary.main : theme.palette.text.primary,
+                        cursor: v.inStock ? "pointer" : "not-allowed",
+                        opacity: v.inStock ? 1 : 0.5,
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "flex-start",
+                        gap: 0.25,
+                        transition: "all 0.2s ease",
+                        boxShadow: isSelected
+                          ? `0 2px 8px ${alpha(theme.palette.primary.main, 0.2)}`
+                          : "none",
+                        "&:hover": {
+                          borderColor: v.inStock ? theme.palette.primary.main : undefined,
+                        },
+                      }}
+                    >
+                      <Typography variant="body2" sx={{ fontWeight: 800, fontSize: "0.88rem" }}>
+                        {v.name}
+                      </Typography>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          fontWeight: 700,
+                          color: isSelected ? theme.palette.primary.main : "text.secondary",
+                        }}
+                      >
+                        {v.inStock ? formatCurrency(vPrice) : "Out of stock"}
+                      </Typography>
+                    </Box>
+                  );
+                })}
+              </Box>
+            </Box>
+          )}
+
+          {/* ── Modifier Groups / Add-ons ── */}
+          {hasModifiers && (
+            <Box sx={{ mb: 2.5, display: "flex", flexDirection: "column", gap: 2 }}>
+              {modifierGroups.map((group) => {
+                const selectedIds = selectedModifierOptionIds[group.id] ?? [];
+                const isRequired = group.minSelections > 0;
+                return (
+                  <Box
+                    key={group.id}
+                    sx={{
+                      p: 2,
+                      borderRadius: 2.5,
+                      bgcolor: alpha(theme.palette.primary.main, 0.02),
+                      border: `1px solid ${alpha(theme.palette.divider, 0.8)}`,
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        mb: 1.25,
+                      }}
+                    >
+                      <Box>
+                        <Typography
+                          variant="subtitle2"
+                          sx={{ fontWeight: 800, fontSize: "0.9rem", color: "#1E293B" }}
+                        >
+                          {group.displayName || group.name}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: "text.secondary", fontSize: "0.72rem" }}>
+                          {group.maxSelections === 1
+                            ? "Select 1 option"
+                            : `Select up to ${group.maxSelections} options`}
+                        </Typography>
+                      </Box>
+                      <Chip
+                        label={isRequired ? "Required" : "Optional"}
+                        size="small"
+                        sx={{
+                          height: 20,
+                          fontSize: "0.62rem",
+                          fontWeight: 800,
+                          letterSpacing: 0.5,
+                          textTransform: "uppercase",
+                          bgcolor: isRequired
+                            ? alpha(theme.palette.error.main, 0.1)
+                            : alpha(theme.palette.text.secondary, 0.08),
+                          color: isRequired ? theme.palette.error.main : theme.palette.text.secondary,
+                        }}
+                      />
+                    </Box>
+                    <Box
+                      sx={{
+                        display: "grid",
+                        gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+                        gap: 1,
+                      }}
+                    >
+                      {(group.options ?? [])
+                        .filter((o) => o.inStock)
+                        .map((opt) => {
+                          const isChecked = selectedIds.includes(opt.id);
+                          const optPrice = Number(opt.price || 0);
+                          const displayOptPrice = taxInclusive(optPrice, product.gstRate);
+                          return (
+                            <Box
+                              key={opt.id}
+                              component="button"
+                              type="button"
+                              onClick={() =>
+                                handleToggleModifierOption(group.id, opt.id, group.maxSelections)
+                              }
+                              sx={{
+                                p: 1.25,
+                                borderRadius: 1.75,
+                                border: `1.5px solid ${
+                                  isChecked
+                                    ? theme.palette.primary.main
+                                    : alpha(theme.palette.divider, 0.7)
+                                }`,
+                                bgcolor: isChecked
+                                  ? alpha(theme.palette.primary.main, 0.06)
+                                  : theme.palette.background.paper,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                cursor: "pointer",
+                                textAlign: "left",
+                                transition: "all 0.15s ease",
+                                "&:hover": { borderColor: theme.palette.primary.main },
+                              }}
+                            >
+                              <Box sx={{ display: "flex", alignItems: "center", gap: 1, minWidth: 0 }}>
+                                <Box
+                                  sx={{
+                                    width: 16,
+                                    height: 16,
+                                    borderRadius: group.maxSelections === 1 ? "50%" : 0.75,
+                                    border: `2px solid ${
+                                      isChecked
+                                        ? theme.palette.primary.main
+                                        : theme.palette.text.disabled
+                                    }`,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    flexShrink: 0,
+                                  }}
+                                >
+                                  {isChecked && (
+                                    <Box
+                                      sx={{
+                                        width: 8,
+                                        height: 8,
+                                        borderRadius: group.maxSelections === 1 ? "50%" : 0.5,
+                                        bgcolor: theme.palette.primary.main,
+                                      }}
+                                    />
+                                  )}
+                                </Box>
+                                <Typography
+                                  variant="body2"
+                                  sx={{ fontWeight: 600, fontSize: "0.82rem", lineHeight: 1.2 }}
+                                >
+                                  {opt.name}
+                                </Typography>
+                              </Box>
+                              <Typography
+                                variant="caption"
+                                sx={{
+                                  fontWeight: 700,
+                                  color: optPrice > 0 ? theme.palette.primary.main : "text.secondary",
+                                  ml: 1,
+                                  flexShrink: 0,
+                                }}
+                              >
+                                {optPrice > 0 ? `+${formatCurrency(displayOptPrice)}` : "Free"}
+                              </Typography>
+                            </Box>
+                          );
+                        })}
+                    </Box>
+                  </Box>
+                );
+              })}
+            </Box>
+          )}
+
           {/* Tab Navigation */}
           <Tabs
             value={activeTab}
@@ -601,8 +978,15 @@ const ProductModal = memo(({ product, onAddToCart, onClose }: ProductModalProps)
                   gap: 1.25,
                 }}
               >
-                {product.weight && (
-                  <FactItem label="Weight" value={`${Number(product.weight)} ${product.weightUnit}`} />
+                {(activeVariant?.weight || product.weight) && (
+                  <FactItem
+                    label="Weight"
+                    value={
+                      activeVariant?.weight
+                        ? `${Number(activeVariant.weight)} ${activeVariant.weightUnit || "g"}`
+                        : `${Number(product.weight)} ${product.weightUnit}`
+                    }
+                  />
                 )}
                 {product.piecesPerPack && (
                   <FactItem label="Pieces" value={`${product.piecesPerPack} pcs`} />
@@ -745,9 +1129,11 @@ const ProductModal = memo(({ product, onAddToCart, onClose }: ProductModalProps)
                   lineHeight: 1,
                 }}
               >
-                {formatCurrency(displayDiscountedPrice)}
+                {formatCurrency(
+                  hasVariantsOrModifiers ? displayCurrentUnitPrice : displayDiscountedPrice
+                )}
               </Typography>
-              {hasDiscount && (
+              {hasDiscount && !hasVariantsOrModifiers && (
                 <Typography
                   sx={{
                     fontSize: "0.95rem",
@@ -761,8 +1147,14 @@ const ProductModal = memo(({ product, onAddToCart, onClose }: ProductModalProps)
               )}
             </Box>
             <Typography variant="caption" sx={{ color: "text.secondary", display: "block", mt: 0.25 }}>
-              per {product.baseUnit?.toLowerCase() || "item"}
-              {product.gstRate ? ` · incl. ${Number(product.gstRate)}% GST` : ""}
+              {hasVariants && activeVariant
+                ? `size: ${activeVariant.name}`
+                : `per ${product.baseUnit?.toLowerCase() || "item"}`}
+              {modifiersSurcharge > 0
+                ? ` · incl. ${formatCurrency(taxInclusive(modifiersSurcharge, product.gstRate))} add-ons`
+                : product.gstRate
+                ? ` · incl. ${Number(product.gstRate)}% GST`
+                : ""}
             </Typography>
             {isLowStock && (
               <Typography
@@ -775,7 +1167,7 @@ const ProductModal = memo(({ product, onAddToCart, onClose }: ProductModalProps)
           </Box>
 
           {/* Interactive Cart CTA */}
-          <Box sx={{ minWidth: { xs: 150, sm: 200 } }}>
+          <Box sx={{ minWidth: { xs: 150, sm: 220 } }}>
             {isOutOfStock ? (
               <Button
                 fullWidth
@@ -791,6 +1183,48 @@ const ProductModal = memo(({ product, onAddToCart, onClose }: ProductModalProps)
               >
                 Out of Stock
               </Button>
+            ) : hasVariantsOrModifiers ? (
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1, width: "100%" }}>
+                {quantity > 0 && (
+                  <Chip
+                    label={`${quantity} in cart`}
+                    size="small"
+                    color="primary"
+                    variant="outlined"
+                    sx={{ fontWeight: 800, borderRadius: 1.5, flexShrink: 0, height: 32 }}
+                  />
+                )}
+                <Button
+                  fullWidth
+                  variant="contained"
+                  size="large"
+                  disableElevation
+                  startIcon={isAdding ? null : <ShoppingCartOutlinedIcon />}
+                  onClick={handleAdd}
+                  disabled={isAdding || Boolean(missingRequiredGroup)}
+                  sx={{
+                    py: 1.25,
+                    borderRadius: 2.5,
+                    fontWeight: 800,
+                    fontSize: "0.92rem",
+                    textTransform: "none",
+                    boxShadow: `0 4px 14px ${alpha(theme.palette.primary.main, 0.35)}`,
+                    transition: "all 0.2s ease",
+                    "&:hover": {
+                      transform: "translateY(-1px)",
+                      boxShadow: `0 6px 20px ${alpha(theme.palette.primary.main, 0.45)}`,
+                    },
+                  }}
+                >
+                  {isAdding ? (
+                    <CircularProgress size={22} sx={{ color: "white" }} />
+                  ) : missingRequiredGroup ? (
+                    `Select ${missingRequiredGroup}`
+                  ) : (
+                    `Add to Cart • ${formatCurrency(displayCurrentUnitPrice)}`
+                  )}
+                </Button>
+              </Box>
             ) : quantity > 0 ? (
               <Box
                 sx={{
@@ -808,7 +1242,7 @@ const ProductModal = memo(({ product, onAddToCart, onClose }: ProductModalProps)
                 }}
               >
                 <IconButton
-      aria-label="Decrease quantity"
+                  aria-label="Decrease quantity"
                   size="small"
                   onClick={(e) => handleUpdateQty(e, -1)}
                   disabled={isUpdating}
@@ -837,7 +1271,8 @@ const ProductModal = memo(({ product, onAddToCart, onClose }: ProductModalProps)
                   </Typography>
                 </Box>
 
-                <IconButton aria-label="Increase quantity"
+                <IconButton
+                  aria-label="Increase quantity"
                   size="small"
                   onClick={(e) => handleUpdateQty(e, 1)}
                   disabled={isUpdating}

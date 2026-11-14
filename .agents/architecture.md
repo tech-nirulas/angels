@@ -99,6 +99,29 @@ angels/
   - `FeaturedSection.tsx`: Mounted in `FeaturedProductCard` header alongside product name with `gap: 0.75` and `size="small"`.
   - `ProductModal.tsx`: Mounted alongside modal product title (`variant="h4"`) with `size="medium"`, and embedded within an explicit dietary classification tag ("100% Vegetarian", "Non-Vegetarian", or "Contains Egg") paired with `DietaryBadge` (`size="small"`) in the dietary section.
 
+### Product Variants, Modifiers & Add-ons Architecture
+- **Catalog Card Interaction (`ProductCard.tsx`, `AddToCart.tsx`)**:
+  - Products with size variants dynamically render their starting price as `"From " + formatCurrency(minPrice)`.
+  - Products with variants or modifier groups display a **"CUSTOMISE"** button with a tune icon. Clicking "CUSTOMISE" triggers the product customization modal directly.
+  - Simple standalone products retain the quick direct-add counter.
+- **Customization Modal (`ProductModal.tsx`)**:
+  - **Size Variants Selector**: Interactive pill cards rendering variant size/weight names (e.g. 500g, 1 kg) with real-time tax-inclusive pricing, active state highlights, and out-of-stock indicators.
+  - **Modifier Groups Selector**: Single-select modifier groups (`maxSelections === 1`) render as radio controls; multi-select groups render as checkboxes with add-on surcharges (`+₹50` or `Free`).
+  - **Real-time Price Engine**: Dynamically sums `(Variant Base Price + Modifiers Surcharge)` with GST calculations.
+  - **Validation Guard**: Blocks addition and displays `Select [Group Name]` if any mandatory modifier group is unsatisfied.
+  - **Dynamic Facts**: Binds to `activeVariant.weight` when a size variant is chosen.
+- **Client Configuration Hashing (`utils/cartHash.ts`)**:
+  - Standalone pure JavaScript RFC 1321 MD5 hash algorithm matching `aimk_backend`'s `CartService.computeConfigurationHash`.
+  - Computes `computeClientConfigHash(productId, variantId, modifierOptionIds)` identically to backend.
+- **Cart Redux State & Merging (`features/cart/cartSlice.ts`, `features/cart/cartEndpoints.ts`, `app/cart/page.tsx`)**:
+  - Keyed by `configurationHash`: different sizes or add-on combinations of the same product create distinct, independent line items.
+  - Adding identical configurations increments that specific line's quantity.
+  - Line items in `app/cart/page.tsx` display variant size badges (e.g. `500g`) and add-on chips with tax-inclusive pricing.
+  - Steppers and deletions route by `item.id || item.configurationHash || item.productId`, preventing collisions across variants.
+  - Login cart merge passes full variant and modifier snapshot metadata.
+- **Order Details Display (`app/orders/[id]/page.tsx`)**:
+  - Order line items read and display `item.customizations.variant.name` and selected add-on chips.
+
 ## 3. Cart Sync & Checkout Flow
 
 ```mermaid

@@ -1,11 +1,32 @@
 // features/cart/cartSlice.ts
-import { RootState } from "@/lib/store";
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import type { RootState } from "@/lib/store";
+import { computeClientConfigHash } from "../../utils/cartHash.ts";
+import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
+
+export interface SelectedVariantSnapshot {
+  id: string;
+  sku?: string;
+  name: string;
+  price: number;
+}
+
+export interface SelectedModifierSnapshot {
+  groupId: string;
+  groupName: string;
+  optionId: string;
+  optionName: string;
+  price: number;
+}
 
 // ── Shared cart item shape (mirrors CartItemResponse from the backend) ────────
 export interface CartItem {
   id: string;
   productId: string;
+  variantId?: string | null;
+  configurationHash?: string;
+  selectedVariant?: SelectedVariantSnapshot | null;
+  selectedModifiers?: SelectedModifierSnapshot[] | null;
+  itemNotes?: string | null;
   quantity: number;
   snapshotPrice?: number;
   snapshotDiscount?: number | null;
@@ -41,11 +62,26 @@ function loadGuestCart(): CartItem[] {
       const basePrice = Number(item.price ?? 0);
       const discountedPrice = item.discountedPrice !== undefined ? Number(item.discountedPrice) : basePrice;
       const discountPct = item.discount ?? null;
-      const effectivePrice = discountedPrice < basePrice ? discountedPrice : (discountPct && discountPct > 0 ? basePrice * (1 - discountPct / 100) : basePrice);
+      const hasVariant = Boolean(item.variantId || item.selectedVariant);
+      const effectivePrice = !hasVariant && discountedPrice < basePrice
+        ? discountedPrice
+        : (discountPct && discountPct > 0 ? basePrice * (1 - discountPct / 100) : basePrice);
+      const configHash =
+        item.configurationHash ||
+        computeClientConfigHash(
+          item.productId,
+          item.variantId,
+          item.selectedModifiers ? item.selectedModifiers.map((m: any) => m.optionId) : null
+        );
 
       return {
-        id: `temp-${item.productId}-${Math.random()}`,
+        id: item.id || `temp-${configHash}-${Math.random()}`,
         productId: item.productId,
+        variantId: item.variantId || null,
+        configurationHash: configHash,
+        selectedVariant: item.selectedVariant || null,
+        selectedModifiers: item.selectedModifiers || null,
+        itemNotes: item.itemNotes || null,
         quantity: item.quantity ?? 1,
         product: {
           id: item.productId,
@@ -72,11 +108,17 @@ function saveGuestCart(items: CartItem[]) {
   if (typeof window === "undefined") return;
   try {
     const simple = items.map((item) => ({
+      id: item.id,
       productId: item.productId,
+      variantId: item.variantId,
+      configurationHash: item.configurationHash,
+      selectedVariant: item.selectedVariant,
+      selectedModifiers: item.selectedModifiers,
+      itemNotes: item.itemNotes,
       quantity: item.quantity,
       name: item.product.name,
       slug: item.product.slug,
-      price: item.product.basePrice,
+      price: item.currentPrice,
       discountedPrice: item.product.discountedPrice,
       discount: item.currentDiscount,
       image: item.product.mainImage,
@@ -129,29 +171,88 @@ const cartSlice = createSlice({
     // ── Guest cart actions ─────────────────────────────────────────────────
     addToGuestCart(
       state,
-      action: PayloadAction<{ productId: string; quantity?: number; product: CartItem["product"] }>
+      action: PayloadAction<{
+        productId: string;
+        quantity?: number;
+        variantId?: string | null;
+        modifierOptionIds?: string[] | null;
+        selectedVariant?: SelectedVariantSnapshot | null;
+        selectedModifiers?: SelectedModifierSnapshot[] | null;
+        itemNotes?: string | null;
+        product: CartItem["product"];
+        unitPrice?: number;
+      }>
     ) {
-      const { productId, quantity = 1, product } = action.payload;
-      const basePrice = Number(product.basePrice);
-      const discountedPrice = product.discountedPrice !== undefined ? Number(product.discountedPrice) : basePrice;
-      const discountPct = product.discountPct !== undefined ? product.discountPct : (discountedPrice < basePrice ? Math.round(((basePrice - discountedPrice) / basePrice) * 100) : null);
-      const unitEffectivePrice = discountedPrice < basePrice ? discountedPrice : (discountPct && discountPct > 0 ? basePrice * (1 - discountPct / 100) : basePrice);
+      const {
+        productId,
+        quantity = 1,
+        variantId,
+        modifierOptionIds,
+        selectedVariant,
+        selectedModifiers,
+        itemNotes,
+        product,
+        unitPrice,
+      } = action.payload;
 
-      const existing = state.guestItems.find((i) => i.productId === productId);
+      const basePrice = unitPrice !== undefined ? Number(unitPrice) : Number(product.basePrice);
+      const hasVariant = Boolean(variantId || selectedVariant);
+      const productBasePrice = Number(product.basePrice || basePrice);
+      const productDiscountedPrice =
+        product.discountedPrice !== undefined ? Number(product.discountedPrice) : productBasePrice;
+
+      const discountPct =
+        product.discountPct !== undefined && product.discountPct !== null
+          ? product.discountPct
+          : !hasVariant && productDiscountedPrice < productBasePrice && productBasePrice > 0
+          ? Math.round(((productBasePrice - productDiscountedPrice) / productBasePrice) * 100)
+          : null;
+
+      const unitEffectivePrice =
+        !hasVariant && productDiscountedPrice < basePrice
+          ? productDiscountedPrice
+          : discountPct && discountPct > 0
+          ? Math.round(basePrice * (1 - discountPct / 100) * 100) / 100
+          : basePrice;
+
+      const configHash = computeClientConfigHash(
+        productId,
+        variantId,
+        modifierOptionIds || (selectedModifiers ? selectedModifiers.map((m) => m.optionId) : null)
+      );
+
+      const existing = state.guestItems.find(
+        (i) =>
+          i.configurationHash === configHash ||
+          (!i.configurationHash && i.productId === productId && !variantId && (!selectedModifiers || selectedModifiers.length === 0))
+      );
+
       if (existing) {
         existing.quantity += quantity;
-        const existingEffective = existing.product.discountedPrice !== undefined && existing.product.discountedPrice < existing.product.basePrice
-          ? existing.product.discountedPrice
-          : (existing.currentDiscount && existing.currentDiscount > 0 ? existing.currentPrice * (1 - existing.currentDiscount / 100) : existing.currentPrice);
+        const existingHasVariant = Boolean(existing.variantId || existing.selectedVariant);
+        const existingEffective =
+          !existingHasVariant &&
+          existing.product.discountedPrice !== undefined &&
+          existing.product.discountedPrice < existing.currentPrice
+            ? existing.product.discountedPrice
+            : existing.currentDiscount && existing.currentDiscount > 0
+            ? existing.currentPrice * (1 - existing.currentDiscount / 100)
+            : existing.currentPrice;
         existing.lineTotal = existingEffective * existing.quantity;
       } else {
         state.guestItems.push({
-          id: `temp-${productId}-${Date.now()}`,
+          id: `temp-${configHash}-${Date.now()}`,
           productId,
+          variantId: variantId || null,
+          configurationHash: configHash,
+          selectedVariant: selectedVariant ?? null,
+          selectedModifiers: selectedModifiers ?? null,
+          itemNotes: itemNotes || null,
           quantity,
           product: {
             ...product,
-            discountedPrice,
+            basePrice,
+            discountedPrice: productDiscountedPrice,
             discountPct,
           },
           currentPrice: basePrice,
@@ -164,26 +265,41 @@ const cartSlice = createSlice({
 
     updateGuestQuantity(
       state,
-      action: PayloadAction<{ productId: string; quantity: number }>
+      action: PayloadAction<{ itemIdentifier?: string; productId?: string; quantity: number }>
     ) {
-      const { productId, quantity } = action.payload;
+      const { itemIdentifier, productId, quantity } = action.payload;
+      const key = itemIdentifier || productId;
+      if (!key) return;
+
+      const itemIndex = state.guestItems.findIndex(
+        (i) => i.id === key || i.configurationHash === key || i.productId === key
+      );
+      if (itemIndex === -1) return;
+
       if (quantity <= 0) {
-        state.guestItems = state.guestItems.filter((i) => i.productId !== productId);
+        state.guestItems.splice(itemIndex, 1);
       } else {
-        const item = state.guestItems.find((i) => i.productId === productId);
-        if (item) {
-          item.quantity = quantity;
-          const effective = item.product.discountedPrice !== undefined && item.product.discountedPrice < item.product.basePrice
+        const item = state.guestItems[itemIndex];
+        item.quantity = quantity;
+        const itemHasVariant = Boolean(item.variantId || item.selectedVariant);
+        const effective =
+          !itemHasVariant &&
+          item.product.discountedPrice !== undefined &&
+          item.product.discountedPrice < item.currentPrice
             ? item.product.discountedPrice
-            : (item.currentDiscount && item.currentDiscount > 0 ? item.currentPrice * (1 - item.currentDiscount / 100) : item.currentPrice);
-          item.lineTotal = effective * item.quantity;
-        }
+            : item.currentDiscount && item.currentDiscount > 0
+            ? item.currentPrice * (1 - item.currentDiscount / 100)
+            : item.currentPrice;
+        item.lineTotal = effective * item.quantity;
       }
       saveGuestCart(state.guestItems);
     },
 
     removeFromGuestCart(state, action: PayloadAction<string>) {
-      state.guestItems = state.guestItems.filter((i) => i.productId !== action.payload);
+      const key = action.payload;
+      state.guestItems = state.guestItems.filter(
+        (i) => i.id !== key && i.configurationHash !== key && i.productId !== key
+      );
       saveGuestCart(state.guestItems);
     },
 

@@ -12,16 +12,18 @@ import { Product } from "@/interfaces/product.interface";
 import { useAppDispatch, useAppSelector } from "@/lib/store";
 import AddIcon from "@mui/icons-material/Add";
 import AddShoppingCartIcon from "@mui/icons-material/AddShoppingCart";
+import TuneIcon from "@mui/icons-material/Tune";
 import RemoveIcon from "@mui/icons-material/Remove";
 import { Box, Button, CircularProgress, IconButton, Typography } from "@mui/material";
-import { useTheme } from "@mui/material/styles";
+import { alpha, useTheme } from "@mui/material/styles";
 import { useCallback, useMemo, useState } from "react";
 
 interface AddToCartButtonProps {
   item: Product;
+  onCustomise?: () => void;
 }
 
-export default function AddToCartButton({ item }: AddToCartButtonProps) {
+export default function AddToCartButton({ item, onCustomise }: AddToCartButtonProps) {
   const theme = useTheme();
   const dispatch = useAppDispatch();
   const isAuthenticated = useAppSelector((s) => s.auth.isAuthenticated);
@@ -109,6 +111,44 @@ export default function AddToCartButton({ item }: AddToCartButtonProps) {
         sx={{ borderRadius: 2, py: 1, backgroundColor: theme.palette.grey[400] }}
       >
         Out of Stock
+      </Button>
+    );
+  }
+
+  const hasVariantsOrModifiers = Boolean(
+    (item.variants && item.variants.length > 0) ||
+    (item.modifierGroups && item.modifierGroups.length > 0)
+  );
+
+  if (hasVariantsOrModifiers) {
+    return (
+      <Button
+        fullWidth
+        variant="contained"
+        startIcon={<TuneIcon sx={{ fontSize: "1.1rem" }} />}
+        onClick={(e) => {
+          e.stopPropagation();
+          onCustomise?.();
+        }}
+        sx={{
+          borderRadius: 2,
+          py: 1,
+          fontWeight: 700,
+          letterSpacing: 0.5,
+          fontSize: "0.85rem",
+          bgcolor: alpha(theme.palette.primary.main, 0.08),
+          color: theme.palette.primary.main,
+          border: `1.5px solid ${alpha(theme.palette.primary.main, 0.35)}`,
+          boxShadow: "none",
+          transition: "all 0.2s ease",
+          "&:hover": {
+            bgcolor: theme.palette.primary.main,
+            color: "white",
+            boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.25)}`,
+          },
+        }}
+      >
+        CUSTOMISE
       </Button>
     );
   }

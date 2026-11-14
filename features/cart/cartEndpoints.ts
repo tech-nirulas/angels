@@ -8,10 +8,14 @@ type Builder = EndpointBuilder<any, any, any>;
 export interface AddToCartDto {
   productId: string;
   quantity?: number;
+  variantId?: string | null;
+  modifierOptionIds?: string[] | null;
+  itemNotes?: string | null;
 }
 
 export interface UpdateCartQuantityDto {
-  productId: string;
+  productId?: string;
+  itemIdentifier?: string;
   quantity: number;
 }
 
@@ -19,6 +23,13 @@ export interface MergeCartDto {
   items: {
     productId: string;
     quantity: number;
+    variantId?: string | null;
+    modifierOptionIds?: string[] | null;
+    selectedVariant?: any;
+    selectedModifiers?: any;
+    configurationHash?: string;
+    itemNotes?: string | null;
+    snapshotPrice?: number;
   }[];
 }
 
@@ -46,25 +57,31 @@ export const cartEndpoints = (builder: Builder) => ({
     query: (body) => ({
       url: "cart/add",
       method: "POST",
-      body: { productId: body.productId, quantity: body.quantity ?? 1 },
+      body: {
+        productId: body.productId,
+        quantity: body.quantity ?? 1,
+        variantId: body.variantId || undefined,
+        modifierOptionIds: body.modifierOptionIds || undefined,
+        itemNotes: body.itemNotes || undefined,
+      },
     }),
     invalidatesTags: ["Cart"],
   }),
 
-  // PUT /cart/item/:productId
+  // PUT /cart/item/:itemIdentifier
   updateCartQuantity: builder.mutation<Root<CartItem[]>, UpdateCartQuantityDto>({
-    query: ({ productId, quantity }) => ({
-      url: `cart/item/${productId}`,
+    query: ({ productId, itemIdentifier, quantity }) => ({
+      url: `cart/item/${itemIdentifier || productId}`,
       method: "PUT",
       body: { quantity },
     }),
     invalidatesTags: ["Cart"],
   }),
 
-  // DELETE /cart/item/:productId
+  // DELETE /cart/item/:itemIdentifier
   removeFromCart: builder.mutation<Root<CartItem[]>, string>({
-    query: (productId) => ({
-      url: `cart/item/${productId}`,
+    query: (itemIdentifier) => ({
+      url: `cart/item/${itemIdentifier}`,
       method: "DELETE",
     }),
     invalidatesTags: ["Cart"],

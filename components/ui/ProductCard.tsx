@@ -16,6 +16,7 @@ import Rating from "@mui/material/Rating";
 import Typography from "@mui/material/Typography";
 import { useTheme } from "@mui/material/styles";
 import Image from "next/image";
+import { useMemo } from "react";
 
 const CARD_SPEC = IMAGE_SLOTS.productCard;
 
@@ -42,6 +43,17 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
 
   const imageUrl = getImageUrl(product);
   const isOutOfStock = !product.inStock;
+
+  const hasVariants = Boolean(product.variants && product.variants.length > 0);
+  const minVariantPrice = useMemo(() => {
+    if (!hasVariants) return null;
+    const inStock = product.variants!.filter((v) => v.inStock);
+    const pool = inStock.length > 0 ? inStock : product.variants!;
+    return Math.min(...pool.map((v) => Number(v.price)));
+  }, [hasVariants, product.variants]);
+
+  const displayMinPrice =
+    minVariantPrice !== null ? taxInclusive(minVariantPrice, product.gstRate) : null;
 
   return (
     <Card
@@ -278,9 +290,11 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
               color: theme.palette.primary.main,
             }}
           >
-            {formatCurrency(discountedPrice)}
+            {hasVariants && displayMinPrice !== null
+              ? `From ${formatCurrency(displayMinPrice)}`
+              : formatCurrency(discountedPrice)}
           </Typography>
-          {hasDiscount && (
+          {!hasVariants && hasDiscount && (
             <Typography
               sx={{
                 fontSize: "0.85rem",
@@ -292,7 +306,7 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
               {formatCurrency(basePrice)}
             </Typography>
           )}
-          {product.baseUnit && (
+          {product.baseUnit && !hasVariants && (
             <Typography variant="caption" sx={{ color: theme.palette.text.disabled, fontSize: "0.65rem" }}>
               / {product.baseUnit.toLowerCase()}
             </Typography>
@@ -302,7 +316,7 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
       </CardActionArea>
 
       <CardActions sx={{ p: 2, pt: 0 }}>
-        <AddToCartButton item={product} />
+        <AddToCartButton item={product} onCustomise={onClick} />
       </CardActions>
     </Card>
   );

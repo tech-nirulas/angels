@@ -71,9 +71,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 const IDEMPOTENCY_KEY = "aimk_checkout_idempotency_key";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-function effectivePrice(price: number, discount?: number | null, discountedPrice?: number) {
-  if (discountedPrice !== undefined && discountedPrice < price) return discountedPrice;
-  if (discount && discount > 0) return price * (1 - discount / 100);
+function effectivePrice(
+  price: number,
+  discount?: number | null,
+  discountedPrice?: number,
+  hasVariant: boolean = false
+) {
+  if (!hasVariant && discountedPrice !== undefined && discountedPrice < price) return discountedPrice;
+  if (discount && discount > 0) return Math.round(price * (1 - discount / 100) * 100) / 100;
   return price;
 }
 
@@ -536,7 +541,7 @@ export default function CartPage() {
 
   // Fingerprint of cart line items to trigger revalidation only when items/quantities change
   const cartSignature = normalizedItems
-    .map((i) => `${i.productId}:${i.quantity}:${i.currentPrice}`)
+    .map((i) => `${i.id || i.configurationHash || i.productId}:${i.quantity}:${i.currentPrice}`)
     .sort()
     .join("|");
 
@@ -616,7 +621,17 @@ export default function CartPage() {
   useEffect(() => {
     if (isAuthenticated && guestItems.length > 0) {
       mergeCartMutation({
-        items: guestItems.map((i) => ({ productId: i.productId, quantity: i.quantity })),
+        items: guestItems.map((i) => ({
+          productId: i.productId,
+          quantity: i.quantity,
+          variantId: i.variantId,
+          modifierOptionIds: i.selectedModifiers ? i.selectedModifiers.map((m) => m.optionId) : undefined,
+          configurationHash: i.configurationHash,
+          selectedVariant: i.selectedVariant,
+          selectedModifiers: i.selectedModifiers,
+          itemNotes: i.itemNotes,
+          snapshotPrice: i.currentPrice,
+        })),
       })
         .unwrap()
         // Only clear the guest cart once the server has actually taken the
@@ -643,67 +658,78 @@ export default function CartPage() {
     window: string | null;
   } | null>(null);
 
+  // Invalidate cached serverTotals when cartSignature changes so local estimatedTotal displays immediately
   useEffect(() => {
-    if (!isAuthenticated || !selectedAddressId) {
+    setServerTotals(null);
+  }, [cartSignature]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !selectedAddressId || normalizedItems.length === 0) {
       setServerTotals(null);
       return;
     }
     let cancelled = false;
-    previewOrder({
-      deliveryAddressId: selectedAddressId,
-      promoCode: appliedPromo?.code,
-      orderType: "delivery",
-      // The backend derives the window from the IST clock — nothing sent here.
-    })
-      .unwrap()
-      .then((res) => {
-        if (cancelled) return;
-        const d = res?.data ?? res;
-        // If server preview indicates promo is invalid, drop it
-        if (Array.isArray(d?.issues)) {
-          const promoIssue = d.issues.find((issue: any) => issue.type === "PROMOTION_ERROR");
-          if (promoIssue && appliedPromo) {
-            dispatch(removePromo());
-            showSnack(promoIssue.issue || `Coupon '${appliedPromo.code}' is no longer valid`, "error");
-          }
-        }
-        if (typeof d?.grandTotal === "number") {
-          setServerTotals({
-            grandTotal: d.grandTotal,
-            deliveryFee: Number(d.deliveryFee ?? 0),
-            gstAmount: typeof d?.gstAmount === "number" ? d.gstAmount : null,
-            subtotal: typeof d?.subtotal === "number" ? d.subtotal : null,
-            window: typeof d?.deliveryWindow === "string" ? d.deliveryWindow : null,
-          });
-        }
+    const timer = setTimeout(() => {
+      previewOrder({
+        deliveryAddressId: selectedAddressId,
+        promoCode: appliedPromo?.code,
+        orderType: "delivery",
+        // The backend derives the window from the IST clock — nothing sent here.
       })
-      // A preview failure must never block checkout: createOrder recomputes
-      // authoritatively, so fall back to the local estimate.
-      .catch((err: any) => {
-        if (!cancelled) {
-          setServerTotals(null);
-          if (
-            err?.data?.type === "PROMOTION_ERROR" ||
-            (err?.data?.message && typeof err.data.message === "string" && err.data.message.toLowerCase().includes("promo"))
-          ) {
-            dispatch(removePromo());
-            showSnack(err?.data?.message ?? `Coupon '${appliedPromo?.code}' removed`, "error");
+        .unwrap()
+        .then((res) => {
+          if (cancelled) return;
+          const d = res?.data ?? res;
+          // If server preview indicates promo is invalid, drop it
+          if (Array.isArray(d?.issues)) {
+            const promoIssue = d.issues.find((issue: any) => issue.type === "PROMOTION_ERROR");
+            if (promoIssue && appliedPromo) {
+              dispatch(removePromo());
+              showSnack(promoIssue.issue || `Coupon '${appliedPromo.code}' is no longer valid`, "error");
+            }
           }
-        }
-      });
+          if (typeof d?.grandTotal === "number") {
+            setServerTotals({
+              grandTotal: d.grandTotal,
+              deliveryFee: Number(d.deliveryFee ?? 0),
+              gstAmount: typeof d?.gstAmount === "number" ? d.gstAmount : null,
+              subtotal: typeof d?.subtotal === "number" ? d.subtotal : null,
+              window: typeof d?.deliveryWindow === "string" ? d.deliveryWindow : null,
+            });
+          }
+        })
+        // A preview failure must never block checkout: createOrder recomputes
+        // authoritatively, so fall back to the local estimate.
+        .catch((err: any) => {
+          if (!cancelled) {
+            setServerTotals(null);
+            if (
+              err?.data?.type === "PROMOTION_ERROR" ||
+              (err?.data?.message && typeof err.data.message === "string" && err.data.message.toLowerCase().includes("promo"))
+            ) {
+              dispatch(removePromo());
+              showSnack(err?.data?.message ?? `Coupon '${appliedPromo?.code}' removed`, "error");
+            }
+          }
+        });
+    }, 200);
+
     return () => {
       cancelled = true;
+      clearTimeout(timer);
     };
-  }, [isAuthenticated, selectedAddressId, appliedPromo?.code, previewOrder]);
+  }, [isAuthenticated, selectedAddressId, appliedPromo?.code, previewOrder, cartSignature, normalizedItems.length]);
 
   // Local estimates work on tax-inclusive amounts (what the customer pays).
   // The checkout payload itself keeps sending pre-tax `currentPrice` — the
   // backend converts, so converting here would double-charge the tax.
   const inclusiveItems = normalizedItems.map((i) => {
+    const hasVariant = Boolean(i.variantId || i.selectedVariant);
     const preTaxUnit = effectivePrice(
       Number(i.currentPrice),
       i.currentDiscount ? Number(i.currentDiscount) : null,
       i.product?.discountedPrice,
+      hasVariant
     );
     const gstRate = (i.product as { gstRate?: string | number } | undefined)?.gstRate;
     const incUnit = taxInclusive(preTaxUnit, gstRate);
@@ -863,13 +889,14 @@ export default function CartPage() {
   };
 
   const handleUpdateQuantity = useCallback(
-    async (productId: string, newQuantity: number) => {
-      setUpdatingProductId(productId);
+    async (item: any, newQuantity: number) => {
+      const lineIdentifier = item.id || item.configurationHash || item.productId;
+      setUpdatingProductId(lineIdentifier);
       if (isAuthenticated) {
-        if (newQuantity <= 0) await removeItemMutation(productId);
-        else await updateQuantityMutation({ productId, quantity: newQuantity });
+        if (newQuantity <= 0) await removeItemMutation(lineIdentifier);
+        else await updateQuantityMutation({ itemIdentifier: lineIdentifier, quantity: newQuantity });
       } else {
-        dispatch(updateGuestQuantity({ productId, quantity: newQuantity }));
+        dispatch(updateGuestQuantity({ itemIdentifier: lineIdentifier, quantity: newQuantity }));
       }
       setUpdatingProductId(null);
     },
@@ -877,10 +904,11 @@ export default function CartPage() {
   );
 
   const handleRemove = useCallback(
-    async (productId: string, productName: string) => {
-      setUpdatingProductId(productId);
-      if (isAuthenticated) await removeItemMutation(productId);
-      else dispatch(removeFromGuestCart(productId));
+    async (item: any, productName: string) => {
+      const lineIdentifier = item.id || item.configurationHash || item.productId;
+      setUpdatingProductId(lineIdentifier);
+      if (isAuthenticated) await removeItemMutation(lineIdentifier);
+      else dispatch(removeFromGuestCart(lineIdentifier));
       setRemovedName(productName);
       showSnack(`${productName} removed`, "info");
       setUpdatingProductId(null);
@@ -1021,23 +1049,30 @@ export default function CartPage() {
                       const gstRate = (item.product as { gstRate?: string | number } | undefined)?.gstRate;
                       // Display prices are tax-inclusive (utils/pricing.ts); the
                       // checkout payload below keeps sending pre-tax currentPrice.
+                      const hasVariant = Boolean(item.variantId || item.selectedVariant);
                       const unitPrice = taxInclusive(
                         effectivePrice(
                           Number(item.currentPrice),
                           item.currentDiscount ? Number(item.currentDiscount) : null,
-                          item.product?.discountedPrice
+                          item.product?.discountedPrice,
+                          hasVariant
                         ),
                         gstRate
                       );
                       const preTaxStrike = Number(item.currentPrice);
                       const lineTotal = unitPrice * item.quantity;
-                      const isItemUpdating = updatingProductId === item.productId;
-                      const discountPct = item.currentDiscount ?? (item.product?.discountedPrice ? Math.round(((Number(item.currentPrice) - item.product.discountedPrice) / Number(item.currentPrice)) * 100) : null);
+                      const lineIdentifier = item.id || item.configurationHash || item.productId;
+                      const isItemUpdating = updatingProductId === lineIdentifier;
+                      const discountPct =
+                        item.currentDiscount ??
+                        (!hasVariant && item.product?.discountedPrice
+                          ? Math.round(((Number(item.currentPrice) - item.product.discountedPrice) / Number(item.currentPrice)) * 100)
+                          : null);
                       const hasDiscount = discountPct !== null && discountPct > 0;
 
                       return (
                         <motion.div
-                          key={item.productId}
+                          key={lineIdentifier}
                           layout
                           initial={{ opacity: 0, x: -20 }}
                           animate={{ opacity: 1, x: 0 }}
@@ -1067,9 +1102,59 @@ export default function CartPage() {
                             <Box sx={{ flex: 1, minWidth: 0 }}>
                               <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 1 }}>
                                 <Box sx={{ minWidth: 0 }}>
-                                  <Typography variant="subtitle1" sx={{ fontFamily: "var(--font-body)", fontWeight: 600, fontSize: { xs: "0.9rem", sm: "1rem" }, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                                    {item.product.name}
+                                  <Typography
+                                    variant="subtitle1"
+                                    sx={{
+                                      fontFamily: "var(--font-body)",
+                                      fontWeight: 700,
+                                      fontSize: { xs: "0.95rem", sm: "1.02rem" },
+                                      lineHeight: 1.3,
+                                      display: "flex",
+                                      alignItems: "center",
+                                      flexWrap: "wrap",
+                                      gap: 0.75,
+                                    }}
+                                  >
+                                    <span>{item.product.name}</span>
+                                    {item.selectedVariant?.name && (
+                                      <Chip
+                                        label={item.selectedVariant.name}
+                                        size="small"
+                                        sx={{
+                                          height: 20,
+                                          fontSize: "0.68rem",
+                                          fontWeight: 800,
+                                          bgcolor: alpha(theme.palette.primary.main, 0.08),
+                                          color: theme.palette.primary.main,
+                                          borderRadius: 1.5,
+                                        }}
+                                      />
+                                    )}
                                   </Typography>
+
+                                  {item.selectedModifiers && item.selectedModifiers.length > 0 && (
+                                    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mt: 0.5 }}>
+                                      {item.selectedModifiers.map((mod: any, mIdx: number) => (
+                                        <Chip
+                                          key={mod.optionId || mIdx}
+                                          label={`+ ${mod.optionName}${
+                                            Number(mod.price) > 0
+                                              ? ` (${formatCurrency(taxInclusive(Number(mod.price), gstRate))})`
+                                              : ""
+                                          }`}
+                                          size="small"
+                                          sx={{
+                                            height: 18,
+                                            fontSize: "0.62rem",
+                                            fontWeight: 600,
+                                            bgcolor: alpha(theme.palette.text.secondary, 0.06),
+                                            color: theme.palette.text.secondary,
+                                            borderRadius: 1,
+                                          }}
+                                        />
+                                      ))}
+                                    </Box>
+                                  )}
                                   <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.5 }}>
                                     <Typography sx={{ fontWeight: 700, color: theme.palette.primary.main, fontSize: "0.95rem", fontFamily: "var(--font-body)" }}>
                                       {formatCurrency(unitPrice)}
@@ -1085,7 +1170,7 @@ export default function CartPage() {
                                   </Box>
                                 </Box>
                                 <Tooltip title="Remove item">
-                                  <IconButton aria-label="Remove item from cart" size="small" onClick={() => handleRemove(item.productId, item.product.name)} disabled={isItemUpdating} sx={{ flexShrink: 0, color: theme.palette.text.disabled, "&:hover": { color: theme.palette.error.main, background: alpha(theme.palette.error.main, 0.08) } }}>
+                                  <IconButton aria-label="Remove item from cart" size="small" onClick={() => handleRemove(item, item.product.name)} disabled={isItemUpdating} sx={{ flexShrink: 0, color: theme.palette.text.disabled, "&:hover": { color: theme.palette.error.main, background: alpha(theme.palette.error.main, 0.08) } }}>
                                     <DeleteOutlineIcon fontSize="small" />
                                   </IconButton>
                                 </Tooltip>
@@ -1094,8 +1179,8 @@ export default function CartPage() {
                               <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mt: 1.5 }}>
                                 <QuantityStepper
                                   value={item.quantity}
-                                  onDecrement={() => handleUpdateQuantity(item.productId, item.quantity - 1)}
-                                  onIncrement={() => handleUpdateQuantity(item.productId, item.quantity + 1)}
+                                  onDecrement={() => handleUpdateQuantity(item, item.quantity - 1)}
+                                  onIncrement={() => handleUpdateQuantity(item, item.quantity + 1)}
                                   disabled={isItemUpdating}
                                 />
                                 <Typography sx={{ fontWeight: 700, fontSize: "1rem", fontFamily: "var(--font-body)" }}>

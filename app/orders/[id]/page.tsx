@@ -545,7 +545,32 @@ export default function OrderDetailPage() {
                             <Box sx={{ flex: 1, minWidth: 0 }}>
                               <Typography variant="body2" sx={{ fontWeight: 600, lineHeight: 1.3 }}>
                                 {item.productSnapshot?.name}
+                                {item.customizations?.variant?.name && (
+                                  <Typography component="span" sx={{ ml: 0.75, fontWeight: 700, color: theme.palette.primary.main, fontSize: "0.8rem" }}>
+                                    ({item.customizations.variant.name})
+                                  </Typography>
+                                )}
                               </Typography>
+                              {item.customizations?.modifiers && item.customizations.modifiers.length > 0 && (
+                                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mt: 0.5, mb: 0.25 }}>
+                                  {item.customizations.modifiers.map((mod: any, mIdx: number) => (
+                                    <Typography
+                                      key={mod.optionId || mIdx}
+                                      variant="caption"
+                                      sx={{
+                                        color: theme.palette.text.secondary,
+                                        fontSize: "0.7rem",
+                                        bgcolor: alpha(theme.palette.primary.main, 0.05),
+                                        px: 0.75,
+                                        py: 0.2,
+                                        borderRadius: 1,
+                                      }}
+                                    >
+                                      + {mod.optionName}
+                                    </Typography>
+                                  ))}
+                                </Box>
+                              )}
                               <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
                                 {formatCurrency(unitPrice)} × {item.quantity}
                                 {item.productSnapshot?.discount && (

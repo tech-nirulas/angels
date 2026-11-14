@@ -1,5 +1,78 @@
 # Angels Consumer Web App — Development Log
 
+## [2026-11-14] Bugfix: Real-Time Cart Subtotal & Total Reactivity & Decoupled Variant Pricing
+- **Real-Time Cart Reactivity (`app/cart/page.tsx`)**:
+  - Fixed frozen cart totals: Added `cartSignature` to `previewOrder` effect dependency array with a 200ms debounce.
+  - Added optimistic reactivity: Cached `serverTotals` is invalidated immediately on `cartSignature` change so `estimatedTotal` updates at 0ms latency when quantity is increased or decreased.
+  - Keyed `cartSignature` by `i.id || i.configurationHash || i.productId` to prevent signature collisions across multiple variants of the same product.
+- **Decoupled Variant Pricing from Base Product Discount (`app/cart/page.tsx` & `features/cart/cartSlice.ts`)**:
+  - Fixed bug where base product's fixed `discountedPrice` (e.g. ₹400 on ₹500 base product) clamped variant prices (e.g. ₹1800 2kg cake clamped down to ₹400).
+  - Refactored `effectivePrice` and `cartSlice` (`loadGuestCart`, `addToGuestCart`, `updateGuestQuantity`) to calculate discount percentages relative to unit price when variants are present, preserving full variant pricing.
+- **Testing & Verification**:
+  - Added test case in `test/cart-slice-variants.test.ts` verifying that variants maintain independent price scaling and do not clamp to base discounts.
+  - All 7 test suites pass cleanly (`cart-configuration-hash.test.ts`, `cart-slice-variants.test.ts`, `cart-promo-slice.test.ts`, `cart-revalidation-helper.test.ts`, `pricing.test.ts`, `product-card-dietary.test.ts`, `product-modal-dietary.test.ts`).
+  - Next.js production build (`npm run build`) succeeded with 17/17 routes generated cleanly.
+
+## [2026-11-14] Feature: Variants, Modifiers & Add-ons Integration (Phase 4: Cart Page & Order History Displays)
+- **Cart Page Line Item Customization Breakdown (`app/cart/page.tsx`)**:
+  - Uniquely keyed line items using `item.id || item.configurationHash || item.productId`, eliminating duplicate key collisions for multiple variants of the same product.
+  - Rendered variant size badge (e.g. `500g`, `1 kg`) directly alongside the product name.
+  - Rendered chip tags for each selected modifier/add-on with tax-inclusive surcharge pricing (e.g. `+ Eggless (+₹50)`, `+ Sparkler Candle (+₹40)`).
+  - Updated `handleUpdateQuantity` and `handleRemove` to pass line identifier (`id || configurationHash`), enabling independent quantity changes and removals for different sizes/customizations of the same product.
+- **Order Details Customization Snapshot (`app/orders/[id]/page.tsx`)**:
+  - Binds to backend order item snapshot `item.customizations`: renders variant name alongside product title and chip badges for selected add-on modifiers.
+- **Documentation & Task Completion**:
+  - Updated `.agents/architecture.md` with complete architectural documentation of the Variants & Modifiers subsystem.
+  - Production build verification: `npm run build` completed successfully (17/17 pages generated cleanly).
+  - All test suites (`cart-configuration-hash.test.ts`, `cart-slice-variants.test.ts`, `cart-promo-slice.test.ts`, `cart-revalidation-helper.test.ts`, `dietary-badge.test.ts`, `pricing.test.ts`, `product-card-dietary.test.ts`, `product-modal-dietary.test.ts`) PASS.
+
+## [2026-11-14] Feature: Variants, Modifiers & Add-ons Integration (Phase 3: Customization UI & Card Interaction)
+- **Product Details & Customization Modal (`components/ui/ProductModal.tsx`)**:
+  - Implemented interactive **Size / Variant Selector**: renders responsive pill cards displaying variant size/weight names (e.g. 500g, 1 kg) with real-time tax-inclusive pricing, active state highlights, and out-of-stock indicators.
+  - Implemented **Modifier Groups Selector**: renders single-choice groups (`maxSelections === 1`) as radio controls and multi-choice groups (`maxSelections > 1`) as checkboxes, displaying add-on price surcharges (`+₹50` or `Free`).
+  - Added real-time pricing computation: dynamically sums `(Variant Base Price + Modifiers Surcharge)` with GST calculations.
+  - Added mandatory group validation: blocks addition and prompts user (`Select [Group Name]`) if required modifier minimums are unsatisfied.
+  - Updated Add-to-Cart payload to pass `variantId`, `modifierOptionIds`, and snapshots to backend and guest Redux store.
+  - Dynamic weight fact update: binds to `activeVariant.weight` when a size variant is chosen.
+- **Catalog Card & CTA Interaction (`components/ui/ProductCard.tsx` & `components/ui/AddToCart.tsx`)**:
+  - Products with variants dynamically compute and render starting price as `"From " + formatCurrency(minPrice)`.
+  - For products with variants or modifier groups, primary card button renders **"CUSTOMISE"** with tune icon. Tapping "CUSTOMISE" opens the customization modal directly.
+  - Preserved direct quick-add stepper for simple standalone products without variants or required choices.
+- **Testing & Verification**:
+  - Verified `test/product-card-dietary.test.ts` and `test/product-modal-dietary.test.ts` (PASS).
+  - Verified `tsc --noEmit` compiles with 0 errors.
+
+## [2026-11-14] Feature: Variants, Modifiers & Add-ons Integration (Phase 2: RTK Endpoints & Cart Redux Slice)
+- **Cart API Endpoints (`features/cart/cartEndpoints.ts`)**:
+  - Expanded `AddToCartDto` with optional `variantId`, `modifierOptionIds`, and `itemNotes`.
+  - Updated `updateCartQuantity` and `removeFromCart` to accept `itemIdentifier` (supporting `cartItemId`, `configurationHash`, or `productId`).
+  - Updated `MergeCartDto` to accept full line metadata (`variantId`, `modifierOptionIds`, `selectedVariant`, `selectedModifiers`, `itemNotes`, `snapshotPrice`).
+  - Updated `app/cart/page.tsx` and `app/verify-otp/page.tsx` merge triggers to pass the enriched guest item metadata to the server.
+- **Cart Redux Slice (`features/cart/cartSlice.ts`)**:
+  - Added `SelectedVariantSnapshot` and `SelectedModifierSnapshot` types.
+  - Upgraded `CartItem` model to include `variantId`, `configurationHash`, `selectedVariant`, `selectedModifiers`, and `itemNotes`.
+  - Upgraded `addToGuestCart` to hash the line configuration via `computeClientConfigHash`. Same products with different variants or modifier sets now cleanly instantiate separate line items. Adding identical configurations increments existing line quantity.
+  - Upgraded `updateGuestQuantity` and `removeFromGuestCart` to look up items by `id || configurationHash || productId`.
+  - Upgraded `loadGuestCart` and `saveGuestCart` in `localStorage` to preserve all variant and customization attributes with backward-compatibility for legacy guest items.
+- **Testing & Verification**:
+  - Created `test/cart-slice-variants.test.ts` testing multi-variant line separation, modifier price additions, identical configuration quantity increments, and hash-based updates and deletions (all PASS).
+  - Verified `test/cart-promo-slice.test.ts` passes cleanly.
+  - Verified `tsc --noEmit` compiles with 0 errors.
+
+## [2026-11-14] Feature: Variants, Modifiers & Add-ons Integration (Phase 1: Domain Models & Hashing)
+- **Domain Interfaces (`interfaces/product.interface.ts`)**:
+  - Added TypeScript models for `ProductVariant` (size, price, compareAtPrice, weight, displayOrder, stock status).
+  - Added TypeScript models for `ModifierOption`, `ModifierGroup`, and `ProductModifierGroup`.
+  - Extended `Product` interface to support optional `hasVariants`, `variants`, and `modifierGroups`.
+- **Client Configuration Hashing (`utils/cartHash.ts`)**:
+  - Implemented standalone RFC 1321 pure JavaScript `md5` algorithm with zero external dependencies.
+  - Implemented `computeClientConfigHash(productId, variantId, modifierOptionIds)` identically matching `aimk_backend`'s `CartService.computeConfigurationHash`.
+  - Produces byte-for-byte identical 32-character hex MD5 hashes to Node backend crypto.
+  - Gracefully returns bare `productId` for simple items without variants/options.
+- **Unit Testing (`test/cart-configuration-hash.test.ts`)**:
+  - Created test suite asserting identical hash outputs to `crypto.createHash('md5')`, sorting stability, and fallback to `productId`.
+  - Verified with Node test runner: all assertions PASS.
+
 ## [2026-11-14] Feature: Upgrade Dietary Indicator Badges to Full FSSAI 2020 Standard (SVG Upward Triangle)
 - **FSSAI Compliance Upgrade**:
   - Aligned dietary symbols with Food Safety and Standards Authority of India (FSSAI) Labelling and Display Regulations 2020.
