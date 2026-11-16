@@ -1,5 +1,21 @@
 # Angels Consumer Web App — Development Log
 
+## [2026-11-16] Feature: Full Product Names on Cards & Conditional Nutrition Tab
+- **Product Card Title Wrapping (`components/ui/ProductCard.tsx`, `components/sections/FeaturedSection.tsx`)**:
+  - Removed single-line truncation (`WebkitLineClamp: 1`, `overflow: "hidden"`) on the product title Typography.
+  - Added `wordBreak: "break-word"` and `flex: 1` so titles wrap naturally to 2+ lines without cutting off.
+  - Preserved equal-height card alignment in grid layouts (`height: "100%"`, `CardContent flexGrow: 1`).
+- **Product Details Modal Tabs (`components/ui/ProductModal.tsx`)**:
+  - Refactored tab state and controls from numeric index mapping (`0, 1, 2, 3`) to semantic string values (`"overview" | "nutrition" | "storage" | "reviews"`).
+  - Refined `hasNutrition` check to ensure non-empty valid nutritional entries exist.
+  - Completely omitted `<Tab value="nutrition" ... />` from the DOM when `!hasNutrition` (instead of rendering a disabled tab).
+  - Added active tab guard defaulting to `"overview"` if a product lacks nutritional data.
+- **Testing & Verification**:
+  - Authored `test/product-card-title.test.ts` (PASS).
+  - Authored `test/product-modal-nutrition-tab.test.ts` (PASS).
+  - `npx tsc --noEmit` compiled with 0 errors.
+
+
 ## [2026-11-16] Feature: Menu Priority Merchandising Ordering & "Recommended" Tag Support
 - **Product Interfaces & Badges (`interfaces/product.interface.ts`, `components/ui/`)**:
   - Added `recommended: boolean;` to `Product` interface.

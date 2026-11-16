@@ -59,7 +59,7 @@ const ProductModal = memo(({ product, onAddToCart, onClose }: ProductModalProps)
   const isAuthenticated = useAppSelector((s) => s.auth.isAuthenticated);
 
   const [imageError, setImageError] = useState(false);
-  const [activeTab, setActiveTab] = useState(0);
+  const [activeTab, setActiveTab] = useState<"overview" | "nutrition" | "storage" | "reviews">("overview");
   const [galleryIndex, setGalleryIndex] = useState(0);
   const [isUpdating, setIsUpdating] = useState(false);
 
@@ -126,7 +126,21 @@ const ProductModal = memo(({ product, onAddToCart, onClose }: ProductModalProps)
     ? Object.entries(allergens).filter(([, present]) => present).map(([name]) => name)
     : [];
 
-  const hasNutrition = Boolean(nutritional && Object.keys(nutritional).length > 0);
+  const hasNutrition = Boolean(
+    nutritional &&
+    typeof nutritional === "object" &&
+    !Array.isArray(nutritional) &&
+    Object.keys(nutritional).length > 0 &&
+    Object.values(nutritional).some(
+      (v) => v !== null && v !== undefined && String(v).trim() !== ""
+    )
+  );
+
+  useEffect(() => {
+    if (activeTab === "nutrition" && !hasNutrition) {
+      setActiveTab("overview");
+    }
+  }, [hasNutrition, activeTab]);
 
   // Dietary classification (FSSAI standard) & lifestyle tags
   const dietaryClassification = getDietaryClassification(
@@ -953,14 +967,14 @@ const ProductModal = memo(({ product, onAddToCart, onClose }: ProductModalProps)
             }}
             slotProps={{ indicator: { style: { height: 3, borderRadius: "3px 3px 0 0" } } }}
           >
-            <Tab label="Overview" />
-            <Tab label="Nutrition" disabled={!hasNutrition} />
-            <Tab label="Storage & Care" disabled={!product.storageInstructions} />
-            <Tab label={`Reviews (${product.totalReviews || 0})`} />
+            <Tab value="overview" label="Overview" />
+            {hasNutrition && <Tab value="nutrition" label="Nutrition" />}
+            <Tab value="storage" label="Storage & Care" disabled={!product.storageInstructions} />
+            <Tab value="reviews" label={`Reviews (${product.totalReviews || 0})`} />
           </Tabs>
 
           {/* Tab 0: Overview */}
-          {activeTab === 0 && (
+          {activeTab === "overview" && (
             <Box>
               {product.description && (
                 <Typography
@@ -1037,8 +1051,8 @@ const ProductModal = memo(({ product, onAddToCart, onClose }: ProductModalProps)
             </Box>
           )}
 
-          {/* Tab 1: Nutrition */}
-          {activeTab === 1 && hasNutrition && (
+          {/* Tab: Nutrition */}
+          {activeTab === "nutrition" && hasNutrition && (
             <Box sx={{ display: "flex", flexDirection: "column" }}>
               <Box
                 sx={{
@@ -1082,8 +1096,8 @@ const ProductModal = memo(({ product, onAddToCart, onClose }: ProductModalProps)
             </Box>
           )}
 
-          {/* Tab 2: Storage */}
-          {activeTab === 2 && product.storageInstructions && (
+          {/* Tab: Storage */}
+          {activeTab === "storage" && product.storageInstructions && (
             <Box
               sx={{
                 p: 2.5,
@@ -1101,8 +1115,8 @@ const ProductModal = memo(({ product, onAddToCart, onClose }: ProductModalProps)
             </Box>
           )}
 
-          {/* Tab 3: Reviews */}
-          {activeTab === 3 && <ProductReviewsTab productId={product.id} />}
+          {/* Tab: Reviews */}
+          {activeTab === "reviews" && <ProductReviewsTab productId={product.id} />}
         </Box>
 
         {/* ── Sticky Purchase Bar ── */}

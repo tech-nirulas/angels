@@ -64,6 +64,11 @@ angels/
 - Callers pass **no `title`** (the modal renders the product name itself) and `disableContentPadding: true` so the image panel runs edge-to-edge. `ModalProvider` renders its title bar only when a title is supplied, and floats a close button over the content otherwise.
 - The image is locked to 1:1 with an aspect-ratio box, matching `IMAGE_SLOTS.productGallery`.
 - The layout grid uses `minmax(0, 1fr)` tracks with `minWidth: 0` on both columns — a bare `1fr` cannot shrink below the thumbnail strip's min-content width and overflows narrow dialogs.
+- **Tab Navigation & Conditional Nutrition Display**: Tabs use semantic string values (`"overview" | "nutrition" | "storage" | "reviews"`). When a product has no nutritional information defined (`hasNutrition === false`), the "Nutrition" `<Tab />` is completely omitted from the DOM (not disabled), and active tab state safely defaults to `"overview"`.
+
+### Product Cards Full Title Wrapping (`components/ui/ProductCard.tsx`, `components/sections/FeaturedSection.tsx`)
+- Product title Typography renders with natural multiline wrapping (`wordBreak: "break-word"`, `flex: 1`) without `WebkitLineClamp: 1` single-line truncation.
+- Cards maintain strict equal-height layouts across rows via `Card sx={{ height: "100%" }}` and `CardContent sx={{ flexGrow: 1 }}`.
 
 ### Order Status Vocabulary
 

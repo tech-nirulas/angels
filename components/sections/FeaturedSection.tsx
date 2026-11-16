@@ -240,11 +240,8 @@ const FeaturedProductCard = ({
                 fontWeight: 700,
                 fontSize: "1rem",
                 lineHeight: 1.3,
-                display: "-webkit-box",
-                WebkitLineClamp: 1,
-                WebkitBoxOrient: "vertical",
-                overflow: "hidden",
                 flex: 1,
+                wordBreak: "break-word",
               }}
             >
               {product.name}
