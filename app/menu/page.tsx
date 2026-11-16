@@ -151,7 +151,14 @@ export default function MenuPage() {
       case "name_asc":
         return items.sort((a, b) => a.name.localeCompare(b.name));
       default:
-        return items;
+        return items.sort((a, b) => {
+          const score = (p: Product) =>
+            (p.bestSeller ? 8 : 0) +
+            (p.recommended ? 4 : 0) +
+            (p.featured ? 2 : 0) +
+            (p.newArrival ? 1 : 0);
+          return score(b) - score(a);
+        });
     }
   }, [displayProducts, sortBy]);
 

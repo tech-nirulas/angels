@@ -1,5 +1,20 @@
 # Angels Consumer Web App — Development Log
 
+## [2026-11-16] Feature: Menu Priority Merchandising Ordering & "Recommended" Tag Support
+- **Product Interfaces & Badges (`interfaces/product.interface.ts`, `components/ui/`)**:
+  - Added `recommended: boolean;` to `Product` interface.
+  - `ProductCard.tsx`: Rendered "Recommended" Chip in badge stack with Royal Violet accent (`#7C3AED`). Also rendered "Featured" Chip when `product.featured` is true.
+  - `ProductModal.tsx`: Added "Recommended" `BadgeChip` (`#7C3AED`) to the modal header badge row.
+- **Menu Sorting Memoization (`app/menu/page.tsx`)**:
+  - Implemented bitmask priority scoring in `sortedProducts` for default view:
+    `bestSeller` (8) > `recommended` (4) > `featured` (2) > `newArrival` (1) > `createdAt` (desc).
+  - Preserved explicit sorts (`price_asc`, `price_desc`, `rating_desc`, `name_asc`) strictly without badge pinning.
+- **Testing & Verification (`test/menu-sorting.test.ts`)**:
+  - Authored unit test asserting multi-tier hierarchy, anti-leapfrogging (recommended beats featured+new), and tiebreaker chronological stability.
+  - Verified with Node test runner: all assertions PASS.
+  - Verified `tsc --noEmit` compiles with 0 errors.
+
+
 ## [2026-11-14] Bugfix: Real-Time Cart Subtotal & Total Reactivity & Decoupled Variant Pricing
 - **Real-Time Cart Reactivity (`app/cart/page.tsx`)**:
   - Fixed frozen cart totals: Added `cartSignature` to `previewOrder` effect dependency array with a 200ms debounce.

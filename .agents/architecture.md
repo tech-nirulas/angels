@@ -122,6 +122,16 @@ angels/
 - **Order Details Display (`app/orders/[id]/page.tsx`)**:
   - Order line items read and display `item.customizations.variant.name` and selected add-on chips.
 
+### Merchandising Badges & Default Menu Priority Sorting
+- **Badges on Storefront**:
+  - `ProductCard.tsx`: Stacks top-left badge chips for Discount, Best Seller (`theme.palette.warning.main`), Recommended (`#7C3AED` Royal Violet), Featured (`theme.palette.primary.main`), New Arrival (`theme.palette.info.main`), and Seasonal (`theme.palette.success.main`).
+  - `ProductModal.tsx`: Displays matching `BadgeChip` indicators in modal header.
+- **Default Menu Sorting (`app/menu/page.tsx`)**:
+  - When `sortBy === "default"`, the `sortedProducts` memo orders items using a bitmask priority scoring:
+    `bestSeller` (8) > `recommended` (4) > `featured` (2) > `newArrival` (1) > `createdAt` (desc).
+  - Matches backend multi-tier SQL ordering, preventing missing top items caused by server pagination.
+  - When users select an explicit sort option (`price_asc`, `price_desc`, `rating_desc`, `name_asc`), items sort strictly by that selected metric without pinning badges to the top.
+
 ## 3. Cart Sync & Checkout Flow
 
 ```mermaid

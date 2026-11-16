@@ -205,6 +205,32 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
               }}
             />
           )}
+          {product.recommended && (
+            <Chip
+              label="Recommended"
+              size="small"
+              sx={{
+                bgcolor: "#7C3AED",
+                color: "white",
+                fontWeight: 700,
+                fontSize: "0.62rem",
+                height: 20,
+              }}
+            />
+          )}
+          {product.featured && (
+            <Chip
+              label="Featured"
+              size="small"
+              sx={{
+                bgcolor: theme.palette.primary.main,
+                color: "white",
+                fontWeight: 700,
+                fontSize: "0.62rem",
+                height: 20,
+              }}
+            />
+          )}
           {product.newArrival && (
             <Chip
               label="New"

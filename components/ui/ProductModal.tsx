@@ -453,6 +453,9 @@ const ProductModal = memo(({ product, onAddToCart, onClose }: ProductModalProps)
             {product.bestSeller && (
               <BadgeChip label="Best Seller" color={theme.palette.warning.main} />
             )}
+            {product.recommended && (
+              <BadgeChip label="Recommended" color="#7C3AED" />
+            )}
             {product.newArrival && (
               <BadgeChip label="New Arrival" color={theme.palette.info.main} />
             )}
