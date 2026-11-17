@@ -220,16 +220,16 @@
   - **Email**: `callcenter@nirulas.com` (`mailto:callcenter@nirulas.com`)
   - **Toll-Free Phone**: `1800 102 5247` (`tel:18001025247`)
   - **Mobile Phone**: `+91 84448 49940` (`tel:+918444849940`)
-  - **WhatsApp Support**: `+91 92500 10686` (`https://wa.me/919250010686`)
+  - **WhatsApp Support**: `+91 92500 10683` (`https://wa.me/919250010683`)
   - **Address**: `A-65, Sector 64, Noida, Uttar Pradesh 201301`
 - **Global Footer (`components/layout/Footer.tsx`)**:
   - Replaced internal `CONTACT` object with imports from `constants/contact`.
   - Added dedicated Toll-Free line with `SupportAgentOutlinedIcon` and Mobile line with `PhoneAndroidOutlinedIcon`.
-  - Updated WhatsApp icon button and chat link to use the unified `9250010686` support channel.
+  - Updated WhatsApp icon button and chat link to use the unified `9250010683` support channel.
 - **Homepage Custom Cake Section (`components/sections/OrderSection.tsx`)**:
-  - Replaced hardcoded `WHATSAPP_NUMBER` with `CONTACT_INFO.getWhatsappUrl(...)` targeting `9250010686`.
+  - Replaced hardcoded `WHATSAPP_NUMBER` with `CONTACT_INFO.getWhatsappUrl(...)` targeting `9250010683`.
 - **Custom Cake Builder (`app/customize/page.tsx`)**:
-  - Updated order submission WhatsApp redirect, reference check button, and direct discussion CTA to use `CONTACT_INFO.getWhatsappUrl(...)` targeting `9250010686`.
+  - Updated order submission WhatsApp redirect, reference check button, and direct discussion CTA to use `CONTACT_INFO.getWhatsappUrl(...)` targeting `9250010683`.
 - **Documentation & Architecture (`.agents/architecture.md`)**:
   - Updated architecture docs to reflect `constants/contact.ts` as the single source of truth for branding/contact metadata.
 - **Verification**:

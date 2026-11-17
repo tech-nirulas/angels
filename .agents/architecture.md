@@ -77,7 +77,7 @@ angels/
 ### Homepage "Order" Section (`components/sections/OrderSection.tsx`)
 
 - **Not a form.** It used to duplicate the full custom-cake enquiry (name, email, phone, occasion, date, vision) as a second form that submitted nowhere (`setSubmitted(true)` was the entire handler). The one real, working custom-cake request flow — image upload, delivery address, backend mutation, WhatsApp handoff — lives at `/customize` (`app/customize/page.tsx`).
-- The section is now a compact info block + CTA: three info bullets (booking lead time, what to share, delivery area) and two buttons — **Start Customizing** (`router.push('/customize')`) and **Chat on WhatsApp** (`CONTACT_INFO.getWhatsappUrl(...)` targeting `9250010686`).
+- The section is now a compact info block + CTA: three info bullets (booking lead time, what to share, delivery area) and two buttons — **Start Customizing** (`router.push('/customize')`) and **Chat on WhatsApp** (`CONTACT_INFO.getWhatsappUrl(...)` targeting `9250010683`).
 - Keep it that way: if this section grows a form field again, it is duplicating `/customize` and will drift out of sync with it (delivery city, flavour list, etc. are only defined once, in `/customize`).
 
 ### Footer & Contact Info (`constants/contact.ts`, `components/layout/Footer.tsx`)
@@ -87,7 +87,7 @@ angels/
   - Email: `callcenter@nirulas.com`
   - Toll-Free: `1800 102 5247`
   - Mobile: `+91 84448 49940`
-  - WhatsApp: `+91 92500 10686`
+  - WhatsApp: `+91 92500 10683`
 - Link columns (`FOOTER_LINKS`) point only to routes that exist on this site (`/`, `/menu`, `/cakes`, `/customize`, `/orders`, `/addresses`, `/profile`, `/cart`) via `next/link`. Do not add a link here for a page that doesn't exist yet — that was the original problem (`Wedding Cakes`, `Wholesale`, `Careers`, etc. all pointed at `href="#"`).
 - No newsletter signup: the previous one had no backend and no handler at all (the "Join" button did nothing). There is no subscribe endpoint in `aimk_backend`, so it was replaced with the real contact block instead of being wired to nothing.
 - Social icons: Instagram/Facebook are decorative (no verified handles exist to link to — do not fabricate one). WhatsApp is a real, working `wa.me` link (`CONTACT_INFO.getWhatsappUrl()`).

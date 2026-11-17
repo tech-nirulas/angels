@@ -12,14 +12,14 @@ export const CONTACT_INFO = {
   tollFreeHref: "tel:18001025247",
   mobile: "+91 84448 49940",
   mobileHref: "tel:+918444849940",
-  whatsappNumber: "919250010686",
-  whatsappDisplay: "+91 92500 10686",
+  whatsappNumber: "919250010683",
+  whatsappDisplay: "+91 92500 10683",
 
   /**
    * Generates a deep-link WhatsApp URL with pre-filled message text.
    */
   getWhatsappUrl: (text?: string) => {
     const defaultText = "Hello Angels in My Kitchen team, I have a question!";
-    return `https://wa.me/919250010686?text=${encodeURIComponent(text || defaultText)}`;
+    return `https://wa.me/919250010683?text=${encodeURIComponent(text || defaultText)}`;
   },
 };
