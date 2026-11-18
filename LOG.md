@@ -1,5 +1,10 @@
 # Angels Consumer Web App — Development Log
 
+## [2026-11-18] Maintenance: SeaweedFS Media Storage Recovery & Image Verification
+- Investigated and resolved category circle avatars (Cookies, Cakes, Classic Pastries) failing to load on homepage.
+- Verified SeaweedFS S3 storage restored; all 10 active category avatars and 88 menu product images now return HTTP 200 OK.
+- Added `-master.garbageThreshold=0.99` to prevent unintended SeaweedFS volume compactions and increased nightly backup retention to 30 days.
+
 ## [2026-11-16] Feature: Full Product Names on Cards & Conditional Nutrition Tab
 - **Product Card Title Wrapping (`components/ui/ProductCard.tsx`, `components/sections/FeaturedSection.tsx`)**:
   - Removed single-line truncation (`WebkitLineClamp: 1`, `overflow: "hidden"`) on the product title Typography.
